@@ -1,0 +1,191 @@
+source = "太祖武皇帝，沛国谯人也，姓曹，讳操，字孟德，汉相国参之后。"
+chinese_time = ""
+location = "沛国谯"
+entity = "曹操", role = ""
+action = "生"
+
+source = "桓帝世，曹腾为中常侍大长秋，封费亭侯。"
+chinese_time = "桓帝世"
+location = ""
+entity = "曹腾", role = "中常侍"
+action = "任"
+
+source = "桓帝世，曹腾为中常侍大长秋，封费亭侯。"
+chinese_time = "桓帝世"
+location = ""
+entity = "曹腾", role = "大长秋"
+action = "任"
+
+source = "桓帝世，曹腾为中常侍大长秋，封费亭侯。"
+chinese_time = "桓帝世"
+location = ""
+entity = "曹腾", role = "费亭侯"
+action = "封"
+
+source = "养子嵩嗣，官至太尉，莫能审其生出本末。"
+chinese_time = ""
+location = ""
+entity = "曹嵩", role = "养子"
+entity = "曹腾", role = "养父"
+action = "收养"
+
+source = "太祖少机警，有权数，而任侠放荡，不治行业，故世人未之奇也；惟梁国桥玄、南阳何颙异焉。玄谓太祖曰：“天下将乱，非命世之才不能济也，能安之者，其在君乎！”"
+chinese_time = ""
+location = ""
+entity = "桥玄", role = "主导者"
+entity = "何颙", role = "支持者"
+entity = "曹操", role = ""
+action = "评价"
+
+source = "年二十，举孝廉为郎，除洛阳北部尉，迁顿丘令，征拜议郎。"
+chinese_time = "年二十"
+location = ""
+entity = "曹操", role = "孝廉郎"
+action = "举"
+
+source = "年二十，举孝廉为郎，除洛阳北部尉，迁顿丘令，征拜议郎。"
+chinese_time = "年二十"
+location = ""
+entity = "曹操", role = "洛阳北部尉"
+action = "除"
+
+source = "年二十，举孝廉为郎，除洛阳北部尉，迁顿丘令，征拜议郎。"
+chinese_time = "年二十"
+location = ""
+entity = "曹操", role = "顿丘令"
+action = "迁"
+
+source = "年二十，举孝廉为郎，除洛阳北部尉，迁顿丘令，征拜议郎。"
+chinese_time = "年二十"
+location = ""
+entity = "曹操", role = "议郎"
+action = "征拜"
+
+source = "久之，征还为东郡太守；不就，称疾归乡里。"
+chinese_time = ""
+location = ""
+entity = "曹操", role = "东郡太守"
+action = "征还"
+
+source = "久之，征还为东郡太守；不就，称疾归乡里。"
+chinese_time = ""
+location = ""
+entity = "曹操", role = "东郡太守"
+action = "不就"
+
+source = "久之，征还为东郡太守；不就，称疾归乡里。"
+chinese_time = ""
+location = "沛国谯"
+entity = "曹操", role = ""
+action = "回乡"
+
+source = "顷之，冀州刺史王芬、南阳许攸、沛国周旌等连结豪杰，谋废灵帝，立合肥侯，以告太祖，太祖拒之。芬等遂败。"
+chinese_time = ""
+location = ""
+entity = "王芬", role = "主导者"
+entity = "许攸", role = "主导者"
+entity = "周旌", role = "主导者"
+entity = "曹操", role = "反对者"
+entity = "灵帝", role = "针对者"
+entity = "合肥侯", role = "针对者"
+action = "聚谋废立"
+
+source = "金城边章、韩遂杀刺史郡守以叛，众十余万，天下骚动。"
+chinese_time = "金城"
+location = ""
+entity = "边章", role = "主导者"
+entity = "韩遂", role = "主导者"
+action = "叛"
+
+source = "卓表太祖为骁骑校尉，欲与计事。"
+chinese_time = ""
+entity = "曹操", role = "骁骑校尉"
+location = "董卓", role = "支持者"
+action = "任"
+
+source = "太祖乃变易姓名，间行东归。"
+chinese_time = ""
+location = ""
+entity = "曹操", role = ""
+action = "避乱"
+
+source = "出关，过中牟，为亭长所疑，执诣县，邑中或窃识之，为请得解。"
+chinese_time = "中牟"
+entity = "曹操", role = ""
+action = "被捕"
+
+source = "卓遂杀太后及弘农王。"
+chinese_time = ""
+entity = "董卓", role = "主导者"
+entity = "太后", role = "针对者"
+entity = "弘农王", role = "针对者"
+action = "弑主"
+
+source = "太祖至陈留，散家财，合义兵，将以诛卓。冬十二月，始起兵于己吾，是岁中平六年也。"
+chinese_time = "中平六年十二月"
+entity = "曹操", role = "主导者"
+action = "起兵"
+
+
+帮我设计一个历史事件的数据库，可以考虑知识图谱或者关系数据库的方式，需要考虑，历史人物、历史地点、历史事件的关系，历史事件应该能够包含绝大部份的历史事件，包括人类社会的事件（如：人的生老病死、官场升迁任免、阴谋斗争、战争等）、自然地理的事件（如：天灾、天象等），可应该能完整的看到人物之间的关系，以及可以通过时间、人物、事件类型、地点等几个方面来对历史事件进行梳理、整理。
+
+1.历史实体 (Historical Objects)
+- 实体ID (oid)
+- 姓名 (name)
+- 类型 (type)
+  o 历史人物 (Historical Figures): 历史人物，如：曹操、孙权、刘邦等。
+  o 自然实体 (Natural Objects): 自然中的实体，如：太阳、月亮、荧惑星、五台山等。
+  o 人造实体 (Artificial Objects): 人造的实体，如：少林寺、太和殿等。
+- 简介 (biography)
+
+2.历史地点 (Historical Places)
+- 地点ID (pid)
+- 名称 (name)
+- 经度 (longitude) 
+- 纬度 (latitude)
+- 简介 (description)
+
+3.历史事件 (Historical Events)
+- 事件ID (eid)
+- 名称 (name)
+- 发生日期 (date)
+- 结束日期 (end_date)
+- 类型 (type)
+- 子类型 (sub_type)
+- 来源 (source)
+
+4.事件与实体关系 (Event Participants)
+- 事件实体关系ID (aoid)
+- 事件ID (eid)
+- 实体ID (oid)
+- 角色 (role): 在事件中的角色。默认为主角。
+- 健值对 (key/value): 主要记录事件中参与的实体某些发生变化的属性，如：历史人物实体的职位、封号等。如没有，则没有。
+  o key = [name, alias, pseudonym, official_title, honorary_title, noble_rank, honor, emperor_title,temple_name, posthumous_name, ...]
+  o name: 姓名
+  o alias: 别名
+  o family_name: 姓。姓：李。
+  o given_name: 名。名：白。
+  o courtesy_name: 字。字：太白。
+  o pseudonym: 艺名、笔名、号等。号：青莲居士。
+  o official_title: 官职。翰林院供奉、右拾遗。
+  o honorific_title: 尊号，是对某人特别是君主或高级官员在位时或死后所被加封的尊贵称号，通常用于表示尊崇和敬仰。如：圣天子、神武皇帝。
+  o honorary_title: 对某人特定领域成就或贡献的高度评价和认可，通常不是官方授予的正式称号。如：诗仙、诗圣。
+  o noble_rank: 爵位/封号，王公贵族的爵位，一般带封地，如：公侯伯子男等。
+  o emperor_title: 帝号，皇帝登基时所使用的正式称号，一般以“皇帝”结尾。如：秦始皇（始皇帝），汉高祖（高祖皇帝）
+  o temple_name: 庙号，皇帝死后在太庙立庙时所用的称号，通常用于纪念皇帝在位时的功绩。唐太宗（太宗是庙号），宋太祖（太祖是庙号）。
+  o posthumous_name: 谥号，在一个人去世后，根据其生前的行为和品德给予的称号。
+
+5.事件与地点关系 (Event Places)
+- 事件地点关系ID (apid)
+- 事件ID (eid)
+- 地点ID (pid)
+
+6.事件与事件关系 (Event Relationships)
+- 事件间关系ID (aeid)
+- 事件ID1 (eid1)
+- 事件ID2 (eid2)
+- 关系类型 (type)
+  o parent: eid1 is eid2's parent
+  o child: eid1 is eid2's child
+  o next: eid1 is eid2's next event
+  o last: eid1 is eid2's last event
