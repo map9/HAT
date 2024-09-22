@@ -8,11 +8,11 @@ import utils
 
 def test_load():
 
-  dbook_archive_path = "/Users/sunyafu/zebra/Book/Books/library/publish"
+  dbook_archive_path = "../../library/publish"
 
   dbarchive = docbook.BookArchive(dbook_archive_path)
 
-  dbooks = dbarchive.dbbooks
+  dbooks = dbarchive.dbooks
   for book in dbooks:
     logger.info(f"book: {book.id}, {book.title.title}, 卷/章数目:{len(book.divisions)}")
 
@@ -63,7 +63,7 @@ def test_get_book_chapter(dbarchive: docbook.BookArchive):
   print('|'.join([dir.title.title for dir in directory]))
 
 if __name__ == "__main__":
-  utils.setup_logging(log_file = 'test.log', level = logging.INFO)
+  utils.setup_logging(log_file = '../../logs/test.log', level = logging.INFO)
   logger = logging.getLogger("test.docbook.archive")
   
   dbarchive = test_load()

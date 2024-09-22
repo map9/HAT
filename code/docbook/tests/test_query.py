@@ -38,7 +38,7 @@ def test_query():
       logger.info(f"query: {query_string}, \ncontent: {content}, \nresult: {result}.\n")
 
 def test_get_chapter_directory():
-  dbook_path = "/Users/sunyafu/zebra/Book/Books/library/publish/books/战国策.dbook"
+  dbook_path = "../../library/publish/books/战国策.dbook"
   dbfile = docbook.BookFile(dbook_path)
 
   chapter_id = "9acd3206-e369-4e42-8b07-5c1c7f1b55ad"
@@ -53,7 +53,7 @@ def test_get_chapter_directory():
     logger.info(f"path: {path}")
 
 def test_get_chapters_directorys():
-  dbook_path = "/Users/sunyafu/zebra/Book/Books/library/publish/books/战国策.dbook"
+  dbook_path = "../../library/publish/books/战国策.dbook"
   dbfile = docbook.BookFile(dbook_path)
 
   chapter_id = "9acd3206-e369-4e42-8b07-5c1c7f1b55ad"
@@ -62,7 +62,7 @@ def test_get_chapters_directorys():
     path = ' / '.join([dir.title.title for dir in directory])
     logger.info(f"path: {path}")
 
-def sort_func(query_result_piece: docbook.QueryResultPiece):
+def sort_func(query_result_piece: query.QueryResultPiece):
   """
   用chapter的book title为第一排序，中文拼音排序。
   """
@@ -74,11 +74,11 @@ def sort_func(query_result_piece: docbook.QueryResultPiece):
     return (pinyin(directory[-1].title.title, style = Style.TONE3), query_result_piece.order)
 
 def test_query_book():
-  dbook_path = "/Users/sunyafu/zebra/Book/Books/library/publish/books/周易.dbook"
+  dbook_path = "../../library/publish/books/周易.dbook"
   dbfile = docbook.BookFile(dbook_path)
 
   directorys = dbfile.book.get_chapters_directorys()
-  query_results = docbook.search_in_chapters("君子 or 小人", directorys)
+  query_results = docbook.BookQuery.search_in_chapters("君子 or 小人", directorys)
   query_results.sort_query_result_piece(sort_func)
 
   for query_result_piece in query_results.query_result_pieces:
@@ -91,16 +91,16 @@ def test_query_book():
       logger.info(f"query: {query_results.query.query_string}, {path}, content: {hit[0]}.")
 
 def test_query_archive():
-  dbook_archive_path = "/Users/sunyafu/zebra/Book/Books/library/publish"
+  dbook_archive_path = "../../library/publish"
 
   dbarchive = docbook.BookArchive(dbook_archive_path)
 
-  dbooks = dbarchive.dbbooks
+  dbooks = dbarchive.dbooks
   for book in dbooks:
     book.rebuild_chapters_order()
 
   directorys = dbarchive.get_chapters_directorys()
-  query_results = docbook.search_in_chapters("君子 and 小人", directorys)
+  query_results = docbook.BookQuery.search_in_chapters("君子 and 小人", directorys)
   query_results.sort_query_result_piece(sort_func)
 
   for query_result_piece in query_results.query_result_pieces:
@@ -113,7 +113,7 @@ def test_query_archive():
       logger.info(f"query: {query_results.query.query_string}, {path}, content: {hit[0]}.")
 
 if __name__ == "__main__":
-  utils.setup_logging(log_file = 'test.log', level = logging.INFO)
+  utils.setup_logging(log_file = '../../logs/test.log', level = logging.INFO)
   logger = logging.getLogger("test.query")
   
   test_query()

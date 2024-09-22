@@ -96,7 +96,7 @@ def test_book():
 
 # for test
 if __name__ == "__main__":
-  utils.setup_logging(log_file='test.log', level=logging.INFO)
+  utils.setup_logging(log_file='../../logs/test.log', level=logging.INFO)
   logger = logging.getLogger("test.docbook.archive")
 
   test_title()
