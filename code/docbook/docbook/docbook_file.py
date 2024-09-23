@@ -149,6 +149,7 @@ class BookFile(object):
     if dynamic_load == False:
       self.load_all_chapter()
 
+    logger.info(f"Load dbook '{path}' success.")
     return True
 
   def load_all_chapter(self) -> bool:

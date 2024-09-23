@@ -2,13 +2,25 @@
  这个book.css主要用于文献阅读显示时需要的css定义。
 */
 
+fn {
+  border-bottom: 1px solid currentColor;
+}
+
+tn {
+  border: 1px solid currentColor;
+}
+
+bn {
+  border-bottom: 1px dotted currentColor;
+}
+
 .db-chapter {
   margin: auto;
   padding: 32px;
   /*writing-mode: vertical-rl;*/
   /*text-orientation: upright;*/
   text-align: justify;
-  line-height: 1.6;
+  line-height: 1.7;
   font-family: var(--reader-font-family);
   text-shadow: var(--shadow-16) 0 0 1px;
   color: var(--surface-gray-900);
@@ -67,8 +79,8 @@
 }
 
 .db-section p {
-  margin-block-start: 0em;
-  margin-block-end: 0em;
+  margin-block-start: 0.5em;
+  margin-block-end: 0.5em;
   margin-inline-start: 0px;
   margin-inline-end: 0px;
 }

@@ -22,6 +22,7 @@ export class HtmlParseDocument {
 
   static insertAnnotations(content: string, inserts: HtmlContentPiece[]): string {
     const result: string[] = [];
+    const cache: string[] = [];
     let currentPlainTextLength = 0;
     const tagRegex = /<\/?[^>]+>/g;
     let match;
@@ -41,6 +42,7 @@ export class HtmlParseDocument {
       currentPlainTextLength += plainText.length;
   
       let insertIndex = 0;
+      cache.length = 0;
       for (var i = aIndex; i < inserts.length; i++) {
         let annotation = inserts[i];
         if (annotation.position == undefined){
@@ -50,7 +52,11 @@ export class HtmlParseDocument {
         if (!annotation.inserted && currentPlainTextLength >= annotation.position) {
           const _insertIndex = annotation.position - (currentPlainTextLength - plainText.length);
           result.push(plainText.substring(insertIndex, _insertIndex));
-          result.push(annotation.content);
+          if ((currentPlainTextLength == annotation.position) && match[0].startsWith("</")){
+            cache.push(annotation.content);
+          } else {
+            result.push(annotation.content);
+          }
           insertIndex = _insertIndex;
           annotation.inserted = true;
           aIndex = i + 1;
@@ -59,7 +65,14 @@ export class HtmlParseDocument {
       if (insertIndex < plainText.length) {
         result.push(plainText.substring(insertIndex));
       }
-      result.push(match[0]); // 添加标签
+      // 添加标签
+      result.push(match[0]);
+      // 如果添加的内容恰好在标签尾巴上，就需要先加标签，再添加插入内容。
+      // ...<label>...[带插入内容]</label>...，调整为：
+      // ...<label>...</label>[带插入内容]...
+      if (cache.length > 0){
+        result.push(...cache);
+      }
       lastIndex = match.index + match[0].length;
     }
   

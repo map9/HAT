@@ -12,10 +12,10 @@ export async function searchArchive(q?: string, f?: Function): Promise<void> {
 
     try {
       const response = await axios.get(queryString);
-      if (f) f(response.data);
-      console.log(response.data);
       if (!response.data.result_pieces || (response.data.result_pieces && response.data.result_pieces.length == 0)) {
         toast.info(`没有搜索到包含:${q}的内容。`);
+      } else {
+        if (f) f(response.data);
       }
     } catch (error) {
       toast.error(`搜索文献库出现错误:${error}。`);
@@ -33,9 +33,14 @@ export async function getBookList(q?: string, f?: Function): Promise<void> {
   }
   try {
     const response = await axios.get(queryString);
-    if (f) f(response.data);
     if (!response.data.result_pieces || (response.data.result_pieces && response.data.result_pieces.length == 0)) {
-      toast.error(`找不到书名为:${q}的书籍。`);
+      if (q && q.length){
+        toast.error(`找不到书名为:${q}的书籍。`);
+      } else {
+        toast.error(`找不到任何书籍。`);
+      }
+    } else {
+      if (f) f(response.data);
     }
   } catch (error) {
     toast.error(`搜索书籍出现错误:${error}。`);

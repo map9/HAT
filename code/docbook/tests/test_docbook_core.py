@@ -9,6 +9,7 @@ import logging
 import docbook
 import utils
 
+current_directory = os.path.dirname(os.path.abspath(__file__))
 
 def test_title():
   title = docbook.Title('钢铁是怎样炼成的', subtitle='一个人的历程')
@@ -96,7 +97,7 @@ def test_book():
 
 # for test
 if __name__ == "__main__":
-  utils.setup_logging(log_file='../../logs/test.log', level=logging.INFO)
+  utils.setup_logging(log_file = current_directory + '/../../../logs/test.log', level = logging.INFO)
   logger = logging.getLogger("test.docbook.archive")
 
   test_title()

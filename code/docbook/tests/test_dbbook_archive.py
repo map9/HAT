@@ -6,9 +6,11 @@ import logging
 import docbook
 import utils
 
+current_directory = os.path.dirname(os.path.abspath(__file__))
+
 def test_load():
 
-  dbook_archive_path = "../../library/publish"
+  dbook_archive_path = current_directory + "/../../../library/publish"
 
   dbarchive = docbook.BookArchive(dbook_archive_path)
 
@@ -63,7 +65,7 @@ def test_get_book_chapter(dbarchive: docbook.BookArchive):
   print('|'.join([dir.title.title for dir in directory]))
 
 if __name__ == "__main__":
-  utils.setup_logging(log_file = '../../logs/test.log', level = logging.INFO)
+  utils.setup_logging(log_file = current_directory + '/../../../logs/test.log', level = logging.INFO)
   logger = logging.getLogger("test.docbook.archive")
   
   dbarchive = test_load()

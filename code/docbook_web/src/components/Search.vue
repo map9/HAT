@@ -74,6 +74,10 @@ watch(() => route.query.q, (newValue) => {
 });
 
 function QueryResultPiecesToQueryResultsDirectorys(queryResultPieces: QueryResultPiece[]): QueryResultsDirectory[] {
+  if (queryResultPieces == undefined){
+    return [];
+  }
+
   // Create a map to hold all directories by their ID
   const directoryMap = new Map<UUID, QueryResultsDirectory>();
 

@@ -16,6 +16,7 @@ import threading
 
 from query import Query, QueryResults, QueryResultPiece
 from docbook import Book, Division, ContentPiece, DivisionType 
+from utils import remove_html_tags
 
 logger = logging.getLogger('docbook.query')
 
@@ -141,7 +142,30 @@ class BookQuery(object):
     return output_string
 
   @staticmethod
-  def __search_in_chapter(q: Union[Query, str], directory: List[Union[Division, Book]], limit = None) -> Union[QueryResultPiece, None]:
+  def __search_in_chapter_section(q: Query, content_piece: ContentPiece, limit: int = None, annotation: bool = False) -> List[Tuple[str, float]]:
+    if (annotation == False) and (content_piece.type == DivisionType.ANNOTATION):
+      return []
+
+    hits: List[{str, float}] = []
+
+    #logger.info(f"search string: {q.query_string}, content: {content_piece.content}")
+    # 检索范围定义为一个正文段落
+    # TODO: 值得商榷，不同的范围定义，能搜索到的信息也是不一样的。
+    #       关于语义的搜索，可以考虑采用LLM来进行搜索匹配
+    spans = content_piece.content.split('\n')
+    for span in spans:
+      span = remove_html_tags(span)
+      result = q.excute_query(span)
+      if (result == True):
+        hits.append((span, 1.0))
+
+    for index, content_piece in enumerate(content_piece.content_pieces):
+      hits += BookQuery.__search_in_chapter_section(q, content_piece, limit, annotation)
+    
+    return hits
+
+  @staticmethod
+  def __search_in_chapter(q: Union[Query, str], directory: List[Union[Division, Book]], limit: int = None, annotation: bool = False) -> Union[QueryResultPiece, None]:
     if (q is None) or (directory is None) or (len(directory) == 0) or BookQuery.stop_search_event.is_set():
       return None
     if isinstance(q, str):
@@ -160,15 +184,7 @@ class BookQuery(object):
         logger.error(f"a Invalid content_piece: {chapter}.")
         break
       
-      #logger.info(f"search string: {q.query_string}, content: {content_piece.content}")
-      # 检索范围定义为一个正文段落
-      # TODO: 值得商榷，不同的范围定义，能搜索到的信息也是不一样的。
-      #       关于语义的搜索，可以考虑采用LLM来进行搜索匹配
-      spans = content_piece.content.split('\n')
-      for span in spans:
-        result = q.excute_query(span)
-        if (result == True):
-          hits.append((span, 1.0))
+      hits += BookQuery.__search_in_chapter_section(q, content_piece, limit, annotation)
 
     if len(hits) > 0:
       with BookQuery.result_count_lock:
@@ -183,7 +199,7 @@ class BookQuery(object):
       return None
 
   @staticmethod
-  def search_in_chapter(q: Union[Query, str], directory: List[Union[Division, Book]], limit = QUERY_MAX_RESULT_NUM) -> Union[QueryResults, None]:
+  def search_in_chapter(q: Union[Query, str], directory: List[Union[Division, Book]], limit = QUERY_MAX_RESULT_NUM, annotation: bool = False) -> Union[QueryResults, None]:
     if (q is None) or (directory is None) or (len(directory) == 0):
       return None
     if isinstance(q, str):
@@ -194,7 +210,7 @@ class BookQuery(object):
     BookQuery.global_result_count = 0
     BookQuery.stop_search_event.clear()
 
-    query_results_piece = BookQuery.__search_in_chapter(q, directory, limit)
+    query_results_piece = BookQuery.__search_in_chapter(q, directory, limit, annotation)
     if query_results_piece is not None:
       query_results.add_query_result_piece(query_results_piece)
     
@@ -202,7 +218,7 @@ class BookQuery(object):
     return query_results
 
   @staticmethod
-  def search_in_chapters(q: Union[Query, str], directorys: List[List[Union[Division, Book]]], limit = QUERY_MAX_RESULT_NUM) -> Union[QueryResults, None]:
+  def search_in_chapters(q: Union[Query, str], directorys: List[List[Union[Division, Book]]], limit: int = QUERY_MAX_RESULT_NUM, annotation: bool = False) -> Union[QueryResults, None]:
     """
     The `search_in_chapters` function searches for a query string in chapters and returns the
     results.
@@ -233,7 +249,7 @@ class BookQuery(object):
 
     # 使用 ThreadPoolExecutor 对每个chapters的搜索启动一个线程进行处理
     with ThreadPoolExecutor(max_workers = BookQuery.QUERY_THREAD_NUM, thread_name_prefix = 'chapter_searcher') as executor:
-      futures = [executor.submit(lambda p: BookQuery.__search_in_chapter(*p), (q, directory, limit)) for directory in directorys]
+      futures = [executor.submit(lambda p: BookQuery.__search_in_chapter(*p), (q, directory, limit, annotation)) for directory in directorys]
 
       # 等待每个线程执行完毕
       for future in futures:
@@ -251,7 +267,7 @@ class BookQuery(object):
     return query_results
 
   @staticmethod
-  def search_book_bytitle(q: Union[Query, str], dbooks: List[Book], limit = QUERY_MAX_RESULT_NUM) -> Union[List[Book], None]:
+  def search_book_bytitle(q: Union[Query, str], dbooks: List[Book], limit: int = QUERY_MAX_RESULT_NUM) -> Union[List[Book], None]:
     if (q is None) or (dbooks is None) or (len(dbooks) == 0):
       return None
     if isinstance(q, str):

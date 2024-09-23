@@ -56,7 +56,7 @@ def search_in_dbarchive():
     
     if (q is not None):
       dbquery = BookQuery()
-      dbarchive = app.dbarchive
+      dbarchive: BookArchive = app.dbarchive
 
       directorys = dbarchive.get_chapters_directorys()
       query_results = dbquery.search_in_chapters(q, directorys, limit = None)
@@ -64,7 +64,7 @@ def search_in_dbarchive():
 
       for query_result_piece in query_results.query_result_pieces:
         for index, hit in enumerate(query_result_piece.hits):
-          logger.info(f"query: {query_results.query.query_string}, {'' if query_result_piece.directory is None else '|'.join([dir.title.title for dir in query_result_piece.directory])}, content: {hit[0]}.")
+          #logger.info(f"query: {query_results.query.query_string}, {'' if query_result_piece.directory is None else '|'.join([dir.title.title for dir in query_result_piece.directory])}, content: {hit[0]}.")
           query_result_piece.hits[index] = (dbquery.highlights(hit[0], format = BookQuery.MARK_TEXT, keys = query_results.query.get_query_keys(), strong = True, surround = surround), hit[1])
 
       return jsonify(remove_useless_value(query_results.to_dict()))
@@ -81,7 +81,7 @@ def get_book_list():
 
     logging.info(f"/book/list, q: {q}.")
 
-    dbarchive = app.dbarchive
+    dbarchive: BookArchive = app.dbarchive
     if (q is not None) and (len(q) > 0):
       dbquery = BookQuery()
     
@@ -181,7 +181,7 @@ def get_book_chapters():
 
 # 定义 main 入口
 if __name__ == "__main__":
-  setup_logging(log_file = 'server.log', level = logging.INFO)
+  setup_logging(log_file = '../../logs/server.log', level = logging.INFO)
   logger = logging.getLogger("server")
 
   # 禁止对jsonify输出json时按照键进行排序
@@ -192,7 +192,7 @@ if __name__ == "__main__":
   #app.config['JSON_AS_ASCII'] = False  
 
   # load all books from library path
-  app.dbarchive = BookArchive('/Users/sunyafu/zebra/docbook/library/publish', True)
+  app.dbarchive = BookArchive('../../library/publish', False)
   for book in app.dbarchive.dbooks:
     book.rebuild_chapters_order()
 

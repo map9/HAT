@@ -130,8 +130,10 @@ class BookArchive(object):
       self._archive = json.loads(file.read().decode('utf-8'))
       file.close()
 
+    path = pathlib.Path(path)
+    path = path.parent
     for item in self._archive['items']:
-      dbfile = BookFile(item['ref'], dynamic_load)
+      dbfile = BookFile(path / item['ref'], dynamic_load)
       self._dbfiles.append(dbfile)
     return True
 
