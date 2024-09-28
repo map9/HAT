@@ -71,6 +71,7 @@ bn {
 .db-section h4,
 .db-section h5,
 .db-section h6 {
+  text-indent: 2em;
   font-weight: bold;
   margin-block-start: 1em;
   margin-block-end: 1em;

@@ -41,7 +41,8 @@ interface Props {
   inBook: Book;
   isDialog: boolean;
 }
-var props = withDefaults(defineProps<Props>(), {
+
+const props = withDefaults(defineProps<Props>(), {
   inBook: undefined,
   isDialog: undefined,
 });
@@ -50,23 +51,22 @@ const localBook = ref<Book>(props.inBook);
 
 const order = ref<boolean>(true);
 
-const reverseBookCatalogue = (division: Book | Division) => {
-  if (division.divisions === undefined){
-    return
-  }
+const reverseBookCatalogue = (division: Book | Division): Division  => {
+  if (division.divisions !== undefined){
+    for (var _division of division.divisions){
+      _division = _division as Division;
+      reverseBookCatalogue(_division)
+    }
 
-  for (var _division of division.divisions){
-    reverseBookCatalogue(_division)
+    division.divisions = division.divisions.slice().reverse()
+    return Object.assign({}, division) as Division;
   }
-
-  division.divisions = division.divisions.slice().reverse()
-  return Object.assign({}, division);
 }
 
 const OnOrder = () => {
   order.value = !order.value;
 
-  localBook.value = reverseBookCatalogue(localBook.value)
+  localBook.value = reverseBookCatalogue(localBook.value) as Book;
 }
 
 // 监听 props.inBook 的变化

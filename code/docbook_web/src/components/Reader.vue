@@ -6,7 +6,8 @@
     <BookCatalogue v-if="chapterId==undefined" :in-book="bookCatalogue" :is-dialog="false" />
     <BookReader v-if="chapterId!==undefined"  @notify:chapter="OnReaderChapter" @notify:catalogue="OnReaderCatalogue"
     :in-book-id="bookId" :in-chapter-id="chapterId"
-    :inIsPageMode="currentThemeParameters.isPageMode"/>
+    :inIsPageMode="currentThemeParameters.isPageMode"
+    :in-top="position.top" :in-Bottom="position.top+position.height"/>
   </div>
   <div id="toolbar" v-if="chapterId!==undefined" :style="{top: position.top+20+'px', left: position.left+position.width+'px'}">
     <toolbar @notify="OnToolbar" :is-night-mode="isNightMode"/>
@@ -38,6 +39,7 @@ import { Book, SearchRange } from "./ts/BookDefine";
 import { getStringParam } from "./ts/Helper"
 import HeadType from './ts/HeadType';
 import { getBookCatalogue } from './ts/BookServiceHelper';
+import { Bottom } from '@element-plus/icons-vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -47,8 +49,8 @@ const centerDiv = ref<HTMLElement | null>(null);
 // 使用 ref 创建本地响应式状态
 const searchString = ref<string | undefined>();
 const searchRange = ref<SearchRange>(SearchRange.book);
-const bookId = ref<number | undefined>();
-const chapterId = ref<number | undefined>();
+const bookId = ref<string | undefined>();
+const chapterId = ref<string | undefined>();
 
 const bookCatalogue = ref<Book>();
 

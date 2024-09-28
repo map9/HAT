@@ -2,10 +2,10 @@
   <head-bar :inHeadType="HeadType.library" :in-search-string="searchString" :in-search-range="searchRange" />
 
   <div id="center">
-    <search-result-hit :search-target-count="searchResults.query_target_count"
-      :result-pieces-count="searchResults.result_piece_count" />
-    <book-shelf v-if="searchResults.result_pieces" :loading-status="loadingStatus"
-      :search-results="searchResults.result_pieces" />
+    <search-result-hit :queryRange="queryResults.query_range"
+      :queryResultCount="queryResults.query_result_count" />
+    <book-shelf v-if="queryResults.result_pieces" :loading-status="loadingStatus"
+      :search-results="queryResults.result_pieces" />
   </div>
 </template>
 
@@ -18,7 +18,7 @@ import SearchResultHit from './Search/SearchResultHit.vue';
 import BookShelf from './Books/BookShelf.vue';
 
 import LoadingStatus from "./ts/LoadingStatus";
-import { SearchResultObject, SearchRange } from "./ts/BookDefine"
+import { QueryResults, SearchRange } from "./ts/BookDefine"
 import { getStringParam } from "./ts/Helper"
 import { getBookList } from './ts/BookServiceHelper';
 import HeadType from './ts/HeadType';
@@ -36,18 +36,23 @@ var props = withDefaults(defineProps<Props>(), {
 const searchString = ref<string>(props.inSearchString);
 const searchRange = ref<SearchRange>(SearchRange.book);
 
-const searchResults = ref<SearchResultObject>({
+const queryResults = ref<QueryResults>({
+  query_range: 0,
   query_target_count: 0,
-  result_piece_count: 0,
+  query_result_count: 0,
   result_pieces: undefined,
 });
 const loadingStatus = ref(LoadingStatus.idle);
 
-const DoSearch = (q: string | undefined) => {
-  getBookList(q, (d)=>searchResults.value = d);
-  if(q){
+const doSearch = (q?: string) => {
+  loadingStatus.value = LoadingStatus.loading;
+  getBookList(q, (d)=>{
+    queryResults.value = d;
+    loadingStatus.value = LoadingStatus.done;
+  });
+  if (q != undefined){
     searchString.value = q;
-  }else{
+  } else {
     searchString.value = '';
   }
   if (searchString.value.length > 0) {
@@ -62,14 +67,13 @@ const DoSearch = (q: string | undefined) => {
 onMounted(async () => {
   await nextTick();
 
-  DoSearch(getStringParam(route, 'q'));
+  doSearch(getStringParam(route, 'q'));
 });
 
 // watch监听路由变化，当router采用createWebHistory模式时，即使URL已经发生变化，watch函数不会被调用。
 watch(() => route.query.q, (newValue) => {
   if (newValue !== undefined) {
-    DoSearch(newValue as string);
-    console.debug();
+    doSearch(newValue as string);
   }
 });
 </script>

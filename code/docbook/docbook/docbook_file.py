@@ -111,6 +111,7 @@ class BookFile(object):
       logger.info(f"Unsupported file type {type}.")
       return False
 
+    logger.info(f"Save book id: {book.id} as '{path}', file type {type}.")
     return True
 
   def load(self, path: str, dynamic_load: bool = True, reload: bool = True) -> bool:
@@ -149,7 +150,7 @@ class BookFile(object):
     if dynamic_load == False:
       self.load_all_chapter()
 
-    logger.info(f"Load dbook '{path}' success.")
+    logger.info(f"Load dbook: '{path}', type: {'dynamic' if dynamic_load else 'all'}, success.")
     return True
 
   def load_all_chapter(self) -> bool:
@@ -191,7 +192,7 @@ class BookFile(object):
         chapter.divisions = division.divisions
         file.close()
 
-    logger.info(f"{chapter.title.title}, {chapter.ref} success.")
+    logger.info(f"Load chapter: '{chapter.title.title}', ref: '{chapter.ref}', success.")
     chapter['loaded'] = True
     return True
 

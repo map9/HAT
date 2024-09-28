@@ -80,6 +80,7 @@ class QueryResultPiece(object):
 class QueryResults(object):
 #  QueryResults
 #  - query: Query
+#  - 
 #  - query_result_pieces: [QueryResultPiece]
 
   def __init__(self, q: Union[str, Query, None] = None):
@@ -88,6 +89,9 @@ class QueryResults(object):
       self._query: Query = q
     else:
       self._query: Query = Query(q)
+
+    # 查询范围
+    self._query_range = None
 
     # 查询结果数量，缺省的情况下，和_result_pieces的数量一致
     # 但limit后，查询结果的数量应该大于_result_pieces的数量
@@ -101,11 +105,12 @@ class QueryResults(object):
     return self._query
 
   @property
-  def query_result_count(self):
-    query_result_count = 0
-    for query_result_piece in self._query_result_pieces:
-      query_result_count += len(query_result_piece.hits)
-    return query_result_count
+  def query_range(self):
+    return self._query_range
+
+  @query_range.setter
+  def query_range(self, range: Union[int, object]):
+    self._query_range = range
 
   @property
   def query_target_count(self):
@@ -118,12 +123,20 @@ class QueryResults(object):
     self._query_target_count = count
 
   @property
+  def query_result_count(self):
+    query_result_count = 0
+    for query_result_piece in self._query_result_pieces:
+      query_result_count += len(query_result_piece.hits)
+    return query_result_count
+
+  @property
   def query_result_pieces(self):
     return self._query_result_pieces
 
   def to_dict(self):
     return {
       "query": self._query.query_string,
+      "query_range": self._query_range if isinstance(self._query_range, int) else self.query_range.to_dict(),
       "query_target_count": self.query_target_count,
       "query_result_count": self.query_result_count,
       "result_pieces": [query_result_piece.to_dict() for query_result_piece in self._query_result_pieces]
@@ -156,7 +169,7 @@ class QueryResults(object):
     if sort_func is not None:
       self._query_result_pieces.sort(key = sort_func)
     else:
-      self._query_result_pieces.sort(key = lambda query_result_piece: (str(query_result_piece.directory[0]), query_result_piece.order))
+      self._query_result_pieces.sort(key = lambda query_result_piece: (str(query_result_piece.directory[0].id), query_result_piece.order))
 
   def limit(self, limit) -> 'QueryResults':
     query_results = QueryResults(self._query)

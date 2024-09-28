@@ -2,8 +2,8 @@
   <div v-if="loadingStatus == LoadingStatus.done">
     <div v-if="queryResultPieces && queryResultPieces.length > 0" class="results-content-wrapper">
       <div v-for="(result_piece, qIndex) in computedQueryResultsDirectorys" :key="qIndex">
-        <div v-for="(hit, hIndex) in result_piece.hits" :key="hIndex" class="result-content-wrapper">
-          <div class="result-before"><span>{{ Count(qIndex, hIndex) }}</span></div>
+        <div v-for="(hit, hIndex) in result_piece.hits" :key="Count(qIndex, hIndex)" :tabindex="cumuativeCount" @mouseenter="showHitCopy($event)"  @mouseleave="hideHitCopy($event)" class="result-content-wrapper">
+          <div class="result-before"><span>{{ cumuativeCount }}</span></div>
           <div class="result-wrapper">
             <div>
               <a href="" class="book-content">
@@ -37,7 +37,7 @@ import { UUID } from "crypto";
 import { useToast } from "vue-toastification";
 
 import LoadingStatus from "../ts/LoadingStatus";
-import { QueryResults } from "../ts/BookDefine";
+import { QueryResultsDirectory, QueryResultPiece } from "../ts/BookDefine";
 
 const toast = useToast();
 
@@ -47,20 +47,20 @@ interface Props {
   queryResultsDirectorys: QueryResultsDirectory[];
 }
 const props = defineProps<Props>();
-var cumuativeCount: number = 0;
+const cumuativeCount = ref<number>(0);
 
 const Count = (qIndex: number, hIndex: number): number => {
   if ((qIndex == 0) && (hIndex == 0)){
-    cumuativeCount = 0
+    cumuativeCount.value = 0;
   }
   else {
-    cumuativeCount ++
+    cumuativeCount.value ++;
   }
 
-  return cumuativeCount
+  return cumuativeCount.value;
 }
 
-const isCheck = (id: UUID) => {
+const isCheck = (id: string) => {
   for(var item of props.queryResultsDirectorys){
     if(item.id === id){
       return item.checkStatus;
@@ -70,7 +70,7 @@ const isCheck = (id: UUID) => {
 }
 
 const computedQueryResultsDirectorys = computed<QueryResultPiece[]>(() => {
-  var pieces: QueryResultPiece[] = [];
+  const pieces: QueryResultPiece[] = [];
 
   for (var queryResultPiece of props.queryResultPieces) {
     if(isCheck(queryResultPiece.directory[0].id)){
@@ -80,6 +80,20 @@ const computedQueryResultsDirectorys = computed<QueryResultPiece[]>(() => {
 
   return pieces;
 })
+
+const showHitCopy = (event) => {
+  const hitCopy = event.currentTarget.querySelector('.book-hit-copy');
+  if (hitCopy) {
+    hitCopy.style.display = 'block';
+  }
+} 
+
+const hideHitCopy = (event) => {
+  const hitCopy = event.currentTarget.querySelector('.book-hit-copy');
+  if (hitCopy) {
+    hitCopy.style.display = 'none';
+  }
+} 
 
 const OnHitCopy = async (result_piece: QueryResultPiece, hIndex) => {
   try {
@@ -185,12 +199,14 @@ v-html指令会导致定义了scoped的css因作用域的问题无法使用，
   font-size: 13px;
   color: var(--surface-gray-500);
 }
+
 .book-hit-copy {
   width: 22px;
   height: 22px;
   margin-left: auto;
-  fill: var(--surface-gray-500);
+  fill: var(--surface-gray-100);
   cursor: pointer;
+  display: none;
 }
 .book-hit-copy:hover {
   fill: var(--primary-red-500);

@@ -1,5 +1,3 @@
-import { UUID } from "crypto";
-
 // 标题。书籍、章节等标题。
 export interface Title {
   title: string;
@@ -14,11 +12,13 @@ export interface Dynasty {
 
 // 著作者。本书的著作者以及他参与著作的工作类型。
 export interface Author {
-  id: UUID;
+  id: string;
   name: string;
   type: string;
   dynasty?: Dynasty;
   officialPosition?: string;
+  description?: string;
+  life?: string;
 }
 
 // 书籍分段类型。卷，章，节，段落：正文段落，注释段落。
@@ -32,13 +32,14 @@ export enum DivisionType {
 
 // 卷册章。书籍正文划分方式，一般来说，没有涉及到正文内容的，都属于卷、册、分卷、分册范围；涉及到具体的正文内容的，为章、序、跋、致谢等。节是章内的正文划分。
 export interface Division {
-  id: UUID;
+  id: string;
   order: number;
   title?: Title;
   authors?: Author[];
   type: DivisionType;
   ref?: string;
   divisions?: (Division | ContentPiece)[];
+  collapse?: boolean;
 }
 
 // 节、正文段落、注释段落。节是章内的正文划分。
@@ -54,18 +55,20 @@ export interface ContentPiece {
 
 // 文献书籍。
 export interface Book {
-  id: UUID,
+  id: string,
   title: Title,
   authors?: Author[],
   dynasty?: Dynasty,
   categories?: string[],
   source?: string,
   description?: string,
+  date?: string,
   divisions?: Division[],
+  collapse?: boolean;
 }
 
 export interface Figure {
-  id: UUID;
+  id: string;
   name: string;
   // 所在朝代
   dynasty?: Dynasty,
@@ -87,7 +90,7 @@ export enum SearchRange {
 }
 
 export interface DirectoryTuple {
-  id: UUID,
+  id: string,
   title: string,
 }
 
@@ -104,14 +107,15 @@ export interface QueryResultPiece {
 
 // 搜索结果集合
 export interface QueryResults {
+  query_range: number;
   query_target_count: number;
   query_result_count: number;
-  result_pieces?: QueryResultPiece[];
+  result_pieces?: QueryResultPiece[] | Book[];
 };
 
 // 搜索结果目录统计
 export interface QueryResultsDirectory {
-  id: UUID,
+  id: string,
   title: string,
   hitCount: number,
   checkStatus: true,

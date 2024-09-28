@@ -31,7 +31,7 @@ defineProps<Props>();
 const router = useRouter();
 
 const getBookAuthors = (book: Book) => {
-  if (book.authors.length){
+  if (book.authors?.length){
     return book.authors.map(v => v.name).join(" ");
   } else {
     return ""

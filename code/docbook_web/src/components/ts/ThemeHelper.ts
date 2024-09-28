@@ -171,7 +171,7 @@ export class ThemeHelper {
   }
   
   getBackgroundColors():string[]{
-    var backgroundColors:string[] = [];
+    const backgroundColors:string[] = [];
     for(var theme of this.themes){
       backgroundColors.push(theme.color);
     }

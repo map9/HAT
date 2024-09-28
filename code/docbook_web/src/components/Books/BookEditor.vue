@@ -50,7 +50,7 @@ const htmlOutput = ref<HTMLElement | null>(null);
 let currentLineNum: number = 0;
 let cursorPosition: number = 0;
 
-var markdownChange: BookMarkdownDocument = new BookMarkdownDocument();
+const markdownChange: BookMarkdownDocument = new BookMarkdownDocument();
 
 const lang = "bookmarkdown";
 

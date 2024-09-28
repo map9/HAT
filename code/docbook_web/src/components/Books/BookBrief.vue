@@ -1,7 +1,7 @@
 <template>
   <div v-if="props.inBook" ref="bookBriefDiv" class="book-brief">
     <div v-if="(totalWidth>=940) || !(props.inBook.authors && props.inBook.authors.length)" class="book-cover-wrapper">
-      <img src="@/assets/book-cover.jpg" :alt="props.inBook.title" class="book-cover">
+      <img src="@/assets/book-cover.jpg" :alt="props.inBook.title.title" class="book-cover">
       <div class="book-title-overlay">
         <h3 class="book-title">{{ props.inBook.title.title }}</h3>
       </div>
@@ -93,7 +93,8 @@ import { Book } from "../ts/BookDefine";
 interface Props {
   inBook: Book | null;
 }
-var props = withDefaults(defineProps<Props>(), {
+
+const props = withDefaults(defineProps<Props>(), {
   inBook: undefined,
 });
 
@@ -105,33 +106,30 @@ const authorCount = computed<number>(()=>{
 });
 
 const getBookAuthors = (book: Book)=>{
-  var htmlString: string = '';
-
   if (book.authors && book.authors.length){
-    htmlString = book.authors.map(author => {
-      var itemString = '';
+    const htmlString: string[] = book.authors.map(author => {
+      let itemString = '';
       if (author.dynasty){
         itemString = `<span>[${author.dynasty.value}]</span>&nbsp;&nbsp;`;  
       }
       itemString += `<span class="writer">${author.name}</span>&nbsp;${author.type === undefined? '著' : author.type}`
       return itemString;
     });
-    htmlString = htmlString.join('&nbsp;&nbsp;<span class="dot">·</span>&nbsp;&nbsp;');
+    return htmlString.join('&nbsp;&nbsp;<span class="dot">·</span>&nbsp;&nbsp;');
   }
-  return htmlString;
+  return '';
 }
 
 const getBookCategories = (book: Book)=>{
-  var htmlString: string = '';
   if (book.categories && book.categories.length){
-    htmlString = book.categories.map(categorie => {
-      var items = categorie.split("|");
-      var itemStrings = items.map(v => `<span>${v}</span>`);
+    const htmlString: string[] = book.categories.map(categorie => {
+      let items = categorie.split("|");
+      let itemStrings = items.map(v => `<span>${v}</span>`);
       return itemStrings.join('&nbsp;<span class="dot">·</span>&nbsp;');
     });
-    htmlString = htmlString.join('&nbsp;&nbsp;|&nbsp;&nbsp;');
+    return htmlString.join('&nbsp;&nbsp;|&nbsp;&nbsp;');
   }
-  return htmlString;
+  return '';
 }
 
 const currentSlideIndex = ref<number>(0);

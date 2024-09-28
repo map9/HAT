@@ -4,6 +4,7 @@ helper_utils.py
 提供一些独立的函数。
 """
 import re
+import pathlib
 
 from typing import Union, List, Dict, Tuple
 from enum import Enum
@@ -76,3 +77,12 @@ def remove_html_tags(text: str) -> str:
   # 使用正则表达式匹配并替换 HTML 标签
   clean_text = re.sub(r'<[^>]+>', '', text)
   return clean_text
+
+def convert_relativepath_to_abspath(relative_path: str, abspath: str = None) -> str:
+  current_directory: pathlib.Path = pathlib.Path.cwd()
+  if (abspath is not None):
+    _abspath: pathlib.Path = pathlib.Path(abspath)
+    current_directory = _abspath.parent if _abspath.is_file() else _abspath
+  
+  path: pathlib.Path = current_directory / relative_path
+  return path.resolve().as_posix()

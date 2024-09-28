@@ -2,8 +2,8 @@
   <head-bar :inHeadType="HeadType.search" :in-search-string="searchString" :in-search-range="searchRange"/>
 
   <div id="center">
-      <search-result-hit :search-target-count="queryResults.query_target_count"
-        :result-pieces-count="queryResults.query_result_count" />
+      <search-result-hit :queryRange="queryResults.query_range"
+        :queryResultCount="queryResults.query_result_count" />
       <div v-if="queryResults.result_pieces && queryResults.result_pieces.length > 0" class="search-results-container">
         <div class="search-results-content-container">
           <search-result :queryResultPieces="queryResults.result_pieces" :queryResultsDirectorys="queryResultsDirectorys" :loading-status="loadingStatus"/>
@@ -28,7 +28,7 @@ import SearchResultHit from './Search/SearchResultHit.vue';
 import SearchResultDirectory from "./Search/SearchResultDirectory.vue";
 
 import LoadingStatus from "./ts/LoadingStatus";
-import { QueryResults, SearchRange, DirectoryTuple } from "./ts/BookDefine"
+import { QueryResults, SearchRange, QueryResultsDirectory, QueryResultPiece, DirectoryTuple } from "./ts/BookDefine"
 import { searchArchive } from "./ts/BookServiceHelper"
 import { getStringParam } from "./ts/Helper"
 import HeadType from './ts/HeadType';
@@ -40,7 +40,8 @@ const toast = useToast();
 interface Props {
   inSearchString?: string;
 }
-var props = withDefaults(defineProps<Props>(), {
+
+const props = withDefaults(defineProps<Props>(), {
   inSearchString: '',
 });
 // 使用 ref 创建本地响应式状态
@@ -48,6 +49,7 @@ const searchString = ref<string>(props.inSearchString);
 const searchRange = ref<SearchRange>(SearchRange.content);
 
 const queryResults = ref<QueryResults>({
+  query_range: 0,
   query_target_count: 0,
   query_result_count: 0,
   result_pieces: undefined,
@@ -61,25 +63,25 @@ const queryResultsDirectorys = ref<QueryResultsDirectory[]>([]);
 onMounted(async () => {
   await nextTick();
 
-  var q = getStringParam(route, 'q');
+  const q = getStringParam(route, 'q');
   doSearch(q);
 });
 
 // watch监听路由变化，当router采用createWebHistory模式时，即使URL已经发生变化，watch函数不会被调用。
 watch(() => route.query.q, (newValue) => {
   if (newValue != undefined) {
-    var q = newValue as string;
+    const q = newValue as string;
     doSearch(q);
   }
 });
 
-function QueryResultPiecesToQueryResultsDirectorys(queryResultPieces: QueryResultPiece[]): QueryResultsDirectory[] {
+function QueryResultPiecesToQueryResultsDirectorys(queryResultPieces?: QueryResultPiece[]): QueryResultsDirectory[] {
   if (queryResultPieces == undefined){
     return [];
   }
 
   // Create a map to hold all directories by their ID
-  const directoryMap = new Map<UUID, QueryResultsDirectory>();
+  const directoryMap = new Map<string, QueryResultsDirectory>();
 
   // Populate the directoryMap with initial values
   queryResultPieces.forEach((resultPiece) => {
@@ -146,7 +148,7 @@ const doSearch = (q?: string) => {
 }
 
 const OnBookDirectoryUpdate = (item: DirectoryTuple[]) => {
-  console.log("Event received with, book_title: " + item.book_title + ", volume_title: " + item.volume_title + ", chapter_title: " + item.chapter_title + ".");
+
 }
 
 </script>

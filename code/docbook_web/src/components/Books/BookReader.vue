@@ -1,24 +1,29 @@
 <template>
   <div ref="bookReaderDiv" class="book-reader">
     <template v-if="props.inIsPageMode">
-      <div v-if="currentBookChapter != undefined && currentBookChapter.content != undefined" class="db-chapter" :key="currentChapterIndex">
+      <div v-if="currentBookChapter != undefined && currentBookChapter.content != undefined" class="db-chapter"
+        :data-key="currentChapterIndex" :key="currentChapterIndex">
         <transition-group name="fade" tag="div" v-html="HtmlParseDocument.ParseChapter(currentBookChapter.content)">
         </transition-group>
       </div>
       <div v-if="props.inIsPageMode" class="navbar">
-        <button class="nav-item" :disabled="!currentChapterIndex || (currentChapterIndex <= 0)" @click="OnPrevChapter">上一章</button>
+        <button class="nav-item" :disabled="!currentChapterIndex || (currentChapterIndex <= 0)"
+          @click="OnPrevChapter">上一章</button>
         <button class="nav-item" @click="OnCatalogue">目录</button>
-        <button class="nav-item" :disabled="!bookReaderChapters || (bookReaderChapters && (currentChapterIndex >= bookReaderChapters.length - 1))" @click="OnNextChapter">下一章</button>
+        <button class="nav-item"
+          :disabled="!bookReaderChapters || (bookReaderChapters != undefined && currentChapterIndex != undefined && (currentChapterIndex >= bookReaderChapters.length - 1))"
+          @click="OnNextChapter">下一章</button>
       </div>
     </template>
     <template v-else>
       <template v-for="(bookReaderChapter, index) in bookReaderChapters">
-        <div v-if="bookReaderChapter != undefined && bookReaderChapter.content != undefined" class="db-chapter" :key="index">
+        <div v-if="bookReaderChapter != undefined && bookReaderChapter.content != undefined" class="db-chapter"
+          :data-key="index" :key="index">
           <transition-group name="fade" tag="div" v-html="HtmlParseDocument.ParseChapter(bookReaderChapter.content)">
           </transition-group>
         </div>
-    </template>    
-    </template>    
+      </template>
+    </template>
   </div>
 </template>
 
@@ -29,62 +34,58 @@ import { useToast } from "vue-toastification";
 import { debounce } from 'lodash-es';
 
 import LoadingStatus from "../ts/LoadingStatus";
-import { Book, Chapter } from "../ts/BookDefine";
+import { Division, BookReaderChapter, DirectoryTuple } from "../ts/BookDefine";
 import { getBookChapters, getBookChapter } from '../ts/BookServiceHelper';
 import { HtmlParseDocument } from '../ts/DocBookParser';
 
 const toast = useToast();
-
 const bookReaderDiv = ref<HTMLElement | null>(null);
-
-// TODO:
-// 在inIsPageMode == False时，需要计算滚动的div和显示窗口之间的关系，实时计算currentChapterIndex。
-// 同时，对滚动超出当前的章节时，加载需要的章节内容。
 
 // 定义外部输入的属性
 interface Props {
   inBookId?: string;
   inChapterId?: string;
-  inIsPageMode?: boolean,
+  inIsPageMode?: boolean;
+  inTop?: number;
+  inBottom?: number;
 }
-var props = withDefaults(defineProps<Props>(), {
-  inBook: undefined,
+
+const props = withDefaults(defineProps<Props>(), {
+  inBookId: undefined,
   inChapterId: undefined,
   inIsPageMode: true,
+  inTop: undefined,
+  inBottom: undefined,
 });
 
-const bookId = ref<string>(props.inBookId);
-const chapterId = ref<string>(props.inChapterId);
-const bookReaderChapters = ref<BookReaderChapter[]>();
-const currentChapterIndex = ref<number>(undefined);
-
+const bookId = ref<string | undefined>(props.inBookId);
+const chapterId = ref<string | undefined>(props.inChapterId);
+const bookReaderChapters = ref<BookReaderChapter[]>([]);
+const currentChapterIndex = ref<number | undefined>(undefined);
 const loadingStatus = ref(LoadingStatus.idle);
-
-const NEXT_CHAPTER = 1;
-const CURRENT_CHAPTER = 0;
-const LAST_CHAPTER = -1;
 
 watch(() => props.inBookId, (newValue) => {
   if (newValue != undefined) {
     bookId.value = newValue;
-    loadBookChapters(bookId.value, chapterId.value);
+    loadBookChapters();
   }
 });
 
 watch(() => props.inChapterId, (newValue) => {
   if (newValue != undefined) {
     chapterId.value = newValue;
-    loadBookChapter(bookId.value, chapterId.value);
+    loadBookChapterById(chapterId.value, true);
   }
 });
 
+// 切换到滚动模式时，预加载当前Chapter的上下章节。
 watch(() => props.inIsPageMode, (newValue) => {
   if (newValue !== undefined) {
-    if(newValue == false){
-      //checkScroll(undefined);
-      // 如果用户已经滚动到页面底部（或非常接近底部）
-      if (window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - (32+15)) {
-        jumpToChapter(currentChapterIndex.value, NEXT_CHAPTER);
+    if (newValue == false) {
+      if (currentChapterIndex.value != undefined){
+        loadBookChapterByIndex(currentChapterIndex.value);
+      } else if (chapterId.value != undefined){
+        loadBookChapterById(chapterId.value);
       }
     }
   }
@@ -94,15 +95,15 @@ onMounted(async () => {
   window.addEventListener('scroll', debouncedCheckScroll);
   await nextTick();
 
-  loadBookChapters(bookId.value, chapterId.value);
+  loadBookChapters();
 });
 
-onUnmounted(()=>{
+onUnmounted(() => {
   window.removeEventListener('scroll', debouncedCheckScroll);
 });
 
-const currentBookChapter = computed<BookReaderChapter>(()=>{
-  if (currentChapterIndex.value != undefined && bookReaderChapters.value != undefined && bookReaderChapters.value[currentChapterIndex.value].content != undefined){
+const currentBookChapter = computed<BookReaderChapter | undefined>(() => {
+  if (currentChapterIndex.value != undefined && bookReaderChapters.value.length > currentChapterIndex.value && bookReaderChapters.value[currentChapterIndex.value].content != undefined) {
     return bookReaderChapters.value[currentChapterIndex.value];
   } else {
     return undefined;
@@ -110,101 +111,95 @@ const currentBookChapter = computed<BookReaderChapter>(()=>{
 });
 
 const getBookChapterDirectoryString = (directory: DirectoryTuple[]): string => {
-  var titles: string[] = directory.slice(1).map((v) => v.title);
+  const titles: string[] = directory.slice(1).map((v) => v.title);
   //console.log(directory);
   //console.log(`titles: ${titles}.`)
   return titles.join("&nbsp·&nbsp");
 };
 
 // 载入id为bookId的书籍的所有章节元数据，同时载入id为chapterId的指定章节内容。
-const loadBookChapters = (bookId: string, chapterId: string) => {
+const loadBookChapters = () => {
   //console.log(`Load book chapters, bookId: ${bookId}, chapterId: ${chapterId}`);
-  getBookChapters(bookId, chapterId, (c: BookReaderChapter[])=>{
-    bookReaderChapters.value = c;
-    if (chapterId == undefined){
-      currentChapterIndex.value = 0;
-    } else {
-      for(let _index = 0; _index < bookReaderChapters.value.length; _index ++) {
-        var item = bookReaderChapters.value[_index];
-        if (item.directory[item.directory.length-1].id == chapterId){
-          //console.log(`item: ${item.directory[item.directory.length-1].id}, ${chapterId}, ${item.content}.`)
-          if (item.content){
-            currentChapterIndex.value = _index;
-          }
-          break;
-        }
-      }
-    }
-  });
-}
-
-// 载入id为bookId的书籍的id为chapterId的指定章节内容。
-const loadBookChapter = (bookId: string, chapterId: string) => {
-  var index = undefined
-  for(let _index = 0; _index < bookReaderChapters.value.length; _index ++) {
-    var item = bookReaderChapters.value[_index];
-    if (item.directory[item.directory.length-1].id == chapterId){
-      if (item.content){
-        currentChapterIndex.value = _index;
-        return;
+  if(bookId.value != undefined){
+    getBookChapters(bookId.value, chapterId.value, (c: BookReaderChapter[]) => {
+      bookReaderChapters.value = c;
+      if (chapterId.value == undefined) {
+        currentChapterIndex.value = 0;
       } else {
-        index = _index;
-        break;
+        loadBookChapterById(chapterId.value, true);
       }
-    }
-  }
-  if (index != undefined){
-    getBookChapter(bookId, chapterId, (c: Chapter)=>{
-      bookReaderChapters.value[index].content = c;
-      currentChapterIndex.value = index;
     });
   }
 }
 
+// 载入id为bookId的书籍的id为chapterId的指定章节内容。
+const loadBookChapterById = (id: string, jumpTo: boolean = false) => {
+  let order: number | undefined = undefined;
+  for (let index = 0; index < bookReaderChapters.value.length; index++) {
+    let item = bookReaderChapters.value[index];
+    if (item.directory[item.directory.length - 1].id == id) {
+      order = index;
+      break;
+    }
+  }
+
+  loadBookChapterByIndex(order, jumpTo);
+}
+
 // 按照书籍章节的显示顺序，跳转到顺序号为index的指定章节，如果该章节未被载入载入该章节内容。
-const jumpToChapter = (index: number, type: number = CURRENT_CHAPTER) => {
+const loadBookChapterByIndex = (index: number | undefined, jumpTo: boolean = false) => {
   if (index == undefined) return;
 
-  if (type == NEXT_CHAPTER) {
-    index ++;
-  } else if (type == LAST_CHAPTER) {
-    index --;
-  }
-
-  if (index < 0){
-    toast.info(`前面没有章节了！已经到头了。`);
+  if (index < 0) {
+    //toast.info(`前面没有章节了！已经到头了。`);
     return;
-  } else if (index > bookReaderChapters.value.length - 1){
-    toast.info(`后面没有章节了！已经到底了。`);
+  } else if (index > bookReaderChapters.value.length - 1) {
+    //toast.info(`后面没有章节了！已经到底了。`);
     return;
   }
 
-  if (props.inIsPageMode){
-    if (bookReaderChapters.value[index].content != undefined){
-      console.log(`Chapter already loaded, id:${bookReaderChapters.value[index].content.id}, index: ${index}.`);
-      currentChapterIndex.value = index;
-      emit('notify:chapter', index);
-      bookReaderDiv.value?.scrollIntoView({ behavior: 'smooth' });
-    } else {
-      var bookReaderChapter: BookReaderChapter = bookReaderChapters.value[index];
-      getBookChapter(bookId.value, bookReaderChapter.directory[bookReaderChapter.directory.length-1].id, (c: Chapter) => {
-        bookReaderChapter.content = c;
-        currentChapterIndex.value = index;
+  if (index > bookReaderChapters.value.length && bookReaderChapters.value[index].content != undefined) {
+    //console.log(`Chapter already loaded, id:${bookReaderChapters.value[index].content.id}, index: ${index}.`);
+    currentChapterIndex.value = index;
+    if (jumpTo) {
+      nextTick(() => {
         emit('notify:chapter', index);
-        bookReaderDiv.value?.scrollIntoView({ behavior: 'smooth' });
+        scrollToChapter(index);
       });
     }
   } else {
-    if (bookReaderChapters.value[index].content != undefined){
-      console.log(`Chapter already loaded, id:${bookReaderChapters.value[index].content.id}, index: ${index}.`);
-      currentChapterIndex.value = index;
-      emit('notify:chapter', index);
-  } else {
-      var bookReaderChapter: BookReaderChapter = bookReaderChapters.value[index];
-      getBookChapter(bookId.value, bookReaderChapter.directory[bookReaderChapter.directory.length-1].id, (c: Chapter) => {
+    const bookReaderChapter: BookReaderChapter = bookReaderChapters.value[index];
+
+    if (bookId.value != undefined) {
+      getBookChapter(bookId.value, bookReaderChapter.directory[bookReaderChapter.directory.length - 1].id, (c: Division) => {
+        //console.log(`index: ${index}, jumpTo: ${jumpTo}, loaded.`);
         bookReaderChapter.content = c;
         currentChapterIndex.value = index;
-        emit('notify:chapter', index);
+        if (jumpTo) {
+          nextTick(() => {
+            emit('notify:chapter', index);
+            scrollToChapter(index);
+          });
+        }
+      });
+    }
+  }
+
+  // 预先加载上下的章节
+  if (!props.inIsPageMode && bookId.value != undefined) {
+    if (index - 1 >= 0 && bookReaderChapters.value[index - 1].content === undefined) {
+      const bookReaderChapter: BookReaderChapter = bookReaderChapters.value[index - 1];
+      getBookChapter(bookId.value, bookReaderChapter.directory[bookReaderChapter.directory.length - 1].id, (c: Division) => {
+        bookReaderChapter.content = c;
+        nextTick(() => {
+          scrollToChapter(index);
+        });
+      });
+    }
+    if (index + 1 < bookReaderChapters.value.length && bookReaderChapters.value[index + 1].content === undefined) {
+      const bookReaderChapter: BookReaderChapter = bookReaderChapters.value[index + 1];
+      getBookChapter(bookId.value, bookReaderChapter.directory[bookReaderChapter.directory.length - 1].id, (c: Division) => {
+        bookReaderChapter.content = c;
       });
     }
   }
@@ -216,38 +211,112 @@ const emit = defineEmits([
 ]);
 
 const OnNextChapter = () => {
-  jumpToChapter(currentChapterIndex.value, NEXT_CHAPTER);
+  if (currentChapterIndex.value != undefined) {
+    loadBookChapterByIndex(currentChapterIndex.value + 1, true);
+  }
 };
 
 const OnPrevChapter = () => {
-  jumpToChapter(currentChapterIndex.value, LAST_CHAPTER);
-};
-
-defineExpose({ jumpToChapter, OnNextChapter, OnPrevChapter });
-
-const checkScroll = (event) => {
-  if(props.inIsPageMode == false){
-    // 如果用户已经滚动到页面底部（或非常接近底部）
-    if (window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - (32+15)) {
-      if(currentChapterIndex.value){
-        jumpToChapter(currentChapterIndex.value, NEXT_CHAPTER);
-      }
-    }
-    // 如果用户已经滚动到页面顶部（或非常接近顶部）
-    if(window.scrollY < 5){
-      if(currentChapterIndex.value){
-        jumpToChapter(currentChapterIndex.value, LAST_CHAPTER);
-      }
-    }
-    // console.debug(`window.scrollY: ${window.scrollY}.`);
+  if (currentChapterIndex.value != undefined) {
+    loadBookChapterByIndex(currentChapterIndex.value - 1, true);
   }
-}
-
-const debouncedCheckScroll = debounce(checkScroll, 200);
+};
 
 const OnCatalogue = () => {
   emit('notify:catalogue');
 }
+
+//defineExpose({ loadBookChapterByOrder, OnNextChapter, OnPrevChapter });
+// 滚动窗口到指定序列号的章节div。
+const scrollToChapter = (index: number) => {
+  if (bookReaderDiv.value) {
+    const chapterDiv = bookReaderDiv.value.querySelector(`div[data-key='${index}']`) as HTMLElement | null;
+    chapterDiv?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+// 检查章节元素是否超出当前视口，或需要加载上下文章节
+const isChapterInView = (chapterElement: HTMLElement): { inView: boolean, loadPrevious: boolean, loadNext: boolean } => {
+  const rectChapter = chapterElement.getBoundingClientRect();
+  const buffer = 150; // 设定一个缓冲区，提前预加载前后章节
+  const top = props.inTop || 0;
+  const bottom = props.inBottom || window.innerHeight;
+
+  //console.log(`index: ${chapterElement.getAttribute('data-key')}, ${rectChapter.top}, ${rectChapter.bottom}.`);
+
+  return {
+    inView: rectChapter.top >= top && rectChapter.bottom <= bottom, // 章节完全可见
+    loadPrevious: rectChapter.top >= top - buffer && rectChapter.top <= buffer && rectChapter.bottom > top, // 章节顶部超出视口，需要加载上一个章节
+    loadNext: rectChapter.top < bottom && rectChapter.bottom >= bottom - buffer && rectChapter.bottom <= bottom + buffer // 章节底部超出视口，需要加载下一个章节
+  };
+};
+
+// 滚动时检查
+const checkScroll = () => {
+  if (props.inIsPageMode === false) {
+    const chapterDivs = bookReaderDiv.value?.querySelectorAll('.db-chapter') || [];
+    let _currentChapterIndex = currentChapterIndex.value;
+    let _previousChapterIndex = undefined;
+    let _nextChapterIndex = undefined;
+
+    chapterDivs.forEach((chapterDiv, index) => {
+      const chapterElement = chapterDiv as HTMLElement;
+      const viewStatus = isChapterInView(chapterElement);
+      const dataKey = chapterElement.getAttribute('data-key');
+      if (dataKey != undefined){
+        index = Number(dataKey);
+      }
+
+      //console.log(`index: ${index}, ${viewStatus.inView}, ${viewStatus.loadPrevious}, ${viewStatus.loadNext}.`);
+      // 如果当前章节在视口中，更新 currentChapterIndex
+      if (viewStatus.inView) {
+        _currentChapterIndex = index;
+        if (_previousChapterIndex == undefined || (_previousChapterIndex != undefined && _previousChapterIndex > index))
+          _previousChapterIndex = index;
+        if (_nextChapterIndex == undefined || (_nextChapterIndex != undefined && _nextChapterIndex < index))
+          _nextChapterIndex = index;
+      }
+
+      // 如果章节超出顶部或底部，需要加载前后章节
+      if (viewStatus.loadPrevious && (_previousChapterIndex == undefined || (_previousChapterIndex != undefined && _previousChapterIndex > index))) {
+        _previousChapterIndex = index;
+      }
+      if (viewStatus.loadNext && (_nextChapterIndex == undefined || (_nextChapterIndex != undefined && _nextChapterIndex < index))) {
+        _nextChapterIndex = index;
+      }
+    });
+
+    //console.log(`index: ${_currentChapterIndex}, previous: ${_previousChapterIndex}, next: ${_nextChapterIndex}.`);
+
+    // 更新 currentChapterIndex 并预加载相邻章节
+    if (_currentChapterIndex !== currentChapterIndex.value) {
+      currentChapterIndex.value = _currentChapterIndex;
+    }
+    console.log(`current: ${currentChapterIndex.value}, ${_currentChapterIndex}.`);
+
+    // 如果需要加载上一个章节
+    if (bookId.value && _previousChapterIndex && _previousChapterIndex - 1 >= 0 && bookReaderChapters.value[_previousChapterIndex - 1].content === undefined) {
+      const bookReaderChapter: BookReaderChapter = bookReaderChapters.value[_previousChapterIndex - 1];
+      getBookChapter(bookId.value, bookReaderChapter.directory[bookReaderChapter.directory.length - 1].id, (c: Division) => {
+        const chapterIndex = _previousChapterIndex;
+        bookReaderChapter.content = c;
+        nextTick(() => {
+          if(chapterIndex !== undefined) scrollToChapter(chapterIndex);
+        });
+      });
+    }
+
+    // 如果需要加载下一个章节
+    if (bookId.value && _nextChapterIndex && _nextChapterIndex + 1 < bookReaderChapters.value.length && bookReaderChapters.value[_nextChapterIndex + 1].content === undefined) {
+      const bookReaderChapter: BookReaderChapter = bookReaderChapters.value[_nextChapterIndex + 1];
+      getBookChapter(bookId.value, bookReaderChapter.directory[bookReaderChapter.directory.length - 1].id, (c: Division) => {
+        bookReaderChapter.content = c;
+      });
+    }
+  }
+};
+
+const debouncedCheckScroll = debounce(checkScroll, 200);
 </script>
 
 <style>
@@ -264,6 +333,7 @@ button {
   color: inherit;
   background-color: inherit;
 }
+
 .book-reader {
   margin: 20px 0;
   padding: 32px;
@@ -276,10 +346,13 @@ button {
   background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACQAAAAkCAQAAABLCVATAAAAAXNSR0IArs4c6QAAAWlJREFUeNqlloFtwzAMBFU0PxF34k5eoUtktBZVnBysixEEUWBD+idpUnrTGXNkhPvt18awXZjKyE5BE5ix8sw6IEQHfKA1kZoMF5ZNnndqy1k2vae+wTAjMBPIp+sY3QJP1JADaXtvFjv4LR1TFKA5GD4suFSQcGEhjPWRn2+zKpRLT0hBwSo3lRerdpScpbMQCgZS2cH4tHQwerJVPIQjUVBH9wFTPOMgxnRwObhWLLkKlpaJA8TnpDxBwEv1r8Uo+ImegDVX4DBXKKWt3mQnZRRMlxZ7vfxDra6j0vD8vKUtKvJ79Pt1X9W6XxZNTvphhYxcGEjneWncGVH3pM2kAs6Qlq4XDIus4x2qDKieYEsz0nTAYd96MelYZEEgElZxnJtEa4mefZpr7hHGsLLmS2uDVgPGEUadgBxwrn3zwRwGhkU2NVqy6fUEbRs1CruoCM5zlPaIIL6/biLs0edft/d7IfjhT9gfL6wnSxDYPyIAAAAASUVORK5CYII=);
 }
 
-.fade-enter-active, .fade-leave-active {
+.fade-enter-active,
+.fade-leave-active {
   transition: opacity 0.5s;
 }
-.fade-enter-from, .fade-leave-to {
+
+.fade-enter-from,
+.fade-leave-to {
   opacity: 0;
 }
 
@@ -338,5 +411,4 @@ button {
   box-sizing: border-box;
   border-right: 1px solid var(--border-black-8);
 }
-
 </style>

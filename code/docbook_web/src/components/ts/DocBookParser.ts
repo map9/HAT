@@ -47,6 +47,7 @@ export class HtmlParseDocument {
         let annotation = inserts[i];
         if (annotation.position == undefined){
           console.log(`${annotation.position}, ${annotation.content}.`);
+          continue;
         }
         // 检查插入位置
         if (!annotation.inserted && currentPlainTextLength >= annotation.position) {
@@ -84,6 +85,7 @@ export class HtmlParseDocument {
       let annotation = inserts[i];
       if (annotation.position == undefined){
         console.log(`${annotation.position}, ${annotation.content}.`);
+        continue;
       }
       // 检查插入位置
       if (!annotation.inserted && currentPlainTextLength >= annotation.position) {
@@ -146,9 +148,9 @@ export class HtmlParseDocument {
   }
 
   static parseContentPiece(contentPiece: ContentPiece, index: number, level: number = -1): HtmlContentPiece {
-    var htmlString: string = "";
-    var childs: HtmlContentPiece[] = [];
-    var output: HtmlContentPiece[] = [];
+    let htmlString: string = "";
+    const childs: HtmlContentPiece[] = [];
+    const output: HtmlContentPiece[] = [];
   
     contentPiece.content_pieces?.forEach((contentPiece, _index) => {
       childs.push(this.parseContentPiece(contentPiece, _index, (level == -1)? level : (level + 1)));
@@ -162,9 +164,9 @@ export class HtmlParseDocument {
     //    <div class="paragraph annotation" key="">...</div>
     //  </div>  
     if (contentPiece.type == DivisionType.SECTION){
-      var inserts: HtmlContentPiece[] = [];
+      const inserts: HtmlContentPiece[] = [];
       for(let i = 0; i < childs.length; i ++){
-        var htmlContentPiece: HtmlContentPiece = childs[i];
+        const htmlContentPiece: HtmlContentPiece = childs[i];
         if (htmlContentPiece.type == DivisionType.ANNOTATION && htmlContentPiece.position && htmlContentPiece.position != 0 ) {
           inserts.push(htmlContentPiece);
         } else {
@@ -172,7 +174,7 @@ export class HtmlParseDocument {
         }
       }
       htmlString += `<div class="db-section" key="${index}">`;
-      var sectionTitleString: string = HtmlParseDocument.insertAnnotations(contentPiece.content, inserts);
+      const sectionTitleString: string = HtmlParseDocument.insertAnnotations(contentPiece.content, inserts);
       htmlString += `<h${level}>${sectionTitleString}</h${level}>`;
       htmlString += output.map((v)=>v.content).join("");
       htmlString += `</div>`;
@@ -191,8 +193,8 @@ export class HtmlParseDocument {
       htmlString += `<div class="db-paragraph-number"><p>${index}</p></div>`;
       htmlString += `<div class="db-paragraph-content">`;
       
-      var paragraphString: string = HtmlParseDocument.insertAnnotations(contentPiece.content, childs);
-      var items: string[] = paragraphString.split('\n');
+      const paragraphString: string = HtmlParseDocument.insertAnnotations(contentPiece.content, childs);
+      const items: string[] = paragraphString.split('\n');
       items.forEach((item) => {
         htmlString += `<p>${item}</p>`;
       });
@@ -221,8 +223,8 @@ export class HtmlParseDocument {
         //htmlString += ((contentPiece.source == undefined) || (contentPiece.source.length == 0))? '' : `<span class="type">${contentPiece.source}</span>`;
         //htmlString += `</p>`;
 
-        var paragraphString: string = HtmlParseDocument.insertAnnotations(contentPiece.content, childs);
-        var items: string[] = paragraphString.split('\n');
+        const paragraphString: string = HtmlParseDocument.insertAnnotations(contentPiece.content, childs);
+        const items: string[] = paragraphString.split('\n');
         items.forEach((item, index) => {
           if (index == 0){
             htmlString += `<p>`;
@@ -249,7 +251,7 @@ export class HtmlParseDocument {
           htmlString += ((contentPiece.annotator == undefined) || (contentPiece.annotator.length == 0))? '' : `<span class="annotator">${contentPiece.annotator}</span>`;
           htmlString += ((contentPiece.source == undefined) || (contentPiece.source.length == 0))? '' : `<span class="type">${contentPiece.source}</span>`;
           
-          var annotationString: string = HtmlParseDocument.insertAnnotations(contentPiece.content, childs);
+          const annotationString: string = HtmlParseDocument.insertAnnotations(contentPiece.content, childs);
           htmlString += `<span>${annotationString}</span>`;
           htmlString += `</annotation>`;
         } else {
@@ -279,25 +281,25 @@ export class HtmlParseDocument {
   //    <div class="paragraph" key="">...</div>
   //    <div class="section" key="">...</div>
   static ParseChapter(chapter: Division): string {
-    var htmlString: string = "";
-    var childs: HtmlContentPiece[] = [];
-    var output: HtmlContentPiece[] = [];
+    let htmlString: string = "";
+    const childs: HtmlContentPiece[] = [];
+    const output: HtmlContentPiece[] = [];
 
-    var level = 3; // 章：第3级别
+    const level = 3; // 章：第3级别
     chapter.divisions?.forEach((contentPiece, _index) => {
-      childs.push(this.parseContentPiece(contentPiece, _index, (level+1)));
+      childs.push(this.parseContentPiece(contentPiece as ContentPiece, _index, (level + 1)));
     });
 
-    var inserts: HtmlContentPiece[] = [];
+    const inserts: HtmlContentPiece[] = [];
     for(let i = 0; i < childs.length; i ++) {
-      var htmlContentPiece: HtmlContentPiece = childs[i];
+      const htmlContentPiece: HtmlContentPiece = childs[i];
       if (htmlContentPiece.type == DivisionType.ANNOTATION && htmlContentPiece.position && htmlContentPiece.position != 0 ) {
         inserts.push(htmlContentPiece);
       } else {
         output.push(htmlContentPiece);
       }
     }
-    var chapterTitleString: string = HtmlParseDocument.insertAnnotations(chapter.title?.title, inserts);
+    const chapterTitleString: string = chapter.title? HtmlParseDocument.insertAnnotations(chapter.title?.title, inserts) : "";
     htmlString += `<div class="db-section" key="${chapter.id}">`;
     htmlString += `<h${level}>${chapterTitleString}</h${level}>`;
     htmlString += output.map((v)=>v.content).join("");

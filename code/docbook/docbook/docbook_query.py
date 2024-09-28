@@ -214,6 +214,7 @@ class BookQuery(object):
     if query_results_piece is not None:
       query_results.add_query_result_piece(query_results_piece)
     
+    # 不主动排序
     #query_results.sort_query_result_piece()
     return query_results
 
@@ -263,7 +264,7 @@ class BookQuery(object):
           if BookQuery.stop_search_event.is_set() and (query_results.query_result_count >= limit):
             break
 
-    query_results.sort_query_result_piece()
+    #query_results.sort_query_result_piece()
     return query_results
 
   @staticmethod

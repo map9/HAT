@@ -6,11 +6,9 @@ import logging
 import docbook
 import utils
 
-current_directory = os.path.dirname(os.path.abspath(__file__))
-
 def test_load():
 
-  dbook_archive_path = current_directory + "/../../../library/publish"
+  dbook_archive_path = utils.convert_relativepath_to_abspath("../../../library/publish", __file__)
 
   dbarchive = docbook.BookArchive(dbook_archive_path)
 
@@ -32,7 +30,7 @@ def test_load_all_chapter(dbarchive: docbook.BookArchive):
   dbfiles[0].load_all_chapter()
 
   division = dbfiles[0].book.divisions[0]
-  print(division)
+  logger.info(division)
 
 def test_get_book_catalogue(dbarchive: docbook.BookArchive):
   #id = "b5a5e741-b8bc-491c-a399-c07982777821" # 老子
@@ -40,10 +38,14 @@ def test_get_book_catalogue(dbarchive: docbook.BookArchive):
   id = "ca546e4e-06cc-4c01-b827-0bb3cfc6c6b8" # 資治通鑑
   
   dbook = dbarchive.get_book_byid(id)
+  if (dbook is None):
+    logger.info(f"Can't get book, id: {id}.")
+    return
+
   catalogue = dbook.get_catalogue()
-  catalogue = docbook.remove_useless_value(catalogue)
+  catalogue = utils.remove_useless_value(catalogue)
   catalogue = json.dumps(catalogue, ensure_ascii = False, indent = 2)
-  print(catalogue)
+  logger.info(f"book: {id}\ncatalogue:{catalogue}.")
 
 def test_get_book_chapter(dbarchive: docbook.BookArchive):
   dbook_id = "ca546e4e-06cc-4c01-b827-0bb3cfc6c6b8" # 資治通鑑
@@ -59,15 +61,13 @@ def test_get_book_chapter(dbarchive: docbook.BookArchive):
     logger.info(f"load dbook chapter failed, id = {chapter_id}.")
     return
 
-  print(loaded)
-
   directory = dbfile.book.get_chapter_directory_byid(chapter_id)
-  print('|'.join([dir.title.title for dir in directory]))
+  logger.info('|'.join([dir.title.title for dir in directory]))
 
 if __name__ == "__main__":
-  utils.setup_logging(log_file = current_directory + '/../../../logs/test.log', level = logging.INFO)
+  utils.setup_logging(log_file = utils.convert_relativepath_to_abspath('../../../logs/test.log', __file__), level = logging.INFO)
   logger = logging.getLogger("test.docbook.archive")
   
   dbarchive = test_load()
-  #test_get_book_catalogue(dbarchive)
+  test_get_book_catalogue(dbarchive)
   test_get_book_chapter(dbarchive)

@@ -61,7 +61,7 @@ interface Props {
   inSearchString?: string;
   inSearchRange?: SearchRange;
 }
-var props = withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   inSearchString: '',
   inSearchRange: SearchRange.content,
 });
@@ -136,7 +136,7 @@ const OnSearch = (e: KeyboardEvent) => {
 };
 
 const DoSearch = () => {
-  var ret = search(searchString.value, searchRange.value);
+  const ret = search(searchString.value, searchRange.value);
   if(ret === true){
     store.addSearchText(searchString.value, searchRange.value);
     searchInput.value.blur();

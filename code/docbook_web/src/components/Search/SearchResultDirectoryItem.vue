@@ -1,8 +1,8 @@
 <template>
-  <div v-if="queryResultsDirectoryItem.childs.length > 0" class="book-volume">
+  <div v-if="queryResultsDirectoryItem && queryResultsDirectoryItem.childs.length > 0" class="book-volume">
     <span>{{ queryResultsDirectoryItem.title }}</span>
   </div>
-  <div v-else class="book-chapter" @click="OnChapterClick(queryResultsDirectoryItem)">
+  <div v-else-if="queryResultsDirectoryItem" class="book-chapter" @click="OnChapterClick(queryResultsDirectoryItem)">
     <div class="book-chapter-body">
       <div class="book-chapter-icon">
         <span>
@@ -27,8 +27,8 @@
       -->
     </div>
   </div>
-  <div v-if="queryResultsDirectoryItem.childs && queryResultsDirectoryItem.childs.length">
-    <SearchResultItem
+  <div v-if="queryResultsDirectoryItem && queryResultsDirectoryItem.childs.length">
+    <SearchResultDirectoryItem
       v-for="child in queryResultsDirectoryItem.childs"
       :key="child.id"
       :queryResultsDirectoryItem="child"
@@ -47,14 +47,14 @@ interface Props {
   directory: DirectoryTuple[];
 }
 
-var props = withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   queryResultsDirectoryItem: undefined,
   directory: undefined,
 });
 
 const getDirectory = (item: QueryResultsDirectory) => {
   if(props.directory){
-    var directory: DirectoryTuple[] = Array.from(props.directory);
+    const directory: DirectoryTuple[] = Array.from(props.directory);
     directory.push({
       id: item.id,
       title: item.title,
@@ -70,11 +70,13 @@ const emit = defineEmits<{
 }>();
 
 const OnChapterClick = (item: QueryResultsDirectory) => {
-  var directory: DirectoryTuple[] = getDirectory(item);
+  const directory: DirectoryTuple[] | undefined = getDirectory(item);
   console.log(directory);
 
   // 触发名为 'update' 的事件，并传递字符串数据
-  emit('update', directory);
+  if(directory != undefined){
+    emit('update', directory);
+  }
 }
 
 </script>

@@ -46,7 +46,7 @@
     </div>
 
     <div v-if="subShowType == ShowType.book && currentBook" class="book-directory">
-      <SearchResultItem
+      <SearchResultDirectoryItem
         v-for="child in currentBook.childs"
         :key="child.id"
         :queryResultsDirectoryItem="child"
@@ -59,7 +59,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import LoadingStatus from "../ts/LoadingStatus";
-import SearchResultItem from "./SearchResultItem.vue"
+import SearchResultDirectoryItem from "./SearchResultDirectoryItem.vue"
 import { QueryResultsDirectory, DirectoryTuple } from "../ts/BookDefine"
 
 // 通过父组件从外部传入的属性数据
@@ -69,7 +69,7 @@ interface Props {
   isShowSearchResults: boolean;
 }
 
-var props = withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   loadingStatus: LoadingStatus.idle,
   queryResultsDirectorys: undefined,
   isShowSearchResults: true
@@ -81,11 +81,11 @@ enum ShowType {
 }
 
 const subShowType = ref<ShowType>(ShowType.library);
-const currentBook = ref<QueryResultPiece>();
+const currentBook = ref<QueryResultsDirectory>();
 
 // 计算被选择上的hit数量
 const currentHitsCount = computed<number>(()=>{
-  var count = 0;
+  let count: number = 0;
   for(var book of props.queryResultsDirectorys){
     count += (book.hitCount && book.checkStatus===true)? book.hitCount : 0;
   }
@@ -94,7 +94,7 @@ const currentHitsCount = computed<number>(()=>{
 
 // 计算被选择上的book数量
 const currentBookCount = computed<number>(()=>{
-  var count = 0;
+  let count: number = 0;
   for(var book of props.queryResultsDirectorys){
     count += (book.checkStatus===true)? 1 : 0;
   }
@@ -102,7 +102,7 @@ const currentBookCount = computed<number>(()=>{
 });
 
 const getDirectory = (item: QueryResultsDirectory)=>{
-  var directory: DirectoryTuple[] = []
+  const directory: DirectoryTuple[] = []
   directory.push({
       id: item.id,
       title: item.title,
@@ -115,7 +115,7 @@ function countQueryResultsDirectoryChapter(queryResultsDirectory: QueryResultsDi
     return 1;
   }
 
-  var count: number = 0;
+  let count: number = 0;
   for (var child of queryResultsDirectory.childs) {
     count += countQueryResultsDirectoryChapter(child);
   }

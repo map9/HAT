@@ -1,9 +1,9 @@
 <template>
-  <label v-if="props.inDivision && props.inDivision != props.inBook" for="vol97698856" @click="OnExpand(props.inDivision)">
+  <label v-if="props.inDivision && props.inDivision != props.inBook" for="props.inDivision.id" @click="OnExpand(props.inDivision)">
     <div class="volume-header">
-      <h3 class="volume-name">{{ props.inDivision.title.title }}<!---<span v-if="volume.title.length>0" class="dot">·</span>共{{volume.chapters? volume.chapters.length : 0}}章--></h3>
+      <h3 class="volume-name">{{ props.inDivision? props.inDivision.title?.title : '' }}<!---<span v-if="volume.title.length>0" class="dot">·</span>共{{volume.chapters? volume.chapters.length : 0}}章--></h3>
       <div class="volume-operate">
-        <label class="volume-col" for="vol97698856">
+        <label class="volume-col" for="props.inDivision.id">
           <i class="icon">
             <svg :style="(props.inDivision.collapse === undefined || props.inDivision.collapse === false)? { transform: 'rotate(180deg)' } : { transform: 'rotate(0deg)' }" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg"><path d="M512 685.248L233.376 406.624l45.248-45.248L512 594.752l233.376-233.376 45.248 45.248z" /></svg>
           </i>
@@ -15,7 +15,7 @@
     <div class="catalogue-volume">
       <ul v-if="isChapter(item) && (props.inDivision.collapse === undefined || props.inDivision.collapse === false)" class="volume-chapters">
         <li class="chapter-item" v-for="(chapter, indexc) in item.divisions" :key="indexc">
-          <button class="chapter-name" @click="OnChapter(chapter.id)">{{ chapter.title.title }}</button>
+          <button class="chapter-name" @click="OnChapter(chapter.id)">{{ chapter.title?.title }}</button>
         </li>
       </ul>
       <template v-if="isChapter(item) === false">
@@ -37,7 +37,7 @@ import { ref, computed, onMounted, nextTick, watch } from 'vue';
 
 import { useRouter } from 'vue-router';
 
-import { Book, DivisionType } from "../ts/BookDefine";
+import { Book, Division, DivisionType } from "../ts/BookDefine";
 
 const router = useRouter();
 
@@ -47,7 +47,7 @@ interface Props {
   inDivision: Book | Division;
 }
 
-var props = withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   inBook: undefined,
   inDivision: undefined,
 });
@@ -59,29 +59,33 @@ interface BookCataloguePart {
 
 const bookCatalogueParts = ref<BookCataloguePart[]>()
 
-const computeBookCatalogueParts = (inBook: Book | Division | null) => {
-  var _bookCatalogueParts: BookCataloguePart[] = [];
-  var _bookCataloguePart: BookCataloguePart = undefined
+const computeBookCatalogueParts = (division: Book | Division | null) => {
+  const _bookCatalogueParts: BookCataloguePart[] = [];
+  let _bookCataloguePart: BookCataloguePart | undefined = undefined
 
-  for (var division of inBook.divisions){
-    if (division.type != DivisionType.VOLUME && division.type != DivisionType.CHAPTER){
-      console.log(`division type error: ${division}`)
+  if (division.divisions == undefined){
+    return _bookCatalogueParts;
+  }
+
+  for (var _division of division.divisions){
+    if (_division.type != DivisionType.VOLUME && _division.type != DivisionType.CHAPTER){
+      console.log(`division type error: ${_division}`)
       continue;
     }
 
-    if(_bookCataloguePart && division.type != _bookCataloguePart.type){
+    if(_bookCataloguePart && _division.type != _bookCataloguePart.type){
       _bookCatalogueParts.push(_bookCataloguePart)
       _bookCataloguePart = undefined
     }
 
     if (_bookCataloguePart == undefined){
       _bookCataloguePart = {
-        type: division.type,
+        type: _division.type,
         divisions: [],
       }
     }
 
-    _bookCataloguePart.divisions.push(division);
+    _bookCataloguePart.divisions.push(_division);
   }
 
   if(_bookCataloguePart){
@@ -114,8 +118,8 @@ const OnExpand = (division)=>{
   division.collapse = !division.collapse;
 } 
 
-const OnChapter = (cno:number) => {
-  const params: Record<string, string | number> = { bid: props.inBook.id, cid: cno };
+const OnChapter = (cid: string) => {
+  const params: Record<string, string | number> = { bid: props.inBook.id, cid: cid };
   router.push({ path: '/Reader', query: params });
   close();
 }

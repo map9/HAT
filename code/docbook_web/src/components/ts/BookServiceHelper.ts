@@ -4,8 +4,8 @@ import {useToast} from "vue-toastification";
 const toast = useToast();
 
 export async function searchArchive(q?: string, f?: Function): Promise<void> {
-  var queryString: string = "/api/book/search?";
-  var surround: number = 60;
+  let queryString: string = "/api/book/search?";
+  let surround: number = 60;
 
   if (q && q.length) {
     queryString += `q=${q}&&surround=${surround}`;
@@ -26,7 +26,7 @@ export async function searchArchive(q?: string, f?: Function): Promise<void> {
 }
 
 export async function getBookList(q?: string, f?: Function): Promise<void> {
-  var queryString: string = "/api/book/list?";
+  let queryString: string = "/api/book/list?";
 
   if (q && q.length) {
     queryString += `q=${q}`;
@@ -50,7 +50,7 @@ export async function getBookList(q?: string, f?: Function): Promise<void> {
 export async function getBookCatalogue(bid: string, f?: Function): Promise<void> {
   if (bid && bid.length) {
     try {
-      var queryString = `/api/book/catalogue?bid=${encodeURIComponent(bid)}`;
+      let queryString = `/api/book/catalogue?bid=${encodeURIComponent(bid)}`;
 
       const response = await axios.get(queryString);
       if (f) f(response.data);
@@ -62,7 +62,7 @@ export async function getBookCatalogue(bid: string, f?: Function): Promise<void>
   }
 }
 
-export async function getBookChapters(bid: string, cid?: number, f?: Function): Promise<void> {
+export async function getBookChapters(bid: string, cid?: string, f?: Function): Promise<void> {
   if (bid && bid.length) {
     try {
       let queryString = `/api/book/chapters?bid=${encodeURIComponent(bid)}`;
@@ -80,7 +80,7 @@ export async function getBookChapters(bid: string, cid?: number, f?: Function): 
   }
 }
 
-export async function getBookChapter(bid: string, cid: number, f?: Function): Promise<void> {
+export async function getBookChapter(bid: string, cid: string, f?: Function): Promise<void> {
   if (bid && bid.length) {
     try {
       let queryString = `/api/book/chapter?bid=${encodeURIComponent(bid)}`;

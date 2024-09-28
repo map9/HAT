@@ -1,15 +1,27 @@
 <template>
-  <div v-if="searchTargetCount && resultPiecesCount" class="hit-text">
-    <p>搜索{{ searchTargetCount }}本书籍，共发现{{ resultPiecesCount }}个结果：</p>
+  <div v-if="queryRange && queryResultCount" class="hit-text">
+    <p>搜索{{ queryRange }}本书籍，共发现{{ queryResultCount }}个结果：</p>
   </div>
 </template>
 
 <script setup lang="ts">
+import { watch } from 'vue';
+
 interface Props {
-  searchTargetCount: number;
-  resultPiecesCount: number;
+  queryRange: number;
+  queryResultCount: number;
 }
-defineProps<Props>();
+const props = defineProps<Props>();
+
+watch(() => props.queryRange, (newValue) => {
+  if (newValue !== undefined) {
+  }
+});
+
+watch(() => props.queryResultCount, (newValue) => {
+  if (newValue !== undefined) {
+  }
+});
 
 </script>
 

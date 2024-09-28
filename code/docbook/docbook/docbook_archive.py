@@ -12,6 +12,7 @@ from typing import Union, List, Dict, Tuple
 from enum import Enum
 
 import pathlib
+import utils
 from docbook import BookFile, Book, Division
 
 logger = logging.getLogger('docbook.archive')
@@ -42,6 +43,10 @@ class BookArchive(object):
   @property
   def dbooks(self):
     return [dbfile.book for dbfile in self._dbfiles]
+
+  @property
+  def book_count(self):
+    return len(self._dbfiles)
 
   @property
   def chapters(self):
@@ -111,17 +116,15 @@ class BookArchive(object):
   def load(self, path: str, dynamic_load: bool = True) -> bool:
     archive_file_path = pathlib.Path(path)
 
-    if archive_file_path.is_file():
-      if self.__load_from_file(path, dynamic_load) == True:
-        self._path = path
-        return True
-
-    elif archive_file_path.is_dir():
+    # 如果给定的path没有BookArchive.ROOT_FILE_NAME，则自动创建一个
+    if archive_file_path.is_dir():
       archive_file_path = archive_file_path / BookArchive.ROOT_FILE_NAME
       if archive_file_path.is_file() == False:
         self.create_archive(archive_file_path.parent.as_posix())
-      self.__load_from_file(archive_file_path.as_posix(), dynamic_load)
     
+    if self.__load_from_file(archive_file_path.as_posix(), dynamic_load) == True:
+      self._path = archive_file_path.as_posix()
+      return True
     else:
       return False
 
@@ -130,22 +133,22 @@ class BookArchive(object):
       self._archive = json.loads(file.read().decode('utf-8'))
       file.close()
 
-    path = pathlib.Path(path)
+    # 先转绝对路径
+    path = pathlib.Path(path).resolve()
     path = path.parent
     for item in self._archive['items']:
-      dbfile = BookFile(path / item['ref'], dynamic_load)
+      dbfile = BookFile(utils.convert_relativepath_to_abspath(item['ref'], path.as_posix()), dynamic_load)
       self._dbfiles.append(dbfile)
     return True
 
   @staticmethod
   def create_archive(path):
-    path = pathlib.Path(path)
+    path = pathlib.Path(path).resolve()
     dbook_files = list(path.rglob(BookFile.PARTS_FILE_NAME))
     dbook_files.extend(list(path.rglob(f"*{BookFile.SINGLE_FILE_SUFFIX}")))
 
     archive: dict = {}
-    archive['items'] = [{'ref': str(dbfile)} for dbfile in dbook_files]
-    print(archive)
+    archive['items'] = [{'ref': str(dbfile.relative_to(path))} for dbfile in dbook_files]
 
     archive_path = path / BookArchive.ROOT_FILE_NAME
     archive_path.parent.mkdir(parents = True, exist_ok = True)

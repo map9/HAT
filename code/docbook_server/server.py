@@ -1,3 +1,4 @@
+import os
 import uuid
 import logging
 
@@ -7,9 +8,9 @@ from pypinyin import pinyin, Style
 from typing import Union, List, Dict, Tuple
 from enum import Enum
 
-from utils import setup_logging, remove_useless_value
+from utils import setup_logging, remove_useless_value, convert_relativepath_to_abspath
 from docbook import Division, Book, BookFile, BookArchive, BookQuery
-from query import QueryResultPiece
+from query import QueryResults, QueryResultPiece
 
 # 实例化并命名为 app 实例
 app = Flask(__name__)
@@ -59,8 +60,9 @@ def search_in_dbarchive():
       dbarchive: BookArchive = app.dbarchive
 
       directorys = dbarchive.get_chapters_directorys()
-      query_results = dbquery.search_in_chapters(q, directorys, limit = None)
+      query_results: QueryResults = dbquery.search_in_chapters(q, directorys, limit = None)
       query_results.sort_query_result_piece(sort_func)
+      query_results.query_range = int(dbarchive.book_count)
 
       for query_result_piece in query_results.query_result_pieces:
         for index, hit in enumerate(query_result_piece.hits):
@@ -91,8 +93,9 @@ def get_book_list():
 
     dbooks.sort(key = lambda dbook: pinyin(dbook.title.title, style = Style.TONE3))
     return jsonify({
+      "query_range": dbarchive.book_count,
       "query_target_count": len(dbooks),
-      "result_pieces_count": len(dbarchive.dbooks), 
+      "result_pieces_count": dbarchive.book_count, 
       "result_pieces": remove_useless_value([dbook.get_brief() for dbook in dbooks])
     })
   
@@ -178,10 +181,9 @@ def get_book_chapters():
         return jsonify(error = f"can't find book: {bid}."), 400  # 使用HTTP状态码400表示错误请求
     else:
       return jsonify(error = "bid parameter is missing."), 400  # 使用HTTP状态码400表示错误请求
-
-# 定义 main 入口
-if __name__ == "__main__":
-  setup_logging(log_file = '../../logs/server.log', level = logging.INFO)
+ 
+def initialize():
+  setup_logging(log_file = convert_relativepath_to_abspath('../../logs/server.log', __file__), level = logging.INFO)
   logger = logging.getLogger("server")
 
   # 禁止对jsonify输出json时按照键进行排序
@@ -192,11 +194,14 @@ if __name__ == "__main__":
   #app.config['JSON_AS_ASCII'] = False  
 
   # load all books from library path
-  app.dbarchive = BookArchive('../../library/publish', False)
+  app.dbarchive = BookArchive(convert_relativepath_to_abspath('../../library/publish', __file__), False)
   for book in app.dbarchive.dbooks:
     book.rebuild_chapters_order()
 
   QueryResultPiece.DIRECTORY_TO_DICT_FUNC = directory_to_dict_func
 
+# 定义 main 入口
+if __name__ == "__main__":
+  initialize()
   # 调用 run 方法，设定端口号，启动服务
   app.run(port = 6060, host = "0.0.0.0", debug = True)

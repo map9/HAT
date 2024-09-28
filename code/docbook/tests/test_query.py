@@ -1,14 +1,12 @@
 import sys
 import os
 import logging
+import pathlib
 
 import query
 import utils
 import docbook
-
 from pypinyin import pinyin, Style
-
-current_directory = os.path.dirname(os.path.abspath(__file__))
 
 def test_query():
   query_string = "h or (a and (b or c and not (f or g))) and (not e) or k or j and (i and m)"
@@ -40,7 +38,7 @@ def test_query():
       logger.info(f"query: {query_string}, \ncontent: {content}, \nresult: {result}.\n")
 
 def test_get_chapter_directory():
-  dbook_path = current_directory + "/../../../library/publish/books/战国策.dbook"
+  dbook_path = utils.convert_relativepath_to_abspath("../../../library/publish/books/战国策.dbook", __file__)
   dbfile = docbook.BookFile(dbook_path)
 
   chapter_id = "9acd3206-e369-4e42-8b07-5c1c7f1b55ad"
@@ -55,7 +53,7 @@ def test_get_chapter_directory():
     logger.info(f"path: {path}")
 
 def test_get_chapters_directorys():
-  dbook_path = current_directory + "/../../../library/publish/books/战国策.dbook"
+  dbook_path = utils.convert_relativepath_to_abspath("../../../library/publish/books/战国策.dbook", __file__)
   dbfile = docbook.BookFile(dbook_path)
 
   chapter_id = "9acd3206-e369-4e42-8b07-5c1c7f1b55ad"
@@ -76,7 +74,7 @@ def sort_func(query_result_piece: query.QueryResultPiece):
     return (pinyin(directory[-1].title.title, style = Style.TONE3), query_result_piece.order)
 
 def test_query_book():
-  dbook_path = current_directory + "/../../../library/publish/books/周易.dbook"
+  dbook_path = utils.convert_relativepath_to_abspath("../../../library/publish/books/周易.dbook", __file__)
   dbfile = docbook.BookFile(dbook_path)
 
   directorys = dbfile.book.get_chapters_directorys()
@@ -93,7 +91,7 @@ def test_query_book():
       logger.info(f"query: {query_results.query.query_string}, {path}, content: {hit[0]}.")
 
 def test_query_archive():
-  dbook_archive_path = current_directory + "/../../../library/publish"
+  dbook_archive_path = utils.convert_relativepath_to_abspath("../../../library/publish", __file__)
   
   dbarchive = docbook.BookArchive(dbook_archive_path)
 
@@ -115,14 +113,12 @@ def test_query_archive():
       logger.info(f"query: {query_results.query.query_string}, {path}, content: {hit[0]}.")
 
 def test_query_book2():
-  dbook_path = current_directory + "/../../../library/publish/资治通鉴·繁体竖排版 294卷全"
+  dbook_path = utils.convert_relativepath_to_abspath("../../../library/publish/资治通鉴·繁体竖排版 294卷全", __file__)
   dbfile = docbook.BookFile(dbook_path, False)
 
   directorys = dbfile.book.get_chapters_directorys()
   query_results = docbook.BookQuery.search_in_chapters("右賢王", directorys)
   query_results.sort_query_result_piece(sort_func)
-
-  logger.info(f"query: {query_results}")
 
   for query_result_piece in query_results.query_result_pieces:
     directory = query_result_piece.directory
@@ -133,8 +129,9 @@ def test_query_book2():
     for hit in query_result_piece.hits:
       logger.info(f"query: {query_results.query.query_string}, {path}, content: {hit[0]}.")
 
+import cProfile
 if __name__ == "__main__":
-  utils.setup_logging(log_file = current_directory + '/../../../logs/test.log', level = logging.INFO)
+  utils.setup_logging(log_file = utils.convert_relativepath_to_abspath('../../../logs/test.log', __file__), level = logging.INFO)
   logger = logging.getLogger("test.query")
   
   test_query()
@@ -143,3 +140,4 @@ if __name__ == "__main__":
   test_query_book()
   test_query_archive()
   test_query_book2()
+  #cProfile.run('test_query_book2()')
