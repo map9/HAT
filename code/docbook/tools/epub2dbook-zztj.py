@@ -256,6 +256,7 @@ class Converter():
       依据段落是否带number来决定是否将不同的正文段落合并成一个ContentPiece。
       """
 
+      # 有独立number的段落，或者注释段落，不能作为段落来合并
       if 'number' in node.attrs:
         return True
 
@@ -266,8 +267,8 @@ class Converter():
         content_pieces = father_node.content_pieces
       
       if (len(content_pieces) > 0) and content_pieces[-1].get('number') is not None:
-        content_pieces[-1].concat_content_piece(node)
-        return False
+        result = content_pieces[-1].concat_content_piece(node)
+        return False if result == True else True
 
       return True
 

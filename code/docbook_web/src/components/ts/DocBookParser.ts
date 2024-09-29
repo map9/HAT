@@ -152,8 +152,12 @@ export class HtmlParseDocument {
     const childs: HtmlContentPiece[] = [];
     const output: HtmlContentPiece[] = [];
   
+    let order = 0;
     contentPiece.content_pieces?.forEach((contentPiece, _index) => {
-      childs.push(this.parseContentPiece(contentPiece, _index, (level == -1)? level : (level + 1)));
+      if (contentPiece.type != DivisionType.ANNOTATION) {
+        order ++;
+      }
+      childs.push(this.parseContentPiece(contentPiece, order, (level == -1)? level : (level + 1)));
     });
 
     //  节，节标题（和书、卷、章的标题不是一个类型，更类似为文本）中包含正文文本段落内的注释。
@@ -223,7 +227,7 @@ export class HtmlParseDocument {
       // 注释文本段落
       if ((contentPiece.position == undefined || contentPiece.position == 0)) {
         htmlString += `<div class="db-column db-annotation" key="${index}">`;
-        htmlString += `<div class="number"><p>${index}</p></div>`;
+        htmlString += `<div class="number"><p></p></div>`;
         htmlString += `<div class="content ${HtmlParseDocument.getAnnotatorStyle(contentPiece.annotator, contentPiece.source)}">`;
 
         const paragraphString: string = HtmlParseDocument.insertAnnotations(contentPiece.content, childs);
