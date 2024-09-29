@@ -29,7 +29,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { withDefaults, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import BookCatalogueItem from "./BookCatalogueItem.vue"
 import { Book, Division } from "../ts/BookDefine";
@@ -38,8 +38,8 @@ const router = useRouter();
 
 // 定义外部输入的属性
 interface Props {
-  inBook: Book;
-  isDialog: boolean;
+  inBook?: Book;
+  isDialog?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -47,26 +47,30 @@ const props = withDefaults(defineProps<Props>(), {
   isDialog: undefined,
 });
 
-const localBook = ref<Book>(props.inBook);
+const localBook = ref<Book | undefined>(props.inBook);
 
 const order = ref<boolean>(true);
 
-const reverseBookCatalogue = (division: Book | Division): Division  => {
+const reverseBookCatalogue = (division)  => {
   if (division.divisions !== undefined){
-    for (var _division of division.divisions){
-      _division = _division as Division;
-      reverseBookCatalogue(_division)
+    for(var i = 0; i < division.divisions.length; i ++){
+      const _division =division.divisions[i] as Division;
+      division.divisions[i] = reverseBookCatalogue(_division);
     }
 
     division.divisions = division.divisions.slice().reverse()
     return Object.assign({}, division) as Division;
   }
+  return division;
 }
 
 const OnOrder = () => {
   order.value = !order.value;
-
-  localBook.value = reverseBookCatalogue(localBook.value) as Book;
+  
+  const _book = reverseBookCatalogue(localBook.value);
+  if (_book != undefined){
+    localBook.value = _book as Book;
+  }
 }
 
 // 监听 props.inBook 的变化

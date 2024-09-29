@@ -57,7 +57,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { withDefaults, ref, computed } from 'vue';
 import LoadingStatus from "../ts/LoadingStatus";
 import SearchResultDirectoryItem from "./SearchResultDirectoryItem.vue"
 import { QueryResultsDirectory, DirectoryTuple } from "../ts/BookDefine"

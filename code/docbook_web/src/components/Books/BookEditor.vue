@@ -57,7 +57,6 @@ const lang = "bookmarkdown";
 const RenderHtmlContent = () => {
   if (markdownText.value.length) {
     htmlText.value = markdownChange.ToHtml(markdownText.value);
-    //console.debug(htmlText.value);
   } else {
     htmlText.value = "<p></p>";
   }

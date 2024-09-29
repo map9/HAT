@@ -71,7 +71,7 @@ bn {
 .db-section h4,
 .db-section h5,
 .db-section h6 {
-  text-indent: 2em;
+  /*text-indent: 2em;*/
   font-weight: bold;
   margin-block-start: 1em;
   margin-block-end: 1em;
@@ -90,17 +90,17 @@ bn {
   display: fixed;
 }
 
-.db-section .db-paragraph {
+.db-section .db-column {
   display: flex;
   margin-bottom: 1em;
 }
 
-.db-paragraph .db-paragraph-number {
+.db-column .number {
   flex: 0 0 clamp(30px, calc(var(--reader-font-size) + 22px), 46px);
   margin-right: 8px;
 }
 
-.db-paragraph .db-paragraph-number p {
+.db-column .number p {
   color: var(--surface-gray-900);
   background-color: var(--surface-gray-100);
   font-size: clamp(12px, var(--reader-font-size), 24px);
@@ -109,35 +109,30 @@ bn {
   border-radius: 4px;
 }
 
-.db-paragraph .db-paragraph-content {
-  flex: 1;
-}
-
-.db-paragraph .db-paragraph-content p {
-  /*text-indent: 2em;*/
-  font-size: clamp(12px, var(--reader-font-size), 24px);
-}
-
-.db-paragraph .db-annotation-content {
+.db-column .content {
   flex: 1;
   padding: 2px 4px;
-  border-radius: 4px;
-  border: 1px solid #00000008;
 }
 
-.db-paragraph .db-annotation-content p {
+.db-column .content p {
   /*text-indent: 2em;*/
   font-size: clamp(12px, var(--reader-font-size), 24px);
 }
 
-.db-annotation-content .annotator {
+.db-paragraph {
+}
+
+.db-annotation {
+}
+
+.db-annotation .annotator {
   margin: 0 2px 0 0;
   padding: 2px 2px;
   font-size: clamp(8px, calc(var(--reader-font-size) - 4px), 20px);
   color: currentColor;
 }
 
-.db-annotation-content .type {
+.db-annotation .type {
   margin: 0 5px 0 0;
   padding: 2px 2px;
   font-size: clamp(8px, calc(var(--reader-font-size) - 4px), 20px);
@@ -173,33 +168,33 @@ annotation .type {
   border: 0.5px solid currentColor;
 }
 
-.db-paragraph .style01,
+.db-annotation .style01,
 annotation.style01 {
   /* light gray */
   color: #000000B0;
   background-color: #00000008;
 }
 
-.db-paragraph .style02,
+.db-annotation .style02,
 annotation.style02 {
   /* firebrick */
   color: #B22222E0;
   background-color: #B2222208;
 }
 
-.db-paragraph .style03,
+.db-annotation .style03,
 annotation.style03 {
   color: #777700F0;
   background-color: #FFFF000F;
 }
 
-.db-paragraph .style04,
+.db-annotation .style04,
 annotation.style04 {
   color: #008B8B;
   background-color: #F5FFFAE0;
 }
 
-.db-paragraph .style05,
+.db-annotation .style05,
 annotation.style05 {
   color: #0000FFA0;
   background-color: #0000FF10;

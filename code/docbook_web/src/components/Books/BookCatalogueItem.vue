@@ -13,7 +13,7 @@
   </label>
   <template v-for="(item, index) in bookCatalogueParts" :key="index">
     <div class="catalogue-volume">
-      <ul v-if="isChapter(item) && (props.inDivision.collapse === undefined || props.inDivision.collapse === false)" class="volume-chapters">
+      <ul v-if="isChapter(item) && props.inDivision && (props.inDivision.collapse === undefined || props.inDivision.collapse === false)" class="volume-chapters">
         <li class="chapter-item" v-for="(chapter, indexc) in item.divisions" :key="indexc">
           <button class="chapter-name" @click="OnChapter(chapter.id)">{{ chapter.title?.title }}</button>
         </li>
@@ -33,7 +33,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick, watch } from 'vue';
+import { withDefaults, ref, computed, onMounted, nextTick, watch } from 'vue';
 
 import { useRouter } from 'vue-router';
 
@@ -43,8 +43,8 @@ const router = useRouter();
 
 // 定义外部输入的属性
 interface Props {
-  inBook: Book;
-  inDivision: Book | Division;
+  inBook?: Book;
+  inDivision?: Book | Division;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -59,15 +59,16 @@ interface BookCataloguePart {
 
 const bookCatalogueParts = ref<BookCataloguePart[]>()
 
-const computeBookCatalogueParts = (division: Book | Division | null) => {
+const computeBookCatalogueParts = (division: Book | Division | undefined) => {
   const _bookCatalogueParts: BookCataloguePart[] = [];
   let _bookCataloguePart: BookCataloguePart | undefined = undefined
 
-  if (division.divisions == undefined){
+  if (division == undefined || division.divisions == undefined){
     return _bookCatalogueParts;
   }
 
   for (var _division of division.divisions){
+    _division = _division as Division;
     if (_division.type != DivisionType.VOLUME && _division.type != DivisionType.CHAPTER){
       console.log(`division type error: ${_division}`)
       continue;
@@ -119,9 +120,11 @@ const OnExpand = (division)=>{
 } 
 
 const OnChapter = (cid: string) => {
-  const params: Record<string, string | number> = { bid: props.inBook.id, cid: cid };
-  router.push({ path: '/Reader', query: params });
-  close();
+  if (props.inBook != undefined){
+    const params: Record<string, string | number> = { bid: props.inBook.id, cid: cid };
+    router.push({ path: '/Reader', query: params });
+    close();
+  }
 }
 
 const emit = defineEmits([

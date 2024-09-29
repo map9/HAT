@@ -7,7 +7,7 @@
       </div>
       <search-bar ref="searchBar" />
       <div class="center-buttons-container">
-        <button class="center-item-button" type="button" @click="OnSearch">KaiJuan Search</button>
+        <button class="center-item-button" type="button" @click="OnSearch">Search</button>
         <button class="center-item-button" type="button">I'm Feeling Lucky</button>
       </div>
     </div>

@@ -64,7 +64,7 @@ export interface Book {
   description?: string,
   date?: string,
   divisions?: Division[],
-  collapse?: boolean;
+  collapse?: boolean,
 }
 
 export interface Figure {

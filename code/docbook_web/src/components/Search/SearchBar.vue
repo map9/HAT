@@ -47,7 +47,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onBeforeUnmount } from "vue";
+import { withDefaults, ref, computed, watch, onMounted, onBeforeUnmount } from "vue";
 import { useRouter } from 'vue-router';
 import { useToast } from "vue-toastification";
 

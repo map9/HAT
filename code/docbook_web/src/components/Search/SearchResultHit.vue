@@ -8,8 +8,8 @@
 import { watch } from 'vue';
 
 interface Props {
-  queryRange: number;
-  queryResultCount: number;
+  queryRange?: number;
+  queryResultCount?: number;
 }
 const props = defineProps<Props>();
 

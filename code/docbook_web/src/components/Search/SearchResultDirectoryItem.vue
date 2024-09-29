@@ -38,13 +38,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { withDefaults, ref, computed } from 'vue';
 import { QueryResultsDirectory, DirectoryTuple } from "../ts/BookDefine"
 
 // 通过父组件从外部传入的属性数据
 interface Props {
-  queryResultsDirectoryItem: QueryResultsDirectory;
-  directory: DirectoryTuple[];
+  queryResultsDirectoryItem?: QueryResultsDirectory;
+  directory?: DirectoryTuple[];
 }
 
 const props = withDefaults(defineProps<Props>(), {

@@ -34,7 +34,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, withDefaults } from 'vue';
 import SearchBar from "./Search/SearchBar.vue";
 
 import { SearchRange } from "./ts/BookDefine";

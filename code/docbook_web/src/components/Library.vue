@@ -10,7 +10,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, nextTick, watch } from 'vue';
+import { withDefaults, ref, onMounted, nextTick, watch } from 'vue';
 import { useRoute } from 'vue-router';
 
 import HeadBar from "./HeadBar.vue";

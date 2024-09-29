@@ -85,13 +85,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { withDefaults, ref, computed, onMounted, onUnmounted } from 'vue';
 
 import { Book } from "../ts/BookDefine";
 
 // 定义外部输入的属性
 interface Props {
-  inBook: Book | null;
+  inBook?: Book;
 }
 
 const props = withDefaults(defineProps<Props>(), {
