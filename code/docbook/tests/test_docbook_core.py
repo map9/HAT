@@ -15,6 +15,9 @@ def test_title():
   print(repr(title))
   title = docbook.Title.from_list(['主标题', '标题前缀', '标题后缀'])
   print(title)
+
+  dbook = docbook.Book()
+  dbook.title = ['主标题', '标题前缀', '标题后缀']
   return title
 
 

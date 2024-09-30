@@ -28,11 +28,23 @@ export class HtmlParseDocument {
     let match;
     let lastIndex = 0;
     let aIndex = 0;
-  
+    
+    // 处理inserts的异常问题
     if (inserts == undefined || inserts.length == 0){
       return content;
     }
+    // 处理content的异常问题
+    if (content === undefined || content.length == 0){
+      inserts.forEach((annotation)=>{
+        if (annotation.position !== undefined && annotation.position != 0)
+          console.log(`${annotation.position}, ${annotation.content}.`);
+        result.push(annotation.content);
+      });
 
+      return result.join("");
+    }
+
+    // 初始化所有等待插入的内容
     inserts.forEach((annotation)=>{
       annotation.inserted = false;
     });
@@ -45,7 +57,8 @@ export class HtmlParseDocument {
       cache.length = 0;
       for (var i = aIndex; i < inserts.length; i++) {
         let annotation = inserts[i];
-        if (annotation.position == undefined){
+        // 如果插入内容的插入位置为非正常位置
+        if (annotation.position === undefined || annotation.position == 0){
           console.log(`${annotation.position}, ${annotation.content}.`);
           continue;
         }
@@ -215,7 +228,7 @@ export class HtmlParseDocument {
     //  注释文本段落，包含注释文本段落内的注释。
     //  <div class="db-column db-annotation" key="">
     //    <div class="number">{{ annotation.index }}</div>
-    //    <div class="content annotation">
+    //    <div class="content style[num]">
     //      <p><span class="annotator">{{ annotation.annotator }}</span><span class="type">{{ annotation.source }}</span></p>
     //      <p>{{ parseAnnotation(annotation.content[0]) }}</p>
     //      <p>{{ parseAnnotation(annotation.content[1]) }}</p>
@@ -227,7 +240,7 @@ export class HtmlParseDocument {
       // 注释文本段落
       if ((contentPiece.position == undefined || contentPiece.position == 0)) {
         htmlString += `<div class="db-column db-annotation" key="${index}">`;
-        htmlString += `<div class="number"><p></p></div>`;
+        htmlString += `<div class="number"></div>`;
         htmlString += `<div class="content ${HtmlParseDocument.getAnnotatorStyle(contentPiece.annotator, contentPiece.source)}">`;
 
         const paragraphString: string = HtmlParseDocument.insertAnnotations(contentPiece.content, childs);
@@ -247,10 +260,10 @@ export class HtmlParseDocument {
         //console.log(htmlString);
       }
       // 正文文本段落、注释文本段落内的注释。
-      //  <annotation class="style04" key="">
+      //  <annotation class="style[num]" key="">
       //    <span class="annotator">{{ annotation.annotator }}</span>
       //    <span class="type">{{ annotation.source }}</span>
-      //    <span>{{ parseAnnotation(annotation.content) }}</span>
+      //    {{ parseAnnotation(annotation.content) }}
       //  </annotation>    
       else {
         if (contentPiece.content && contentPiece.content.length > 0){
@@ -259,7 +272,7 @@ export class HtmlParseDocument {
           htmlString += ((contentPiece.source == undefined) || (contentPiece.source.length == 0))? '' : `<span class="type">${contentPiece.source}</span>`;
           
           const annotationString: string = HtmlParseDocument.insertAnnotations(contentPiece.content, childs);
-          htmlString += `<span>${annotationString}</span>`;
+          htmlString += `${annotationString}`;
           htmlString += `</annotation>`;
         } else {
           htmlString += childs.map((v)=>v.content).join("");
