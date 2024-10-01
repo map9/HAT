@@ -10,7 +10,7 @@ interface HtmlContentPiece {
 }
 
 export class HtmlParseDocument {
-  static annotatorStyles: string[] = ["style01", "style02", "style03", "style04", "style05"];
+  static annotatorStyles: string[] = ["style01", "style02", "style03", "style04"];
   static annotator2Style: Map<string, string> = new Map<string, string>();
   private htmlContent: string = "";
 
@@ -167,7 +167,8 @@ export class HtmlParseDocument {
   
     let order = 0;
     contentPiece.content_pieces?.forEach((contentPiece, _index) => {
-      if (contentPiece.type != DivisionType.ANNOTATION) {
+      // 注释以及注释段落不给序号
+      if ((contentPiece.type != DivisionType.ANNOTATION) && !((contentPiece.type == DivisionType.PARAGRAPH) && (contentPiece.content == undefined || contentPiece.content.length == 0))) {
         order ++;
       }
       childs.push(this.parseContentPiece(contentPiece, order, (level == -1)? level : (level + 1)));
@@ -205,78 +206,61 @@ export class HtmlParseDocument {
       htmlString += output.map((v)=>v.content).join("");
       htmlString += `</div>`;
     }
-    //  正文文本段落，包含正文文本段落内的注释。
-    //  <div class="db-column db-paragraph" key="">
-    //    <div class="number"><p>{{ paragraph.index }}</p></div>
-    //    <div class="content">
-    //      <p>{{ parseAnnotation(paragraph.content[0]) }}</p>
-    //      <p>{{ parseAnnotation(paragraph.content[1]) }}</p>
-    //      <p>{{ parseAnnotation(paragraph.content[.]) }}</p>
-    //    </div>
-    //  </div>
     else if (contentPiece.type == DivisionType.PARAGRAPH) {
-      htmlString += `<div class="db-column db-paragraph" key="${index}">`;
-      htmlString += `<div class="number"><p>${index}</p></div>`;
-      htmlString += `<div class="content">`;
-      const paragraphString: string = HtmlParseDocument.insertAnnotations(contentPiece.content, childs);
-      const items: string[] = paragraphString.split('\n');
-      items.forEach((item) => {
-        htmlString += `<p>${item}</p>`;
-      });
-      htmlString += `</div></div>`;
-    }
-    //  注释文本段落，包含注释文本段落内的注释。
-    //  <div class="db-column db-annotation" key="">
-    //    <div class="number">{{ annotation.index }}</div>
-    //    <div class="content style[num]">
-    //      <p><span class="annotator">{{ annotation.annotator }}</span><span class="type">{{ annotation.source }}</span></p>
-    //      <p>{{ parseAnnotation(annotation.content[0]) }}</p>
-    //      <p>{{ parseAnnotation(annotation.content[1]) }}</p>
-    //      <p>{{ parseAnnotation(annotation.content[.]) }}</p>
-    //    </div>
-    //  </div>
-    else if (contentPiece.type == DivisionType.ANNOTATION) {
-      //console.log(contentPiece);
-      // 注释文本段落
-      if ((contentPiece.position == undefined || contentPiece.position == 0)) {
-        htmlString += `<div class="db-column db-annotation" key="${index}">`;
-        htmlString += `<div class="number"></div>`;
-        htmlString += `<div class="content ${HtmlParseDocument.getAnnotatorStyle(contentPiece.annotator, contentPiece.source)}">`;
-
+      //  正文文本段落，包含正文文本段落内的注释。
+      //  <div class="db-column db-paragraph" key="">
+      //    <div class="number"><p>{{ paragraph.index }}</p></div>
+      //    <div class="content">
+      //      <p>{{ paragraph.content[0] }}</p>
+      //      <p>{{ paragraph.content[1] }}</p>
+      //      <p>{{ paragraph.content[.] }}</p>
+      //    </div>
+      //  </div>
+      if ((contentPiece.content != undefined && contentPiece.content.length > 0)) {
+        htmlString += `<div class="db-column db-paragraph" key="${index}">`;
+        htmlString += `<div class="number"><p>${index}</p></div>`;
+        htmlString += `<div class="content">`;
         const paragraphString: string = HtmlParseDocument.insertAnnotations(contentPiece.content, childs);
         const items: string[] = paragraphString.split('\n');
-        items.forEach((item, index) => {
-          if (index == 0){
-            htmlString += `<p>`;
-            htmlString += ((contentPiece.annotator == undefined) || (contentPiece.annotator.length == 0))? '' : `<span class="annotator">${contentPiece.annotator}</span>`;
-            htmlString += ((contentPiece.source == undefined) || (contentPiece.source.length == 0))? '' : `<span class="type">${contentPiece.source}</span>`;
-            htmlString += `${item}`;
-            htmlString += `</p>`;    
-          } else {
-            htmlString += `<p>${item}</p>`;
-          }
+        items.forEach((item) => {
+          htmlString += `<p>${item}</p>`;
         });
         htmlString += `</div></div>`;
-        //console.log(htmlString);
       }
-      // 正文文本段落、注释文本段落内的注释。
-      //  <annotation class="style[num]" key="">
-      //    <span class="annotator">{{ annotation.annotator }}</span>
-      //    <span class="type">{{ annotation.source }}</span>
-      //    {{ parseAnnotation(annotation.content) }}
-      //  </annotation>    
+      //  注释文本段落，包含注释文本段落内的注释。
+      //  <div class="db-column db-annotation" key="">
+      //    <div class="number"></div>
+      //    <div class="content">
+      //      <p>{{ Annotation }}</p>
+      //    </div>
+      //  </div>      
       else {
-        if (contentPiece.content && contentPiece.content.length > 0){
-          htmlString += `<annotation class="${HtmlParseDocument.getAnnotatorStyle(contentPiece.annotator, contentPiece.source)}" key="${index}">`;
-          htmlString += ((contentPiece.annotator == undefined) || (contentPiece.annotator.length == 0))? '' : `<span class="annotator">${contentPiece.annotator}</span>`;
-          htmlString += ((contentPiece.source == undefined) || (contentPiece.source.length == 0))? '' : `<span class="type">${contentPiece.source}</span>`;
-          
-          const annotationString: string = HtmlParseDocument.insertAnnotations(contentPiece.content, childs);
-          htmlString += `${annotationString}`;
-          htmlString += `</annotation>`;
-        } else {
-          htmlString += childs.map((v)=>v.content).join("");
-        }
+        htmlString += `<div class="db-column db-annotation" key="${index}">`;
+        htmlString += `<div class="number"></div>`;
+        htmlString += `<div class="content">`;
+
+        const paragraphString: string = HtmlParseDocument.insertAnnotations(contentPiece.content, childs);
+        htmlString += `<p>${paragraphString}</p>`;
+        htmlString += `</div></div>`;        
+      }
+    }
+    // 段内注释。
+    //  <annotation class="style[num]" key="">
+    //    <span class="annotator">{{ annotation.annotator }}</span>
+    //    <span class="type">{{ annotation.source }}</span>
+    //    {{ annotation.content }}
+    //  </annotation>    
+    else if (contentPiece.type == DivisionType.ANNOTATION) {
+      if (contentPiece.content && contentPiece.content.length > 0){
+        htmlString += `<annotation class="${HtmlParseDocument.getAnnotatorStyle(contentPiece.annotator, contentPiece.source)}" key="${index}">`;
+        htmlString += ((contentPiece.annotator == undefined) || (contentPiece.annotator.length == 0))? '' : `<span class="annotator">${contentPiece.annotator}</span>`;
+        htmlString += ((contentPiece.source == undefined) || (contentPiece.source.length == 0))? '' : `<span class="type">${contentPiece.source}</span>`;
+        
+        const annotationString: string = HtmlParseDocument.insertAnnotations(contentPiece.content, childs);
+        htmlString += `${annotationString}`;
+        htmlString += `</annotation>`;
+      } else {
+        htmlString += childs.map((v)=>v.content).join("");
       }
     }
     else {

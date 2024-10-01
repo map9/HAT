@@ -4,8 +4,7 @@ decoder-epub.py
 """
 
 import pathlib
-import argparse
-from typing import Union, List
+from typing import Union, List, Tuple
 
 from bs4 import BeautifulSoup
 
@@ -13,19 +12,48 @@ import docbook
 from .unzip_epubbook import UnzipEPubBook
 
 class Converter():
-  class2labels = {
-  }
-  
-  IMG2LABELS = {  
-  }
+  def class2label(self, item_class: str) -> str:
+    """
+    映射epub文件中xhtml中class到docbook缺省的标签。
+    """
+    label = self._class2labels.get(item_class, self._class2labels.get('default'))
+    
+    return label
 
-  def __init__(self, epub_dir: str, class2labels = None):
+  def class2annotator(self, item_class: str) -> Tuple[str, str]:
+    """
+    映射epub文件中xhtml中class到docbook缺省的annotator和authorship。
+    """
+    annotator = self._class2annotators.get(item_class, self._class2annotators.get('default'))
+    
+    return annotator
+  
+  def img2label(self, img: str) -> str:
+    """
+    映射epub文件中xhtml中img到docbook缺省的标签，同时对文字进行重新命名。
+    """
+    src = self._img2labels.get(img)
+    if src is None:
+      index = img.rfind('.')
+      src = f"img{len(self._img2labels)+1:03}.gif" if (index == -1) else f"img{len(self._img2labels)+1:03}{img[index:]}"
+      self._img2labels[img] = src
+    return src
+
+  def __init__(self, epub_dir: str, class2labels = None, class2annotators = None):
 
     self._epub_dir = epub_dir
     self._epub_book: UnzipEPubBook = None
     self._dbook: docbook.Book = docbook.Book()
-    if class2labels is not None:
-      self.class2labels = class2labels
+    
+    self._class2labels = class2labels if class2labels is not None else {}
+    if (self._class2labels.get('default') == None):
+      self._class2labels['default'] = docbook.BookLabel.DEFAULT
+    
+    self._class2annotators = class2annotators if class2annotators is not None else {}
+    if (self._class2annotators.get('default') == None):
+      self._class2annotators['default'] = (None, None)
+  
+    self._img2labels = {}
 
     try:
       self._epub_book = UnzipEPubBook(epub_dir)
@@ -47,26 +75,6 @@ class Converter():
     docbook.BookFile.save_to_docbook(path, self._dbook, type)
     return True
 
-  def get_class_label(self, item_class: str) -> str:
-    """
-    映射epub文件中xhtml中class到docbook缺省的标签。
-    """
-    label = self.class2labels.get(item_class)
-    
-    return self.class2labels.get('blank') if label is None else label
-
-  
-  def img2label(self, img: str) -> str:
-    """
-    映射epub文件中xhtml中img到docbook缺省的标签，同时对文字进行重新命名。
-    """
-    src = self.IMG2LABELS.get(img)
-    if src is None:
-      index = img.rfind('.')
-      src = f"img{len(self.IMG2LABELS)+1:03}.gif" if (index == -1) else f"img{len(self.IMG2LABELS)+1:03}{img[index:]}"
-      self.IMG2LABELS[img] = src
-    return src
-
   def decode_toc_item(self, item):
     """
     解码TOC文件目录子项目。
@@ -78,7 +86,7 @@ class Converter():
     toc_item["sub_items"] = []
     #print(f"label: {toc_item["label"]}, order: {toc_item["order"]}, src: {toc_item["src"]}.")
 
-    for index, child in enumerate(item.children):
+    for child in item.children:
       if child.name == 'navPoint':
         sub_toc_item = self.decode_toc_item(child)
         toc_item["sub_items"].append(sub_toc_item)
@@ -98,7 +106,7 @@ class Converter():
       return []
 
     toc_items = []
-    for index, child in enumerate(nav.children):
+    for child in nav.children:
       if child.name == 'navPoint':
         sub_toc_item = self.decode_toc_item(child)
         toc_items.append(sub_toc_item)

@@ -1,8 +1,8 @@
 """
 decoder-epub-zztj.py
-将电子书《資治通鑑胡三省註版》转换为docbook格式
+将电子书《史记三家注》转换为docbook格式
 
-usage: epub2dbook-zztj.py epub_dir [-h] [--output_dir OUTPUT_DIR]
+usage: epub2dbook-sjsjz.py epub_dir [-h] [--output_dir OUTPUT_DIR]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -38,31 +38,31 @@ from  tools import Converter
 
 class ZZTJConverter(Converter):
 
-  def __init__(self, epub_dir: str, class2labels=None):
-    super().__init__(epub_dir, class2labels)
+  def __init__(self, epub_dir: str, class2labels = None, class2annotators = None):
+    super().__init__(epub_dir, class2labels, class2annotators)
 
   def decode_item_text_to_annotations(self, content):
     sections = re.split(r'【(.*?)】', content)
 
     if (len(sections)%2 == 1):
       if (len(sections[0]) != 0):
-        print(f"Noname: {content}.")
-        sections.insert(0, 'NoName')
+        #print(f"Noname: {sections[0]}, total: {content}.")
+        sections.insert(0, '集解')
       else:
         sections.pop(0)
 
     return [{ "annotator": sections[i], "content": sections[i + 1]} for i in range(0, len(sections), 2)]
 
-  def decode_item_text(self, item, content_piece, content) -> tuple[str, str]:
+  def decode_item_text(self, item, content_piece, content, marked_content) -> tuple[str, str]:
     # 内容
     if item.name == None:
       content += item.text
+      marked_content += item.text
     elif item.name == 'span':
       item_class = item.get('class')
-      if item_class != None:
-        label = self.get_class_label(item_class)
+      if item_class is not None:
         # 注释
-        if (item_class == "style7"):
+        if (item_class == "style7") or (item_class == "style8"):
           texts = self.decode_item_text_to_annotations(item.text)
           for t in texts:
             annotation = docbook.ContentPiece(type=docbook.DivisionType.ANNOTATION)
@@ -72,23 +72,37 @@ class ZZTJConverter(Converter):
             content_piece.add_content_piece(annotation)
         else:
           content += item.text
+          marked_content += item.text
           print(f"unsupport span.{item_class}.")
       else:
         content += item.text
+        marked_content += item.text
         print(f"unsupport span.{item_class}.")
+        # 内容，带img标签
+    elif (item.name == 'img'):
+      content += '　'
+      img_src = item.get('src')[3:]
+      img_label = f"Images/{self.img2label(img_src)}"
+      marked_content += f'　<img src="{img_label}"/>'
+      # print(f"img_src = {img_src}, img_label = {img_label}.")
+      if self._dbook.get_extra(img_label) is None:
+        img_content = self._epub_book.get_item_content_by_name(img_src)
+        self._dbook.add_extra(docbook.Extra(
+            img_label, docbook.ExtraContentType.ITEM_IMAGE, img_label, img_content))
     else:
       content += item.text
+      marked_content += item.text
       print(f"unsupport label: {item.name}.")
 
-    return content
+    return content, marked_content
 
   def decode_chapter_annotation(self, item) -> docbook.ContentPiece:
     content = ""
-
+    marked_content = ""
     content_piece = docbook.ContentPiece(type=docbook.DivisionType.ANNOTATION)
     for child in item.children:
-      content = self.decode_item_text(child, content_piece, content)
-    content_piece.content = content
+      content, marked_content = self.decode_item_text(child, content_piece, content, marked_content)
+    content_piece.content = marked_content
     return content_piece
 
   #   p 正文段落
@@ -97,6 +111,7 @@ class ZZTJConverter(Converter):
   #     span.style7 文内注释
   def decode_chapter_paragraph(self, item) -> tuple[docbook.ContentPiece, int]:
     content = ''
+    marked_content = ''
     section_indent = 999
 
     item_class = item.get('class')
@@ -106,24 +121,32 @@ class ZZTJConverter(Converter):
       content_piece.type = docbook.DivisionType.PARAGRAPH
 
       for child in item.children:
-        content = self.decode_item_text(child, content_piece, content)
-      content_piece.content = content
+        content, marked_content = self.decode_item_text(child, content_piece, content, marked_content)
+      content_piece.content = marked_content
       return content_piece, section_indent
 
     # 注释段落
     elif (item_class == 'style7') or (item_class == 'style8'):
       content_piece.type = docbook.DivisionType.PARAGRAPH
-      content_piece.content = ''
-      texts = self.decode_item_text_to_annotations(item.text)
-      for t in texts:
+      content_piece.content = content
+      if (item_class == 'style8'):
         annotation = docbook.ContentPiece(type=docbook.DivisionType.ANNOTATION)
-        annotation.annotator = t['annotator']
-        annotation.position = -1 if len(content) == 0 else len(content)
-        annotation.content = t['content']
+        annotation.annotator = '索隱'
+        annotation.authorship = '述贊'
+        annotation.position = len(content)
+        annotation.content = item.text
         content_piece.add_content_piece(annotation)
+      else:
+        texts = self.decode_item_text_to_annotations(item.text)
+        for t in texts:
+          annotation = docbook.ContentPiece(type=docbook.DivisionType.ANNOTATION)
+          annotation.annotator = t['annotator']
+          annotation.position = len(content)
+          annotation.content = t['content']
+          content_piece.add_content_piece(annotation)
       return content_piece, section_indent
 
-    # 其他
+    # 其他标签
     else:
       print(f"unsupport p.{item_class}.")
 

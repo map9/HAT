@@ -22,8 +22,8 @@ import docbook
 from  tools import Converter
 class ZZTJConverter(Converter):
 
-  def __init__(self, epub_dir: str, class2labels=None):
-    super().__init__(epub_dir, class2labels)
+  def __init__(self, epub_dir: str, class2labels = None, class2annotators = None):
+    super().__init__(epub_dir, class2labels, class2annotators)
 
   def decode_item_text(self, item, content_piece, content, marked_content) -> tuple[str, str]:
     # 内容
@@ -32,24 +32,27 @@ class ZZTJConverter(Converter):
       marked_content += item.text
     elif item.name == 'span':
       item_class = item.get('class')
-      if item_class != None:
-        label = self.get_class_label(item_class)
+      if item_class is not None:
         # 注释
         if (item_class == "note") or (item_class == "note1") or (item_class == "note4") or (item_class == "note5"):
+          annotator = self.class2annotator(item_class)
           annotation = self.decode_chapter_annotation(item)
-          annotation.annotator = label
+          annotation.annotator = annotator[0]
+          annotation.authorship = annotator[1]
           # 有空内容却带有注释的
-          annotation.position = -1 if len(content) == 0 else len(content)
+          annotation.position = len(content)
           content_piece.add_content_piece(annotation)
-        # 特殊标签的内容，
+        # 特殊标签的内容
         elif (item_class == "note2") or (item_class == "note3"):
+          label = self.class2label(item_class)
           content += item.text
-          marked_content += item.text
+          marked_content += f"<{label}>{item.text}</{label}>"
         # 内容，带span标签，class为number
         elif item_class == 'number':
           content_piece['number'] = int(item.text)
-        # 内容，带span标签，class为name[x], class为ji, class为book-title, class为kong,
+        # 内容，带span标签，class为name[x]
         elif ('name' in item_class) or (item_class == 'book-title'):
+          label = self.class2label(item_class)
           content += item.text
           marked_content += f"<{label}>{item.text}</{label}>"
         # 内容，带span标签，class为ji
@@ -58,19 +61,18 @@ class ZZTJConverter(Converter):
           marked_content += item.text
         # 内容，带span标签，class为kong
         elif item_class == 'kong':
+          label = self.class2label(item_class)
           content += item.text
           marked_content += f"<{label}>{item.text}</{label}>"
         # 内容，带span标签，class为其他
         else:
           content += item.text
           marked_content += item.text
-          print(
-              f"unsupport span.class: {item_class}, {item.text}, decode_item_text")
+          print(f"unsupport span.{item_class}.")
       else:
         content += item.text
         marked_content += item.text
-        print(
-            f"unsupport span.class: {item_class}, {item.text}, decode_item_text")
+        print(f"unsupport span.{item_class}.")
     # 内容，带b标签
     elif item.name == 'b':
       content += item.text
@@ -94,7 +96,7 @@ class ZZTJConverter(Converter):
     else:
       content += item.text
       marked_content += item.text
-      print(f"unsupport label: {item.name}, decode_item_text")
+      print(f"unsupport label: {item.name}.")
 
     return content, marked_content
 
@@ -102,12 +104,8 @@ class ZZTJConverter(Converter):
     content = ""
     marked_content = ""
     content_piece = docbook.ContentPiece(type=docbook.DivisionType.ANNOTATION)
-    for index, child in enumerate(item.children):
-      # print(f"{index}, {child.name}, {child}")
-      content, marked_content = self.decode_item_text(
-          child, content_piece, content, marked_content)
-
-    # content_piece.content = content
+    for child in item.children:
+      content, marked_content = self.decode_item_text(child, content_piece, content, marked_content)
     content_piece.content = marked_content
     return content_piece
 
@@ -115,11 +113,9 @@ class ZZTJConverter(Converter):
     content = ""
     marked_content = ""
     section_indent = 999
-    content_piece = docbook.ContentPiece()
     item_class = item.get('class')
-    assert (item_class == 'emperor') or (item_class == 'reign-title') or (item_class ==
-                                                                          'origin') or ('note' in item_class) or (item_class == 'comment')
-
+    content_piece = docbook.ContentPiece()
+    content_piece.type = docbook.DivisionType.PARAGRAPH
     if (item_class == 'emperor') or (item_class == 'reign-title') or (item_class == 'origin') or (item_class == "note2") or (item_class == "note3"):
       if (item_class == 'emperor'):
         content_piece.type = docbook.DivisionType.SECTION
@@ -127,44 +123,35 @@ class ZZTJConverter(Converter):
       elif (item_class == 'reign-title'):
         content_piece.type = docbook.DivisionType.SECTION
         section_indent = 2
-      else:
-        content_piece.type = docbook.DivisionType.PARAGRAPH
 
-      for index, child in enumerate(item.children):
-        # print(f"{index}, {child.name}, {child}")
-        content, marked_content = self.decode_item_text(
-            child, content_piece, content, marked_content)
-
-      # content_piece.content = content
+      for child in item.children:
+        content, marked_content = self.decode_item_text(child, content_piece, content, marked_content)
       content_piece.content = marked_content
-
-      # print(f"paragraph: paragraph, {content_piece.dump_json(indent = 4)}")
       return content_piece, section_indent
 
     # 注释段落
     elif (item_class == "note") or (item_class == "note1") or (item_class == "note4") or (item_class == "note5") or (item_class == "comment"):
+      annotator = self.class2annotator(item_class)
       annotation = self.decode_chapter_annotation(item)
-      annotation.annotator = self.get_class_label(item_class)
+      annotation.annotator = annotator[0]
+      annotation.authorship = annotator[1]
       annotation.position = None
 
-      # print(f"paragraph: annotation, {annotation.dump_json(indent = 4)}")
-      return annotation, section_indent
+      content_piece.content = ''
+      content_piece.add_content_piece(annotation)
+      return content_piece, section_indent
 
-    # 其他
+    # 其他class
     else:
-      print(f"unsupport p.class: {item_class}, decode_chapter_paragraph")
+      print(f"unsupport p.{item.name}.")
 
   def decode_chapter_title(self, item) -> docbook.Division:
     content = ""
     marked_content = ""
     division = docbook.Division(type=docbook.DivisionType.CHAPTER)
-    for index, child in enumerate(item.children):
-      # print(f"{index}, {child.name}, {child}")
-      content, marked_content = self.decode_item_text(
-          child, division, content, marked_content)
-    # division.title = content
+    for child in item.children:
+      content, marked_content = self.decode_item_text(child, division, content, marked_content)
     division.title = marked_content
-    # print(f"paragraph: paragraph, {division.dump_json(indent = 4)}")
     return division
 
   def decode_chapter(self, toc_item: dict[str, Union[str, List]]):
@@ -211,10 +198,6 @@ class ZZTJConverter(Converter):
     enter = True if id is None else False
     helper = docbook.Indent2SectionHelper()
     for index, child in enumerate(main.children):
-      # if id is not None:
-      #  c = child.text.replace('\r\n', 'CR/LF').replace('\n', 'CR/LF')
-      #  print(f"【{index}】, {child.name}, {c}, {len(child.text)}")
-
       cid = child.get('id') if isinstance(child, Tag) else None
       if enter == False:
         if (cid == id) and (cid is not None) and (id is not None):
@@ -254,7 +237,7 @@ class ZZTJConverter(Converter):
         pass
 
       else:
-        print(f"unsupport label: {child.name}, decode_chapter\n")
+        print(f"unsupport label: {child.name}.")
 
     return helper.root
 
@@ -282,7 +265,7 @@ if __name__ == "__main__":
 
   converter = ZZTJConverter(
       args.epub_dir,
-      class2labels={
+      class2labels = {
           # title name: 人名、姓、字、號、爵位、謚號、廟號等
           'name':       docbook.BookLabel.FIGURENAME,
           # territory: 地名、部族、國、朝代、軍治地等
@@ -290,28 +273,29 @@ if __name__ == "__main__":
           # book name: 書名
           'book-title': docbook.BookLabel.BOOKNAME,
 
-          # annotation: 章节头的注释
-          'comment':    'a',
-          # annotation: 胡三省的辑注
-          'note':       '胡三省',
-          # annotation: 章节头的注释
-          'note1':      '胡三省',
-          # annotation: 年号的注释
-          'note4':      'a3',
-
-          # errata: 文字勘误
-          'note5':      'e1',
-          # errata: 文字增补
-          'kong':       'e2',
-
           # 对人名的一种表达定义，和文字内容无关
-          'note2':      'c1',
+          'note2':      docbook.BookLabel.SPECIAL01,
           # 对官职的一种表达定义，和文字内容无关
-          'note3':      'c2',
+          'note3':      docbook.BookLabel.SPECIAL02,
+
+          # errata: 文字增补
+          'kong':       docbook.BookLabel.ADDITIONS,
 
           # 找不到的类型
-          'blank':      'bnk'
-      }
+          'default':    docbook.BookLabel.DEFAULT
+      },
+      class2annotators = {
+          # annotation: 章节头的注释
+          'comment':    ('司马光', '评'),
+          # annotation: 胡三省的辑注
+          'note':       ('胡三省', '评'),
+          # annotation: 章节头的注释
+          'note1':      ('胡三省', '辑注'),
+          # annotation: 年号的注释
+          'note4':      ('', '注'),
+          # errata: 文字勘误
+          'note5':      ('章鈺', '校勘')
+      },
   )
 
   dbook: docbook.Book = converter.decode_book()

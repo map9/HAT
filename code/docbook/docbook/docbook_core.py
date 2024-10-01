@@ -13,6 +13,8 @@ from datetime import datetime, timezone
 
 from typing import Union, List, Dict, Tuple
 from enum import Enum
+
+from . import docbook_author_type as AuthorType
 from utils import remove_html_tags, remove_useless_value, is_valid_url
 
 logger = logging.getLogger('docbook.core')
@@ -129,11 +131,11 @@ class BaseObject:
 # methods for initialization, conversion to dictionary, and instantiation from dictionary.
 class Title(BaseObject):
   """
-  标题。书籍、章节等标题。
+  标题定义。书籍、章节等标题。
   Title
-    - title
-    - prefix
-    - subtitle
+    - title: str 必选项。标题主标题。
+    - prefix: str 可选项。标题前缀。
+    - subtitle: str 可选项。标题副标题。
   """
 
   def __init__(
@@ -163,13 +165,13 @@ class Title(BaseObject):
     """
 
     # 主标题。
-    self._title = title
+    self._title: str = title
 
     # 标题前缀。
-    self._prefix = prefix
+    self._prefix: Union[str, None] = prefix
 
     # 副标题。
-    self._subtitle = subtitle
+    self._subtitle: Union[str, None] = subtitle
 
     super().__init__(attrs)
 
@@ -189,7 +191,7 @@ class Title(BaseObject):
       return self()
 
   @property
-  def title(self):
+  def title(self) -> str:
     return self._title
 
   @title.setter
@@ -202,7 +204,7 @@ class Title(BaseObject):
       raise ValueError("Invalid Title Value")
 
   @property
-  def prefix(self):
+  def prefix(self) -> Union[str, None]:
     return self._prefix
 
   @prefix.setter
@@ -210,7 +212,7 @@ class Title(BaseObject):
     self._prefix = prefix
 
   @property
-  def subtitle(self):
+  def subtitle(self) -> Union[str, None]:
     return self._subtitle
 
   @subtitle.setter
@@ -223,7 +225,7 @@ class Title(BaseObject):
             f"{'None' if self._subtitle is None else repr(self._subtitle)}),"
             f"{'None' if self._attributes is None else repr(self._attributes)})")
 
-  def to_dict(self):
+  def to_dict(self) -> Dict:
     return {
         "title": self._title,
         "prefix": self._prefix,
@@ -232,7 +234,7 @@ class Title(BaseObject):
     }
 
   @classmethod
-  def from_dict(self, params: Union[Dict, None]):
+  def from_dict(self, params: Union[Dict, None]) -> Union['Title', None]:
     if params is not None:
       return self(
           params.get('title', ''),
@@ -246,43 +248,45 @@ class Title(BaseObject):
 
 class Dynasty(BaseObject):
   """
-  时代。封建社会主要以朝代为时代，新中国统一标注为现代。
+  时代定义。封建社会主要以朝代为时代，新中国统一标注为现代。
+  TODO: 
+  这个类尚未完善，应该能将不同的时间度量单位（如：干支纪年、公元纪年、年号等），对应到当时王朝的朝代。
   Dynasty
-   - value
+   - value: str 必须项。朝代名称。
   """
 
   def __init__(
       self,
-      dynasty: Union[str, None] = None,
+      dynasty: str,
       attrs: Dict = None
   ):
     """
     初始化朝代对象。
     """
-    self._value = dynasty
+    self._value: str = dynasty
 
     super().__init__(attrs)
 
   @property
-  def value(self):
+  def value(self) -> str:
     return self._value
 
   @value.setter
-  def value(self, dynasty):
+  def value(self, dynasty: str):
     self._value = dynasty
 
   def __repr__(self) -> str:
     return (f"Dynasty({'None' if self._value is None else repr(self._value)}, "
             f"{'None' if self._attributes is None else repr(self._attributes)})")
 
-  def to_dict(self):
+  def to_dict(self) -> Dict:
     return {
         "value": self._value,
         "attrs": self._attributes
     }
 
   @classmethod
-  def from_dict(self, params: Union[Dict, None]):
+  def from_dict(self, params: Union[Dict, None]) -> Union['Dynasty', None]:
     if params is not None:
       return self(
           params.get('value', ''),
@@ -294,18 +298,18 @@ class Dynasty(BaseObject):
 
 class Author(BaseObject):
   """
-  著作者。本书的著作者以及他参与著作的工作类型。
+  贡献者/著作者定义。本书的著作者以及他参与著作的身份。
   Author
-   - name
-   - type
-   - dynasty: Dynasty
-   - officialPosition
+   - name: str 必选项。著作者姓名。
+   - type: str 可选项。著作者工作类型。缺省值为AuthorType.AUTHOR。
+   - dynasty: Dynasty 可选项。著作者生活的朝代，有不少著作者是跨朝代的，一般以著作者死亡朝代为朝代。
+   - officialPosition: str 可选项。著作者的官职或者荣誉，多个以 '|' 区分开。
   """
 
   def __init__(
       self,
       name: str = "",
-      type: str = "著",
+      type: str = AuthorType.AUTHOR,
       dynasty: Union[Dynasty, str, None] = None,
       officialPosition: Union[str, None] = None,
       attrs: Dict = None
@@ -325,13 +329,13 @@ class Author(BaseObject):
     if dynasty is not None:
       self.dynasty = dynasty
 
-    # 著作者的官职。可以有多个官职，以竖杠（|）分割。
+    # 著作者的官职。
     self._officialPosition = officialPosition
 
     super().__init__(attrs)
 
   @classmethod
-  def from_array(self, *params):
+  def from_array(self, *params) -> Union['Author']:
     return self.from_list(params)
 
   @classmethod
@@ -348,7 +352,7 @@ class Author(BaseObject):
       raise self()
 
   @property
-  def name(self):
+  def name(self) -> str:
     return self._name
 
   @name.setter
@@ -359,7 +363,7 @@ class Author(BaseObject):
       raise ValueError("Invalid Name Value")
 
   @property
-  def type(self):
+  def type(self) -> str:
     return self._type
 
   @type.setter
@@ -368,7 +372,7 @@ class Author(BaseObject):
     self._type = type
 
   @property
-  def dynasty(self):
+  def dynasty(self) -> Union[Dynasty, None]:
     return self._dynasty
 
   @dynasty.setter
@@ -381,7 +385,7 @@ class Author(BaseObject):
       raise ValueError("Invalid Dynasty Value")
 
   @property
-  def officialPosition(self):
+  def officialPosition(self) -> Union[str, None]:
     return self._officialPosition
 
   @officialPosition.setter
@@ -409,7 +413,7 @@ class Author(BaseObject):
       dynasty = params.get('dynasty', None)
       return self(
           params.get('name', ''),
-          params.get('type', '著'),
+          params.get('type', AuthorType.AUTHOR),
           Dynasty.from_dict(dynasty),
           params.get('officialPosition', None),
           params.get('attrs', None)
@@ -420,11 +424,21 @@ class Author(BaseObject):
 # The class `DivisionType` defines an enumeration for different types of divisions such as volume,
 # chapter, section, paragraph, and annotation.
 class DivisionType(Enum):
-  VOLUME = "volume"
-  CHAPTER = "chapter"
-  SECTION = "section"
-  PARAGRAPH = "paragraph"
-  ANNOTATION = "annotation"
+  """
+  书籍中分段内容的分类。包含：卷、章、节、段落、注释。其中，
+  - 卷。指书籍中的卷、册、分卷、分册等。卷下可以包含：卷、章。
+  - 章。指书籍中的章、序、跋、致谢等。章下可以包含：节、段落，还包括对章标题的注释。章标题的注释一般为前面的注释。
+  - 节。指书籍中的带小标题的分段。节下可以包含：节、段落，还包括对节标题的注释。节标题的注释一般为前面的注释。
+  - 段落。正文文本段落。由一个或者多个无分行的独立文本段组成的正文内容，一般由一个文本段来构建，诗歌的正文文本段落主要会由多个文本段来组成。
+    多个文本段组合成一个正文文本段落，以分行符号区分。段落包含段内注释。
+    注释段落。指该段落中，无正文内容，全是注释。注释段落一般为作者的评价，注释或者批注等。
+  - 注释。段内注释。如果段落内无正文，注释就构成注释段落。
+  """
+  VOLUME = "VOLUME"
+  CHAPTER = "CHAPTER"
+  SECTION = "SECTION"
+  PARAGRAPH = "PARAGRAPH"
+  ANNOTATION = "ANNOTATION"
 
   def __str__(self):
     return self.name
@@ -432,25 +446,28 @@ class DivisionType(Enum):
 
 class Division(BaseObject):
   """
-  卷册章。书籍正文划分方式，一般来说，没有涉及到正文内容的，都属于卷、册、分卷、分册范围；涉及到具体的正文内容的，为章、序、跋、致谢等。节是章内的正文划分。
+  卷章定义。书籍正文划分方式，一般来说，没有涉及到正文内容的，都属于卷、册、分卷、分册范围；涉及到具体的正文内容的，为章、序、跋、致谢等。节是章内的正文划分。
   Division
-    - id: UUID
-    - order: -1
-    - title: Title
-    - authors: [Author]
-    - type: volume | chapter
-    - ref: URL
-    - divisions: [Division | ContentPiece]
+    - id: UUID 必选项。卷章唯一标识。如果没有，会在创建Division自动生成一个。
+    - order: int 可选项。卷章的显示顺序，显示时按照order由小到大顺序显示。如果没有则用Division在集合中的自然顺序代替。
+    - title: Title 必选项。
+    - authors: [Author] 可选项。卷章的著作者。某些章节，比如序、跋等章节，有独立的著作者。
+    - type: volume | chapter 必选项。卷章类型。
+    - ref: URL 可选项。在分文件存储docbook时，卷章可以形成独立的文件进行存储，这个时候，ref主要是指该卷章节的存储位置。
+    - divisions: [Division | ContentPiece] 可选项。如果是卷章的下一级Division或者章节内容。
+    如果(ref is None) and (divisions is None)表示该Division为丢失/亡佚。
+    如果(ref is None) and (divisions is not None)表示该Division已经load，这种情况下不允许unload。
+    如果(ref is not None) and (divisions is None)表示该Division没有load。
   """
 
   def __init__(
       self,
       id: Union[str, None] = None,
-      order: int = -1,
+      order: Union[int, None] = None,
       title: Union[Title, List[str], str] = "",
       authors: Union[List[Author], List[list[str]], List[str], None] = None,
       type: DivisionType = DivisionType.VOLUME,
-      ref: str = None,
+      ref: Union[str, None] = None,
       divisions: Union[List[Union['Division', 'ContentPiece']], None] = None,
       attrs: Dict = None
   ):
@@ -458,40 +475,39 @@ class Division(BaseObject):
     初始化卷册章对象。
     """
 
-    if id is None:
-      self._id = uuid.uuid4()
-    else:
+    self._id: uuid.UUID = uuid.uuid4()
+    if id is not None:
       try:
         self._id = uuid.UUID(id)
       except ValueError:
         raise ValueError("Invalid UUID string")
 
     # 卷册章显示顺序
-    self._order = order
+    self._order: Union[int, None] = order
 
     # 卷册章标题
-    self._title = None
+    self._title: Union[Title, None] = None
     if title is not None:
       self.title = title
 
     # 卷册章著作者
-    self._authors = None
+    self._authors: Union[List[Author], None] = None
     if authors is not None:
       self.authors = authors
 
     # 卷册章类型
-    self._type = type
+    self._type: DivisionType = type
 
     # 卷册章的内容在外部引用地址，类似url
-    self._ref = ref
+    self._ref: Union[str, None] = ref
 
     # 卷册章内容
-    self._divisions = [] if divisions is None else divisions
+    self._divisions: List[Division] = [] if divisions is None else divisions
 
     super().__init__(attrs)
 
   @property
-  def id(self):
+  def id(self) -> uuid.UUID:
     return self._id
 
   @id.setter
@@ -507,15 +523,15 @@ class Division(BaseObject):
       raise ValueError("Invalid UUID Value")
 
   @property
-  def order(self):
+  def order(self) -> Union[int, None]:
     return self._order
 
   @order.setter
-  def order(self, order: int = -1):
+  def order(self, order: int):
     self._order = order
 
   @property
-  def title(self):
+  def title(self) -> Union[Title, None]:
     return self._title
 
   @title.setter
@@ -530,7 +546,7 @@ class Division(BaseObject):
       raise ValueError("Invalid Title Value")
 
   @property
-  def authors(self):
+  def authors(self) -> Union[List[Author], None]:
     return self._authors
 
   @authors.setter
@@ -550,7 +566,7 @@ class Division(BaseObject):
       raise ValueError("Invalid Authors Value")
 
   @property
-  def type(self):
+  def type(self) -> DivisionType:
     return self._type
 
   @type.setter
@@ -562,7 +578,7 @@ class Division(BaseObject):
     raise ValueError("Invalid DivisionType")
 
   @property
-  def ref(self):
+  def ref(self) -> Union[str, None]:
     return self._ref
 
   @ref.setter
@@ -578,7 +594,7 @@ class Division(BaseObject):
       raise ValueError("Invalid Ref Value")
 
   @property
-  def chapters(self):
+  def chapters(self) -> List['Division']:
     chapters = []
     if self._type == DivisionType.CHAPTER:
       chapters.append(self)
@@ -590,7 +606,7 @@ class Division(BaseObject):
     return chapters
 
   @property
-  def divisions(self):
+  def divisions(self) -> List['Division']:
     return self._divisions
 
   @divisions.setter
@@ -604,6 +620,29 @@ class Division(BaseObject):
       self._divisions = divisions
     else:
       raise ValueError("Invalid Division Object")
+
+  def is_lost(self) -> bool:
+    """
+    如果(ref is None) and (divisions is None)表示该Division为丢失/亡佚。
+    """
+    return (self._ref is None) and (self._divisions is None or len(self._divisions) == 0)
+
+  def is_load(self) -> bool:
+    """
+    如果(ref is not None) and (divisions is None)表示该Division没有load。
+    如果(ref is None) and (divisions is None)表示该Division为丢失/亡佚，表示已经load。    
+    """
+    return not ((self._ref is not None) and (self._divisions is None or len(self._divisions) == 0))
+
+  def unload(self) -> bool:
+    """
+    如果(ref is None) and (divisions is not None)表示该Division已经load，这种情况下不允许unload。
+    """
+    if (self._ref is not None):
+      self.divisions = []
+      return True
+    else:
+      return False
 
   def get_chapters_directorys(self, use_object: bool = True) -> Union[List[Union[Tuple[uuid.UUID, str], 'Division']], None]:
     directorys = []
@@ -701,7 +740,7 @@ class Division(BaseObject):
             f"{repr(self._divisions)}, "
             f"{'None' if self._attributes is None else repr(self._attributes)})")
 
-  def to_dict(self):
+  def to_dict(self) -> Dict:
     return {
         "id": str(self._id),
         "order": self._order,
@@ -714,7 +753,7 @@ class Division(BaseObject):
     }
 
   @classmethod
-  def from_dict(self, params: Union[Dict, None]):
+  def from_dict(self, params: Union[Dict, None]) -> Union['Division', None]:
     if params is not None and params.get('type') is not None:
       try:
         type = DivisionType[params.get('type').upper()]
@@ -725,7 +764,7 @@ class Division(BaseObject):
       divisions = params.get('divisions', None)
       return self(
           params.get('id', None),
-          params.get('order', -1),
+          params.get('order', None),
           Title.from_dict(params.get('title', "")),
           None if authors is None else [
               Author.from_dict(author) for author in authors],
@@ -741,26 +780,27 @@ class Division(BaseObject):
 
 class ContentPiece(BaseObject):
   """
-  节、正文段落、注释段落。
-  节是章内的正文划分。
-  正文文本段落。由一个或者多个无分行的独立文本段组成的正文内容，一般由一个文本段来构建，诗歌的正文文本段落主要会由多个文本段来组成。
+  节、正文段落（含：注释段落）、段内注释定义。
   ContentPiece
-    - type: section | paragraph | annotation
-    - annotator
-    - source
-    - position
-    - content
-    - content_pieces: [ContentPiece]
+    - type: DivisionType 必选项。只能为，
+      DivisionType.SECTION
+      DivisionType.PARAGRAPH，默认值。
+      DivisionType.ANNOTATION
+    - content: str 必选项。主体文字，可以包含BookLabel中的标签。type为DivisionType.SECTION表示标题。
+    - annotator: str 可选项。这个内容的作者或者引用源。
+    - authorship: str 可选项。作者在书籍中的身份，和Author对象中的type一致。
+    - position: int 可选项。只有段内注释，这个项目才生效。
+    - content_pieces: List[ContentPiece] 可选项。 
   """
 
   def __init__(
       self,
       type: DivisionType = DivisionType.PARAGRAPH,
       content: str = "",
-      annotator: str = None,
-      source: str = None,
-      position: int = None,
-      content_pieces: List['ContentPiece'] = None,
+      annotator: Union[str, None] = None,
+      authorship: Union[str, None] = None,
+      position: Union[int, None] = None,
+      content_pieces: Union[List['ContentPiece'], None] = None,
       attrs: Dict = None
   ):
     """
@@ -778,13 +818,13 @@ class ContentPiece(BaseObject):
 
     # 初始化其他属性
     self._annotator = annotator
-    self._source = source
+    self._authorship = authorship
     self._position = position
 
     super().__init__(attrs)
 
   @property
-  def annotator(self):
+  def annotator(self) -> Union[str, None]:
     return self._annotator
 
   @annotator.setter
@@ -792,15 +832,15 @@ class ContentPiece(BaseObject):
     self._annotator = annotator
 
   @property
-  def source(self):
-    return self._source
+  def authorship(self) -> Union[str, None]:
+    return self._authorship
 
-  @source.setter
-  def source(self, source: str):
-    self._source = source
+  @authorship.setter
+  def authorship(self, authorship: str):
+    self._authorship = authorship
 
   @property
-  def position(self):
+  def position(self) -> Union[int, None]:
     return self._position
 
   @position.setter
@@ -808,7 +848,7 @@ class ContentPiece(BaseObject):
     self._position = position
 
   @property
-  def type(self):
+  def type(self) -> DivisionType:
     return self._type
 
   @type.setter
@@ -820,7 +860,7 @@ class ContentPiece(BaseObject):
     raise ValueError("Invalid ContentType")
 
   @property
-  def content(self):
+  def content(self) -> str:
     return self._content
 
   @content.setter
@@ -828,7 +868,7 @@ class ContentPiece(BaseObject):
     self._content = content
 
   @property
-  def content_pieces(self):
+  def content_pieces(self) -> Union[List['ContentPiece'], None]:
     return self._content_pieces
 
   @content_pieces.setter
@@ -853,36 +893,36 @@ class ContentPiece(BaseObject):
     """
 
     if isinstance(content_piece, ContentPiece):
-      if (self._type != DivisionType.SECTION) and (self._type == content_piece.type):
-        content_length = len(remove_html_tags(self._content)) + 1
+      if (self._type != DivisionType.SECTION) and (self._type == content_piece.type) and content_piece.content and (len(content_piece.content) > 0):
+        content_length = len(remove_html_tags(self._content)) + 1 # 换行符号+1
         self._content = f"{self._content}\n{content_piece._content}"
-        for content_piece in content_piece.content_pieces:
-          content_piece.position += content_length
-          self._content_pieces.append(content_piece)
+        for _content_piece in content_piece.content_pieces:
+          _content_piece.position += content_length
+          self._content_pieces.append(_content_piece)
     else:
       raise ValueError("ContentPiece Object Type Error")
 
   def __repr__(self) -> str:
     return (f"ContentPiece({repr(self._type)}, {repr(self._content)}, "
             f"{'None' if self._annotator is None else repr(self._annotator)}, "
-            f"{'None' if self._source is None else repr(self._source)}, "
+            f"{'None' if self._authorship is None else repr(self._authorship)}, "
             f"{'None' if self._position is None else repr(self._position)}, "
             f"{'None' if self._content_pieces is None else repr(self._content_pieces)}), "
             f"{'None' if self._attributes is None else repr(self._attributes)})")
 
-  def to_dict(self):
+  def to_dict(self) -> Dict:
     return {
         "type": str(self._type),
         "content": self._content,
         "annotator": self._annotator,
-        "source": self._source,
+        "authorship": self._authorship,
         "position": self._position,
         "content_pieces": None if self._content_pieces is None else [content_piece.to_dict() for content_piece in self._content_pieces],
         "attrs": self._attributes
     }
 
   @classmethod
-  def from_dict(self, params: Union[Dict, None]):
+  def from_dict(self, params: Union[Dict, None]) -> Union['ContentPiece', None]:
     if params is not None and params.get('type') is not None:
       try:
         type = DivisionType[params.get('type').upper()]
@@ -907,25 +947,27 @@ class ContentPiece(BaseObject):
 class Indent2SectionHelper(object):
   """
   在编排Chapter中的ContentPiece的包含关系时，帮助更好的通过指定indent，编排好不同的indent的ContentPiece的相互包含关系。
-  # indent, section
-  # - 0, chapter
-  #   - 1, section
-  #     - 999, paragraph|annotation
-  #       - annotation
-  #         - annotation
-  #     - 2, section
-  #       - 3, section
-  #         - 999, paragraph|annotation
-  #         - 999, paragraph|annotation
-  #   - 1, section
-  #       - 3, section         不支持，缺少中间的section。只会直接挂在最近的section下，成为直接的下一级，而不是夸级的section。
-  #         - 999, paragraph|annotation
-  #         - 999, paragraph|annotation
-  #     - 2, section
-  #        - 999, paragraph|annotation
-  #       - 3, section
-  #         - 999, paragraph|annotation
-  #     - 999, paragraph       不支持。只会挂在最近的section下。
+  indent, section
+    - 0, chapter
+      - annotation
+      - 1, section
+        - annotation
+        - 999, paragraph
+          - annotation
+            - annotation
+        - 2, section
+          - 3, section
+            - 999, paragraph
+            - 999, paragraph
+      - 1, section
+          - 3, section         不支持，缺少中间的section。只会直接挂在最近的section下，成为直接的下一级，而不是夸级的section。
+            - 999, paragraph
+            - 999, paragraph
+        - 2, section
+           - 999, paragraph
+          - 3, section
+            - 999, paragraph
+        - 999, paragraph       不支持。只会挂在最近的section下。
   """
 
   def __init__(self):
@@ -962,13 +1004,6 @@ class Indent2SectionHelper(object):
     if self.has_root() == False:
       raise DecoderError("No root chapter object.")
 
-    # self._indent2sections.sort(key = lambda indent2section: indent2section["indent"])
-    is_paragraph = (
-        (indent == 999) or
-        (content_piece.type == DivisionType.ANNOTATION) or
-        (content_piece.type == DivisionType.PARAGRAPH)
-    )
-
     for index, indent2section in enumerate(self._indent2sections):
       current_indent = indent2section['indent']
       if indent <= current_indent:
@@ -978,7 +1013,7 @@ class Indent2SectionHelper(object):
     if before_add_func is None or before_add_func(self._indent2sections[-1]['section'], content_piece):
       self._indent2sections[-1]['section'].add_content_piece(content_piece)
 
-    if is_paragraph == False:
+    if content_piece.type == DivisionType.SECTION:
       self._indent2sections.append(
           {'indent': indent, 'section': content_piece})
 
@@ -995,22 +1030,20 @@ class ExtraContentType(Enum):
 class Extra(BaseObject):
 
   """
-  定义Book中的除正文外的其他内容。包含：
-  - 正文中插入的图片文件，比如：无法显示的字符用图片代替、封面图片等等；
-  - ...
-  Extra包含
-    - name
-    - type
-    - ref
-    - content
+  附加内容定义。是指书籍中的除正文、注释外的其他内容。包含正文中插入的图片文件，比如：无法显示的字符用图片代替、封面图片等等。
+  Extra
+    - name: str 必选项。内容名称。
+    - type: ExtraContentType 必选项。默认值为ExtraContentType.ITEM_UNKNOWN。
+    - ref: URL 可选项。ref主要是指该附加内容的存储位置。
+    - content: bytes 可选项。附加内容的实际内容。content和ref必须要有一个。
   """
 
   def __init__(
       self,
       name: str = "",
       type: ExtraContentType = ExtraContentType.ITEM_UNKNOWN,
-      ref: str = None,
-      content: bytes = None,
+      ref: Union[str, None] = None,
+      content: Union[bytes, None] = None,
       attrs: Dict = None
   ):
   
@@ -1025,23 +1058,23 @@ class Extra(BaseObject):
     super().__init__(attrs)
 
   @property
-  def name(self):
+  def name(self) -> str:
     return self._name
 
   @name.setter
-  def name(self, name):
+  def name(self, name: str):
     self._name = name
 
   @property
-  def type(self):
+  def type(self) -> ExtraContentType:
     return self._type
 
   @type.setter
-  def type(self, type):
+  def type(self, type: ExtraContentType):
     self._type = type
 
   @property
-  def ref(self):
+  def ref(self) -> Union[str, None]:
     return self._ref
 
   @ref.setter
@@ -1057,18 +1090,18 @@ class Extra(BaseObject):
       raise ValueError("Invalid Ref Value")
 
   @property
-  def content(self):
+  def content(self) -> bytes:
     return self._content
 
   @content.setter
-  def content(self, content):
+  def content(self, content: bytes):
     self._content = content
 
   def __repr__(self) -> str:
     return (f"Extra({repr(self._name)}, {repr(self._type)}, {repr(self._ref)}, "
             f"{'None' if self._attributes is None else repr(self._attributes)})")
 
-  def to_dict(self):
+  def to_dict(self) -> Dict:
     return {
         "name": str(self._name),
         "type": str(self._type),
@@ -1077,7 +1110,7 @@ class Extra(BaseObject):
     }
 
   @classmethod
-  def from_dict(self, params: Union[Dict, None]):
+  def from_dict(self, params: Union[Dict, None]) -> Union['Extra', None]:
     if params is not None and params.get('type') is not None:
       try:
         type = ExtraContentType[params.get('type').upper()]
@@ -1098,16 +1131,16 @@ class Book(BaseObject):
   """
   文献书籍定义。  
   Book
-    - id: UUID
-    - title: Title
-    - authors: [Author]
-    - dynasty: Dynasty
-    - categories: [str]
-    - source
-    - description
-    - date
-    - divisions: [Division]
-    - extras: [Extra]
+    - id: UUID 必选项。书籍唯一标识。如果没有，会在创建Book自动生成一个。
+    - title: Title 必选项。书籍标题。
+    - authors: List[Author] 可选项。书籍著作者。
+    - dynasty: Dynasty 可选项。书籍创建或者最早发表的时代。
+    - categories: List[str] 可选项。书籍分类，可以有多个分类组合。每一个分类组合，主分类、子分类和细分类可以用'|'分隔。
+    - source: str 可选项。书籍来源。
+    - description: str 可选项。书籍概要描述，300字内。
+    - date: datetime 可选项。书籍入库时间，UTC时间。
+    - divisions: List[Division] 可选项。书籍卷、章集合。
+    - extras: List[Extra] 可选项。书籍附加内容集合。
   """
 
   def __init__(
@@ -1127,52 +1160,51 @@ class Book(BaseObject):
     """
     初始化一本文献书籍。
     """
-    if id is None:
-      self._id = uuid.uuid4()
-    else:
+    self._id: uuid.UUID = uuid.uuid4()
+    if id is not None:
       try:
         self._id = uuid.UUID(id)
       except ValueError:
         raise ValueError("Invalid UUID string")
 
     # 书籍名称。
-    self._title = None
+    self._title: Union[Title, None] = None
     self.title = title
 
     # 书籍著作者。
-    self._authors = None
+    self._authors: Union[List[Author], None] = None
     self.authors = authors
 
     # 书籍初次出版的时代。一般以第一个著作者的朝代为书籍出版时代。
-    self._dynasty = None
+    self._dynasty: Union[Dynasty, None] = None
     self.dynasty = dynasty
 
     # 书籍分类集合。
     # 一个category包含主分类|次分类|细分类...,用｜分割的分类序列。
     # 一本书籍可以有多个分类范畴。
     # ['主分类|次分类|细分类', '主分类', '主分类|次分类', ... ]
-    self._categories = categories
+    self._categories: Union[List[str], None] = categories
 
     # 来源。书籍的文字来源，包含但不限于：网页链接、实体或者电子书籍的ISBN号等。
-    self._source = source
+    self._source: Union[str, None] = source
 
     # 描述。书籍的概要介绍。
-    self._description = description
+    self._description: Union[str, None] = description
 
     # 入库时间。书籍的入库时间。
-    self._utc_datetime = None
+    self._utc_datetime: Union[datetime, None] = None
     self.utc_datetime = date
 
     # 卷册章内容。书籍的卷册章内容内容。
-    self._divisions = [] if divisions is None else divisions
+    self._divisions: Union[Division, None] = [] if divisions is None else divisions
 
     # 附加内容
-    self.extras = [] if extras is None else extras
+    self.extras: Union[Extra, None] = [] if extras is None else extras
 
     super().__init__(attrs)
 
   @property
-  def id(self):
+  def id(self) -> uuid.UUID:
     return self._id
 
   @id.setter
@@ -1188,7 +1220,7 @@ class Book(BaseObject):
       raise ValueError("Invalid UUID Value")
 
   @property
-  def title(self):
+  def title(self) -> Union[Title, None]:
     return self._title
 
   @title.setter
@@ -1203,7 +1235,7 @@ class Book(BaseObject):
       raise ValueError("Invalid Title Value")
 
   @property
-  def authors(self):
+  def authors(self) -> Union[List[Author], None]:
     return self._authors
 
   @authors.setter
@@ -1226,7 +1258,7 @@ class Book(BaseObject):
       raise ValueError("Invalid Authors Value")
 
   @property
-  def dynasty(self):
+  def dynasty(self) -> Union[Dynasty, None]:
     return self._dynasty
 
   @dynasty.setter
@@ -1241,7 +1273,7 @@ class Book(BaseObject):
       raise ValueError("Invalid Dynasty Value")
 
   @property
-  def categories(self):
+  def categories(self) -> Union[List[str], None]:
     return self._categories
 
   @categories.setter
@@ -1249,7 +1281,7 @@ class Book(BaseObject):
     self._categories = categories if categories is not None else []
 
   @property
-  def source(self):
+  def source(self) -> Union[str, None]:
     return self._source
 
   @source.setter
@@ -1257,7 +1289,7 @@ class Book(BaseObject):
     self._source = source
 
   @property
-  def description(self):
+  def description(self) -> Union[str, None]:
     return self._description
 
   @description.setter
@@ -1265,7 +1297,7 @@ class Book(BaseObject):
     self._description = description
 
   @property
-  def utc_datetime(self):
+  def utc_datetime(self) -> Union[datetime, None]:
     return self._utc_datetime
 
   @description.setter
@@ -1278,11 +1310,11 @@ class Book(BaseObject):
       self._utc_datetime = None
 
   @property
-  def chapters(self):
+  def chapters(self) -> List[Division]:
     return [chapter for division in self._divisions for chapter in division.chapters]
 
   @property
-  def divisions(self):
+  def divisions(self) -> List[Division]:
     return self._divisions
 
   @divisions.setter
@@ -1296,7 +1328,7 @@ class Book(BaseObject):
       raise ValueError("Invalid Divisions Object")
 
   @property
-  def extras(self):
+  def extras(self) -> Union[List[Extra], None]:
     return self._extras
 
   @extras.setter
@@ -1344,7 +1376,7 @@ class Book(BaseObject):
     
     return  None if directory is None else directory
 
-  def get_chapter_byid(self, id) -> Division:
+  def get_chapter_byid(self, id) -> Union[Division, None]:
     if id is None:
       return None
     if isinstance(id, str):
@@ -1404,6 +1436,7 @@ class Book(BaseObject):
   def resort_chapters(self):
     """
     依据chapter章节的order数值，按照升序来重新组织
+    TODO:
     """    
     pass
 
@@ -1459,7 +1492,7 @@ class Book(BaseObject):
     }
 
   @classmethod
-  def from_dict(self, params: Union[Dict, None]):
+  def from_dict(self, params: Union[Dict, None]) -> Union['Book', None]:
     if params is not None:
       authors = params.get('authors', None)
       divisions = params.get('divisions', None)

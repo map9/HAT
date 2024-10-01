@@ -12,9 +12,24 @@ ENTITYNAME  = 'tn'
 # book name: 書名
 BOOKNAME    = 'bn'
 
+# 需要特定显示的内容，用于显示定义
+SPECIAL01   = 'S1'
+SPECIAL02   = 'S2'
+SPECIAL03   = 'S3'
+SPECIAL04   = 'S4'
+SPECIAL05   = 'S5'
+SPECIAL06   = 'S6'
+SPECIAL07   = 'S7'
+SPECIAL08   = 'S8'
+SPECIAL09   = 'S9'
+SPECIAL10   = 'S0'
+
 # errata/proofreading/corrections: 文字勘误
 CORRECTIONS = 'e1'
 # addendum/supplement/additions: 文字增补
 ADDITIONS   = 'e2'
 # text gap/text deficiency: 文字缺失
 TEXTGAP     = 'e3'
+
+# default
+DEFAULT     = 'bnk'

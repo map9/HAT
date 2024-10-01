@@ -125,24 +125,15 @@ bn {
 .db-annotation {
 }
 
-.db-annotation .annotator {
-  margin: 0 2px 0 0;
-  padding: 2px 2px;
-  font-size: clamp(8px, calc(var(--reader-font-size) - 4px), 20px);
-  color: currentColor;
-}
-
-.db-annotation .type {
-  margin: 0 5px 0 0;
-  padding: 2px 2px;
-  font-size: clamp(8px, calc(var(--reader-font-size) - 4px), 20px);
-  color: currentColor;
-  border-radius: 2px;
-  border: 0.5px solid currentColor;
+.db-annotation .content {
+  padding: 0px 10px;
+  /* light gray */
+  border-radius: 4px;
+  border: 0.5px dashed currentColor;
 }
 
 annotation {
-  margin: 5px 5px 5px 5px;
+  margin: 5px 5px 5px 0px;
   padding: 2px 4px;
   color: #B22222E0;
   background-color: #B2222208;
@@ -168,34 +159,23 @@ annotation .type {
   border: 0.5px solid currentColor;
 }
 
-.db-annotation .style01,
 annotation.style01 {
-  /* light gray */
-  color: #000000B0;
-  background-color: #00000008;
-}
-
-.db-annotation .style02,
-annotation.style02 {
   /* firebrick */
   color: #B22222E0;
   background-color: #B2222208;
 }
 
-.db-annotation .style03,
-annotation.style03 {
+annotation.style02 {
   color: #777700F0;
   background-color: #FFFF000F;
 }
 
-.db-annotation .style04,
-annotation.style04 {
+annotation.style03 {
   color: #008B8B;
   background-color: #F5FFFAE0;
 }
 
-.db-annotation .style05,
-annotation.style05 {
+annotation.style04 {
   color: #0000FFA0;
   background-color: #0000FF10;
 }

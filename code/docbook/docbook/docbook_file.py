@@ -19,37 +19,40 @@ from .docbook_core import Book, Division, DecoderError
 logger = logging.getLogger('docbook.file')
 
 class BookFileType(Enum):
-  # SINGLE_FILE文件结构
-  # as a Book Object dump to a json file, but the file suffix is '.dbook'
-  SINGLE_FILE = 0
-
-  # PARTS_FILE目录结构
-  # - directory
-  #   - book.json           # toc content
-  #   - chapters            # chapter content
-  #     - chapter_001.json  # chapter json file by order
-  #     - ...               # chapter json file by order
-  #   - images              # image content
-  #     - img_001.gif       # image file by order
-  #     - img_002.jpg       # image file by order
-  #     - ...               # image file by order
-  PARTS_FILE = 1
-
-  # SINGLE_PARTS_FILE
-  # as a ziped PARTS_FILE directory
+  SINGLE_FILE       = 0
+  PARTS_FILE        = 1
   # TODO: unsupport
   SINGLE_PARTS_FILE = 2
+  AUTO_DETECTED     = 9
 
   def __str__(self):
     return self.name
 
 class BookFile(object):
+  """
+  文献书籍文件定义。用于读取、存储文献书籍。
+  文献书籍有三种存储结构：
+  BookFile structure
+    - SINGLE_FILE 文件结构。as a Book Object dump to a json file, but the file suffix is '.dbook'
+    - PARTS_FILE 目录结构。
+      - directory
+        - book.json           toc content
+        - chapters            chapter content
+          - chapter_001.json  chapter json file by order
+          - ...               chapter json file by order
+        - images              image content
+          - img_001.gif       image file by order
+          - img_002.jpg       image file by order
+          - ...               image file by order
+    - SINGLE_PARTS_FILE 打包单文件结构。一个被zip压缩后的PARTS_FILE目录结构。
+  """
+
   SINGLE_FILE_SUFFIX = ".dbook"
   PARTS_FILE_NAME = "book.json"
   
   def __init__(self, path: str, dynamic_load: bool = True):
-    self._path = None
-    self._type = BookFileType.SINGLE_FILE
+    self._path: str = path
+    self._type: BookFileType = BookFileType.SINGLE_FILE
     self._book: Book = None
     self.load(path, dynamic_load)
 
@@ -63,10 +66,6 @@ class BookFile(object):
   @property
   def book(self):
     return self._book
-
-  @staticmethod
-  def is_load(chapter: Division) -> bool:
-    False if ((chapter.get('loaded') is not None) and (chapter.get('loaded') == False)) else True
 
   @staticmethod
   def save_to_docbook(path: str, book: Book, type: BookFileType = BookFileType.SINGLE_FILE) -> bool:
@@ -139,11 +138,8 @@ class BookFile(object):
       self._book = Book.from_json(file.read().decode('utf-8'))
       file.close()
 
-    # PARTS_FILE缺省情况下章节是不载入的，但需要标记chapter['loaded']状态
     if self._type == BookFileType.PARTS_FILE:
       self._path = book_file_path.parent.as_posix()
-      for chapter in self._book.chapters:
-        chapter['loaded'] = False
     else:
       self._path = book_file_path.as_posix()
     
@@ -166,24 +162,14 @@ class BookFile(object):
     return True
 
   def unload_all_chapter(self):
-    # 如果是一整个没有分包的文件，不让卸载章节
-    # TODO：只考虑了json的整个文件，没有考虑zip后的有目录的分章节文件
-    if self._type == BookFileType.SINGLE_FILE:
-      return False
-
     for chapter in self._book.chapters:
-      chapter.divisions = None
-      chapter['loaded'] = False
+      chapter.unload()
     
     return True
 
   def load_chapter(self, chapter : Division) -> bool:
-    if (BookFile.is_load(chapter) == True):
+    if (chapter.is_load()):
       return True
-
-    # 如果章节的ref不存在
-    if (chapter.ref is None):
-      return False
 
     if self._type == BookFileType.PARTS_FILE:
       book_file_path = pathlib.Path(self._path) / chapter.ref
@@ -193,7 +179,6 @@ class BookFile(object):
         file.close()
 
     logger.info(f"Load chapter: '{chapter.title.title}', ref: '{chapter.ref}', success.")
-    chapter['loaded'] = True
     return True
 
   def load_chapter_byid(self, id : Union[uuid.UUID, str]) -> Tuple[bool, Union[Division, None]]:

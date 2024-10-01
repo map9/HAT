@@ -5,6 +5,7 @@ from .docbook_file import BookFileType, BookFile
 from .docbook_archive import BookArchive
 from .docbook_query import BookQuery
 from . import docbook_label as BookLabel
+from . import docbook_author_type as AuthorType
 
 __all__ = [
   'Book',
@@ -22,5 +23,6 @@ __all__ = [
   'BookFile',
   'BookArchive',
   'BookQuery',
-  'BookLabel'
+  'BookLabel',
+  'AuthorType',
 ]
