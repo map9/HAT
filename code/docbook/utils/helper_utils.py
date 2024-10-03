@@ -20,12 +20,16 @@ def remove_useless_value(data) -> any:
   @returns The `remove_useless_value` function is designed to remove None values, empty lists, empty
   dictionaries, and strings with length 0 from the `data` object to reduce the output data size.
   """
-  if isinstance(data, Dict):
+  if isinstance(data, dict):
     # 递归处理字典
-    return {k: remove_useless_value(v) for k, v in data.items() if v is not None and ((not isinstance(v, Dict) and not isinstance(v, list) and not isinstance(v, str)) or len(v) > 0)}
+    d = {k: remove_useless_value(v) for k, v in data.items() if v is not None and ((not isinstance(v, dict) and not isinstance(v, list) and not isinstance(v, str)) or len(v) > 0)}
+    d = {k: v for k, v in d.items() if v is not None}
+    return None if (len(d) == 0) else d
   elif isinstance(data, list):
     # 递归处理列表
-    return [remove_useless_value(item) for item in data if item is not None and ((not isinstance(item, Dict) and not isinstance(item, list) and not isinstance(item, str)) or len(item) > 0)]
+    l = [remove_useless_value(item) for item in data if item is not None and ((not isinstance(item, dict) and not isinstance(item, list) and not isinstance(item, str)) or len(item) > 0)]
+    l = [v for v in l if v is not None]
+    return None if (len(l) == 0) else l
   else:
     # 直接返回非字典、非列表的值
     return data

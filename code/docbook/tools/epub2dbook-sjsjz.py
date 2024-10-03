@@ -1,6 +1,6 @@
 """
 decoder-epub-zztj.py
-将电子书《史记三家注》转换为docbook格式
+将[漢川草廬](http://www.sidneyluo.net/)《史记三家注》转换为docbook格式
 
 usage: epub2dbook-sjsjz.py epub_dir [-h] [--output_dir OUTPUT_DIR]
 
@@ -17,7 +17,7 @@ import re
 import argparse
 from typing import Union, List
 
-from bs4 import BeautifulSoup, Tag
+from bs4 import BeautifulSoup
 
 import docbook
 from  tools import Converter
@@ -87,8 +87,7 @@ class ZZTJConverter(Converter):
       # print(f"img_src = {img_src}, img_label = {img_label}.")
       if self._dbook.get_extra(img_label) is None:
         img_content = self._epub_book.get_item_content_by_name(img_src)
-        self._dbook.add_extra(docbook.Extra(
-            img_label, docbook.ExtraContentType.ITEM_IMAGE, img_label, img_content))
+        self._dbook.add_extra(docbook.Extra(img_label, docbook.ExtraContentType.ITEM_IMAGE, img_label, img_content))
     else:
       content += item.text
       marked_content += item.text
@@ -216,7 +215,7 @@ class ZZTJConverter(Converter):
           continue
 
         if helper.has_root() == False:
-          division = docbook.Division(type = docbook.DivisionType.CHAPTER, title=title, authors=[author])
+          division = docbook.Division(type=docbook.DivisionType.CHAPTER, title=title, authors=None if (len(author) == 0) else [author])
           helper.root = division
         helper.add_content_piece(section_indent, content_piece)
 
@@ -270,5 +269,21 @@ if __name__ == "__main__":
   dbook.categories = ['经史子集|史', '纪传史', '二十四史']
   dbook.source = ""
   dbook.description = ("")
+
+  chapters: List[docbook.Division] = dbook.chapters
+  # 史記集解序
+  chapters[0].authors = [['裴駰', '序', '南朝宋']]
+  # 補史記序
+  chapters[1].authors = [['司馬貞', '序', '唐']]
+  # 史記索隱序
+  chapters[2].authors = [['司馬貞', '序', '唐']]
+  # 史記索隱後序
+  chapters[3].authors = [['司馬貞', '序', '唐']]
+  # 史記正義序
+  chapters[4].authors = [['張守節', '序', '唐']]
+  # 史記正義論例謚法解
+  chapters[5].authors = [['張守節', '序', '唐']]
+  # 補史記三皇本紀
+  chapters[6].authors = [['司馬貞', '撰注', '唐']]
 
   converter.save_book(args.output_dir)

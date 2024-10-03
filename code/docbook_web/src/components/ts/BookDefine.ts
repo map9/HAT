@@ -48,7 +48,7 @@ export interface ContentPiece {
   type: DivisionType,
   content: string,
   annotator?: string,
-  source?: string,
+  authorship?: string,
   position?: number,
   content_pieces?: ContentPiece[],
 }

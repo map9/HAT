@@ -34,7 +34,7 @@ class ZZTJConverter(Converter):
       item_class = item.get('class')
       if item_class is not None:
         # 注释
-        if (item_class == "note") or (item_class == "note1") or (item_class == "note4") or (item_class == "note5"):
+        if (item_class == "note") or (item_class == "note1") or ((item_class == "note3") and (item.text.find('電子版') != -1)) or (item_class == "note4") or (item_class == "note5") or (item_class == "note7") or (item_class == "note8"):
           annotator = self.class2annotator(item_class)
           annotation = self.decode_chapter_annotation(item)
           annotation.annotator = annotator[0]
@@ -43,7 +43,7 @@ class ZZTJConverter(Converter):
           annotation.position = len(content)
           content_piece.add_content_piece(annotation)
         # 特殊标签的内容
-        elif (item_class == "note2") or (item_class == "note3"):
+        elif (item_class == "note2") or ((item_class == "note3") and (item.text.find('電子版') == -1)):
           label = self.class2label(item_class)
           content += item.text
           marked_content += f"<{label}>{item.text}</{label}>"
@@ -90,8 +90,7 @@ class ZZTJConverter(Converter):
       # print(f"img_src = {img_src}, img_label = {img_label}.")
       if self._dbook.get_extra(img_label) is None:
         img_content = self._epub_book.get_item_content_by_name(img_src)
-        self._dbook.add_extra(docbook.Extra(
-            img_label, docbook.ExtraContentType.ITEM_IMAGE, img_label, img_content))
+        self._dbook.add_extra(docbook.Extra(img_label, docbook.ExtraContentType.ITEM_IMAGE, img_label, img_content))
     # 内容，带其他标签
     else:
       content += item.text
@@ -116,7 +115,7 @@ class ZZTJConverter(Converter):
     item_class = item.get('class')
     content_piece = docbook.ContentPiece()
     content_piece.type = docbook.DivisionType.PARAGRAPH
-    if (item_class == 'emperor') or (item_class == 'reign-title') or (item_class == 'origin') or (item_class == "note2") or (item_class == "note3"):
+    if (item_class == 'emperor') or (item_class == 'reign-title') or (item_class == 'origin') or (item_class == "note2") or ((item_class == "note3") and (item.text.find('電子版') == -1)):
       if (item_class == 'emperor'):
         content_piece.type = docbook.DivisionType.SECTION
         section_indent = 1
@@ -130,7 +129,7 @@ class ZZTJConverter(Converter):
       return content_piece, section_indent
 
     # 注释段落
-    elif (item_class == "note") or (item_class == "note1") or (item_class == "note4") or (item_class == "note5") or (item_class == "comment"):
+    elif (item_class == "note") or (item_class == "note1") or ((item_class == "note3") and (item.text.find('電子版') != -1)) or (item_class == "note4") or (item_class == "note5") or (item_class == "comment"):
       annotator = self.class2annotator(item_class)
       annotation = self.decode_chapter_annotation(item)
       annotation.annotator = annotator[0]
@@ -159,11 +158,13 @@ class ZZTJConverter(Converter):
     def before_add_func(father_node: Union[docbook.Division, docbook.ContentPiece], node: docbook.ContentPiece) -> bool:
       """
       依据段落是否带number来决定是否将不同的正文段落合并成一个ContentPiece。
+      如果返回值为True，表示已经处理该node内容。
+      如果返回值为False，表示未处理过该node内容。
       """
 
       # 有独立number的段落，或者注释段落，不能作为段落来合并
       if 'number' in node.attrs:
-        return True
+        return False
 
       content_pieces = None
       if isinstance(father_node, docbook.Division):
@@ -172,10 +173,8 @@ class ZZTJConverter(Converter):
         content_pieces = father_node.content_pieces
 
       if (len(content_pieces) > 0) and content_pieces[-1].get('number') is not None:
-        result = content_pieces[-1].concat_content_piece(node)
-        return False if result == True else True
-
-      return True
+        return content_pieces[-1].concat_content_piece(node)
+      return False
 
     index = toc_item['src'].find('#')
     ref = toc_item['src'] if index == -1 else toc_item['src'][:index]
@@ -186,7 +185,8 @@ class ZZTJConverter(Converter):
       return None
 
     content = content.decode('utf-8')
-    print(f"decode chapter, ref: {ref}, id: {id}.")
+    print(f"Decode chapter, name: {toc_item['label']}, src: {ref}, id: {id}.")
+
 
     soup = BeautifulSoup(content, "xml")
     body = soup.find("body")
@@ -224,8 +224,7 @@ class ZZTJConverter(Converter):
         if content_piece is None:
           continue
 
-        helper.add_content_piece(
-            section_indent, content_piece, before_add_func)
+        helper.add_content_piece(section_indent, content_piece, before_add_func)
 
       elif child.name is None:
         pass
@@ -285,16 +284,14 @@ if __name__ == "__main__":
           'default':    docbook.BookLabel.DEFAULT
       },
       class2annotators = {
-          # annotation: 章节头的注释
-          'comment':    ('司马光', '评'),
-          # annotation: 胡三省的辑注
-          'note':       ('胡三省', '评'),
-          # annotation: 章节头的注释
-          'note1':      ('胡三省', '辑注'),
-          # annotation: 年号的注释
-          'note4':      ('', '注'),
-          # errata: 文字勘误
-          'note5':      ('章鈺', '校勘')
+          'comment':    ('司馬光', '述贊'),
+          'note':       ('胡三省', '音註'),
+          'note1':      ('胡三省', '註'),
+          'note3':      ('鄒寰宇', '註'),
+          'note4':      ('中華書局', '註'),
+          'note5':      ('章鈺', '校勘'),
+          'note7':      ('中華書局', '註'), # 自定义
+          'note8':      ('司馬光', '註'), # 自定义
       },
   )
 
@@ -307,5 +304,15 @@ if __name__ == "__main__":
   dbook.description = ("《资治通鉴》是司马光奉宋英宗和宋神宗之命编撰的一部编年体通史。由司马光本人担任主编，在刘攽、刘恕和范祖禹的协助下，历时19年而编撰完成。宋神宗认为此书「鉴于往事，有资于治道」，遂赐名《资治通鉴》。"
                        "全书分为294卷，约三百多万字，记事上起周威烈王二十三年（公元前403年），截止到后周世宗显德六年（959年），按照时间顺序记载了共16朝1362年的历史。《资治通鉴》中引用的史料极为丰富，除了十七史之外，还有各种杂史、私人撰述等。据《四库提要》记载，《资治通鉴》引用前人著作322 种，可见其取材广泛，具有极高的史料价值。"
                        "司马光的《资治通鉴》与司马迁的《史记》并列为中国史学的不朽巨著。《资治通鉴》自成书以来，一直受到历代帝王将相、文人墨客的追捧，点评批注它的人数不胜数。《资治通鉴》保存了很多现在已经看不到的史料，更重要的是，它对之后的史官创作、中国的历史编撰、文献学的发展等产生了深远的影响。")
+
+  chapters: List[docbook.Division] = dbook.chapters
+  # 胡刻通鑑正文校宋記述略
+  chapters[0].authors = [['章鈺', '序', '民國']]
+  # 新註資治通鑑序
+  chapters[1].authors = [['胡三省', '序', '南宋']]
+  # 興文署新刊資治通鑑序
+  chapters[2].authors = [['王磐', '序', '元']]
+  # 興文署新刊資治通鑑序
+  chapters[3].authors = [['趙頊', '序', '北宋']]
 
   converter.save_book(args.output_dir)

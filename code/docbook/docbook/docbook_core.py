@@ -98,11 +98,11 @@ class BaseObject:
     """
     return self.dump_json()
 
-  def to_dict(self):
+  def to_dict(self) -> Dict:
     pass
 
   @classmethod
-  def from_dict(self, params: Union[Dict, None]):
+  def from_dict(self, params: Union[Dict, None]) -> 'BaseObject':
     """
     The function `from_dict` takes a dictionary or None as input and returns the result of calling
     `self` with the input parameters.
@@ -123,7 +123,7 @@ class BaseObject:
     return json.dumps(d, ensure_ascii = ensure_ascii, indent = indent)
 
   @classmethod
-  def from_json(self, params: str):
+  def from_json(self, params: str) -> 'BaseObject':
     return self.from_dict(json.loads(s=params))
 
 
@@ -165,8 +165,10 @@ class Title(BaseObject):
     """
 
     # 主标题。
-    self._title: str = title
-
+    self._title: str = ""
+    if (len(title) > 0):
+      self.title = title
+    
     # 标题前缀。
     self._prefix: Union[str, None] = prefix
 
@@ -176,19 +178,19 @@ class Title(BaseObject):
     super().__init__(attrs)
 
   @classmethod
-  def from_array(self, *params):
+  def from_array(self, *params) -> Union['Title', None]:
     return self.from_list(params)
 
   @classmethod
-  def from_list(self, params):
-    if len(params) == 1:
+  def from_list(self, params) -> Union['Title', None]:
+    if len(params) == 1 and len(params[0]) > 0:
       return self(params[0])
-    elif len(params) == 2:
+    elif len(params) == 2 and len(params[0]) > 0:
       return self(params[0], params[1])
-    elif len(params) >= 3:
+    elif len(params) == 3 and len(params[0]) > 0:
       return self(params[0], params[1], params[2])
     else:
-      return self()
+      raise ValueError("Invalid Title Value")
 
   @property
   def title(self) -> str:
@@ -196,12 +198,10 @@ class Title(BaseObject):
 
   @title.setter
   def title(self, title: str):
-    if title is None:
-      self._title = ""
-    elif isinstance(title, str):
+    if isinstance(title, str) and (len(title) > 0):
       self._title = title
     else:
-      raise ValueError("Invalid Title Value")
+      raise ValueError("Invalid Title.title Value")
 
   @property
   def prefix(self) -> Union[str, None]:
@@ -226,24 +226,30 @@ class Title(BaseObject):
             f"{'None' if self._attributes is None else repr(self._attributes)})")
 
   def to_dict(self) -> Dict:
-    return {
-        "title": self._title,
-        "prefix": self._prefix,
-        "subtitle": self._subtitle,
-        "attrs": self._attributes
-    }
+    if (len(self._title) == 0):
+      return {}
+    else:
+      return {
+          "title": self._title,
+          "prefix": self._prefix,
+          "subtitle": self._subtitle,
+          "attrs": self._attributes
+      }
 
   @classmethod
   def from_dict(self, params: Union[Dict, None]) -> Union['Title', None]:
-    if params is not None:
+    # None or {}
+    if (params is None) or (len(params) == 0):
+      return None
+    elif (params is not None) and (len(params.get('title', '')) > 0):
       return self(
-          params.get('title', ''),
+          params.get('title'),
           params.get('prefix', None),
           params.get('subtitle', None),
           params.get('attrs', None)
       )
     else:
-      return None
+      raise ValueError("Invalid Title Dict")
 
 
 class Dynasty(BaseObject):
@@ -257,13 +263,15 @@ class Dynasty(BaseObject):
 
   def __init__(
       self,
-      dynasty: str,
+      value: str = "",
       attrs: Dict = None
   ):
     """
     初始化朝代对象。
     """
-    self._value: str = dynasty
+    self._value: str = ""
+    if (len(value) > 0):
+      self.value = value
 
     super().__init__(attrs)
 
@@ -273,27 +281,36 @@ class Dynasty(BaseObject):
 
   @value.setter
   def value(self, dynasty: str):
-    self._value = dynasty
+    if isinstance(dynasty, str) and (len(dynasty) > 0):
+      self._value = dynasty
+    else:
+      raise ValueError("Invalid Dynasty.value Value")
 
   def __repr__(self) -> str:
     return (f"Dynasty({'None' if self._value is None else repr(self._value)}, "
             f"{'None' if self._attributes is None else repr(self._attributes)})")
 
   def to_dict(self) -> Dict:
-    return {
-        "value": self._value,
-        "attrs": self._attributes
-    }
+    if (len(self._value) == 0):
+      return {}
+    else:
+      return {
+          "value": self._value,
+          "attrs": self._attributes
+      }
 
   @classmethod
   def from_dict(self, params: Union[Dict, None]) -> Union['Dynasty', None]:
-    if params is not None:
+    # None or {}
+    if (params is None) or (len(params) == 0):
+      return None
+    elif (params is not None) and (len(params.get('value', '')) > 0):
       return self(
           params.get('value', ''),
           params.get('attrs', None)
       )
     else:
-      return None
+      raise ValueError("Invalid Dynasty Dict")
 
 
 class Author(BaseObject):
@@ -319,37 +336,40 @@ class Author(BaseObject):
     """
 
     # 著作者的姓名。
-    self._name = name
+    self._name: str = ""
+    if (len(name) > 0):
+      self.name = name
 
     # 工作类型。一般有：著、编、撰、传、译等。
-    self._type = type
+    self._type: AuthorType = type
+    if (type != AuthorType.AUTHOR):
+      self.type = type
 
     # 著作者的著书所在时代。
-    self._dynasty = None
-    if dynasty is not None:
-      self.dynasty = dynasty
+    self._dynasty: Dynasty = None
+    self.dynasty = dynasty
 
-    # 著作者的官职。
-    self._officialPosition = officialPosition
+    # 著作者的官职与荣誉。
+    self._officialPosition: str = officialPosition
 
     super().__init__(attrs)
 
   @classmethod
-  def from_array(self, *params) -> Union['Author']:
+  def from_array(self, *params) -> Union['Author', None]:
     return self.from_list(params)
 
   @classmethod
-  def from_list(self, params):
-    if len(params) == 1:
+  def from_list(self, params) -> Union['Author', None]:
+    if len(params) == 1 and len(params[0]) > 0:
       return self(params[0])
-    elif len(params) == 2:
+    elif len(params) == 2 and len(params[0]) > 0:
       return self(params[0], params[1])
-    elif len(params) == 3:
+    elif len(params) == 3 and len(params[0]) > 0:
       return self(params[0], params[1], params[2])
-    elif len(params) == 4:
+    elif len(params) == 4 and len(params[0]) > 0:
       return self(params[0], params[1], params[2], params[3])
     else:
-      raise self()
+      raise ValueError("Invalid Author Value")
 
   @property
   def name(self) -> str:
@@ -357,10 +377,10 @@ class Author(BaseObject):
 
   @name.setter
   def name(self, name: str):
-    if isinstance(name, str):
+    if isinstance(name, str) and (len(name) > 0):
       self._name = name
     else:
-      raise ValueError("Invalid Name Value")
+      raise ValueError("Invalid Author.name Value")
 
   @property
   def type(self) -> str:
@@ -377,12 +397,14 @@ class Author(BaseObject):
 
   @dynasty.setter
   def dynasty(self, dynasty: Union[Dynasty, str]):
-    if isinstance(dynasty, str):
+    if (dynasty is None) or (isinstance(dynasty, str) and (len(dynasty) == 0)):
+      self._dynasty = None
+    elif isinstance(dynasty, str):
       self._dynasty = Dynasty(dynasty)
     elif isinstance(dynasty, Dynasty):
       self._dynasty = dynasty
     else:
-      raise ValueError("Invalid Dynasty Value")
+      raise ValueError("Invalid Author.dynasty Object")
 
   @property
   def officialPosition(self) -> Union[str, None]:
@@ -398,28 +420,34 @@ class Author(BaseObject):
             f"{'None' if self._officialPosition is None else repr(self._officialPosition)}, "
             f"{'None' if self._attributes is None else repr(self._attributes)})")
 
-  def to_dict(self):
-    return {
-        "name": self._name,
-        "type": self._type,
-        "dynasty": None if self._dynasty is None else self._dynasty.to_dict(),
-        "officialPosition": self._officialPosition,
-        "attrs": self._attributes
-    }
+  def to_dict(self) -> Dict:
+    if (len(self._name) == 0):
+      return {}
+    else:
+      return {
+          "name": self._name,
+          "type": self._type,
+          "dynasty": None if self._dynasty is None else self._dynasty.to_dict(),
+          "officialPosition": self._officialPosition,
+          "attrs": self._attributes
+      }
 
   @classmethod
-  def from_dict(self, params: Union[Dict, None]):
-    if params is not None:
+  def from_dict(self, params: Union[Dict, None]) -> Union['Author', None]:
+    # None or {}
+    if (params is None) or (len(params) == 0):
+      return None
+    elif (params is not None) and (len(params.get('name', '')) > 0):
       dynasty = params.get('dynasty', None)
       return self(
-          params.get('name', ''),
+          params.get('name'),
           params.get('type', AuthorType.AUTHOR),
           Dynasty.from_dict(dynasty),
           params.get('officialPosition', None),
           params.get('attrs', None)
       )
     else:
-      return None
+      raise ValueError("Invalid Author Dict")
 
 # The class `DivisionType` defines an enumeration for different types of divisions such as volume,
 # chapter, section, paragraph, and annotation.
@@ -451,20 +479,20 @@ class Division(BaseObject):
     - id: UUID 必选项。卷章唯一标识。如果没有，会在创建Division自动生成一个。
     - order: int 可选项。卷章的显示顺序，显示时按照order由小到大顺序显示。如果没有则用Division在集合中的自然顺序代替。
     - title: Title 必选项。
-    - authors: [Author] 可选项。卷章的著作者。某些章节，比如序、跋等章节，有独立的著作者。
-    - type: volume | chapter 必选项。卷章类型。
-    - ref: URL 可选项。在分文件存储docbook时，卷章可以形成独立的文件进行存储，这个时候，ref主要是指该卷章节的存储位置。
-    - divisions: [Division | ContentPiece] 可选项。如果是卷章的下一级Division或者章节内容。
-    如果(ref is None) and (divisions is None)表示该Division为丢失/亡佚。
-    如果(ref is None) and (divisions is not None)表示该Division已经load，这种情况下不允许unload。
-    如果(ref is not None) and (divisions is None)表示该Division没有load。
+    - authors: List[Author] 可选项。卷章的著作者。某些章节，比如序、跋等章节，有独立的著作者。
+    - type: DivisionType 必选项。卷章类型, DivisionType.VOLUME | DivisionType.CHAPTER。
+    - ref: URL 可选项。卷章内容外部引用地址，类似URL。
+    - divisions: List[Division | ContentPiece] 可选项。如果是卷章的下一级Division或者章节内容。
+      如果(ref is None) and (divisions is None)表示该Division为丢失/亡佚。
+      如果(ref is None) and (divisions is not None)表示该Division已经load，这种情况下不允许unload。
+      如果(ref is not None) and (divisions is None)表示该Division没有load。
   """
 
   def __init__(
       self,
       id: Union[str, None] = None,
       order: Union[int, None] = None,
-      title: Union[Title, List[str], str] = "",
+      title: Union[Title, List[str], str] = None,
       authors: Union[List[Author], List[list[str]], List[str], None] = None,
       type: DivisionType = DivisionType.VOLUME,
       ref: Union[str, None] = None,
@@ -472,28 +500,24 @@ class Division(BaseObject):
       attrs: Dict = None
   ):
     """
-    初始化卷册章对象。
+    初始化卷章对象。
     """
 
     self._id: uuid.UUID = uuid.uuid4()
     if id is not None:
-      try:
-        self._id = uuid.UUID(id)
-      except ValueError:
-        raise ValueError("Invalid UUID string")
+      self.id = id
 
-    # 卷册章显示顺序
+    # 卷章显示顺序
     self._order: Union[int, None] = order
 
-    # 卷册章标题
-    self._title: Union[Title, None] = None
+    # 卷章标题
+    self._title: Union[Title, None] = title
     if title is not None:
       self.title = title
 
-    # 卷册章著作者
+    # 卷章著作者
     self._authors: Union[List[Author], None] = None
-    if authors is not None:
-      self.authors = authors
+    self.authors = authors
 
     # 卷册章类型
     self._type: DivisionType = type
@@ -501,8 +525,10 @@ class Division(BaseObject):
     # 卷册章的内容在外部引用地址，类似url
     self._ref: Union[str, None] = ref
 
-    # 卷册章内容
-    self._divisions: List[Division] = [] if divisions is None else divisions
+    # 卷章内容
+    self._divisions: List[Division] = []
+    if divisions is not None:
+      self.divisions = divisions
 
     super().__init__(attrs)
 
@@ -516,11 +542,11 @@ class Division(BaseObject):
       try:
         self._id = uuid.UUID(id)
       except ValueError:
-        raise ValueError("Invalid UUID string")
+        raise ValueError("Invalid Division.id value")
     elif isinstance(id, uuid.UUID):
       self._id = id
     else:
-      raise ValueError("Invalid UUID Value")
+      raise ValueError("Invalid Division.id value")
 
   @property
   def order(self) -> Union[int, None]:
@@ -543,7 +569,7 @@ class Division(BaseObject):
     elif isinstance(title, Title):
       self._title = title
     else:
-      raise ValueError("Invalid Title Value")
+      raise ValueError("Invalid Division.title Object")
 
   @property
   def authors(self) -> Union[List[Author], None]:
@@ -551,19 +577,19 @@ class Division(BaseObject):
 
   @authors.setter
   def authors(self, authors: Union[List[Author], List[List[str]], List[str]]):
-    self._authors = []
-    if isinstance(authors, List) and len(authors) > 0:
+    if (authors is None) or (len(authors) == 0):
+      self._authors = None
+    elif isinstance(authors, List):
       if isinstance(authors[0], Author):
         self._authors = authors
       elif isinstance(authors[0], List):
-        for author in authors:
-          self._authors.append(Author.from_list(author))
+        self._authors = [Author.from_list(author) for author in authors]
       elif isinstance(authors[0], str):
-        self._authors.append(Author.from_list(authors))
+        self._authors = [Author.from_list(authors)]
       else:
-        raise ValueError("Invalid Authors Value")
+        raise ValueError("Invalid Division.authors Objects")
     else:
-      raise ValueError("Invalid Authors Value")
+      raise ValueError("Invalid Division.authors Objects")
 
   @property
   def type(self) -> DivisionType:
@@ -571,11 +597,11 @@ class Division(BaseObject):
 
   @type.setter
   def type(self, type: DivisionType):
-    if isinstance(type, DivisionType):
-      if (type == DivisionType.VOLUME) or (type == DivisionType.CHAPTER):
-        self._type = type
-    
-    raise ValueError("Invalid DivisionType")
+    if isinstance(type, DivisionType) and ((type == DivisionType.VOLUME) or (type == DivisionType.CHAPTER)):
+      self._type = type
+    else:
+      raise ValueError("Invalid Division.type Value")
+
 
   @property
   def ref(self) -> Union[str, None]:
@@ -585,13 +611,13 @@ class Division(BaseObject):
   def ref(self, ref: Union[str, None]):
     if ref is None:
       self._ref = None
-    elif isinstance(ref, str):
+    elif isinstance(ref, str) and (len(ref) > 0):
       if is_valid_url(ref):
         self._ref = ref
       else:
-        raise ValueError("Invalid Ref Format")
+        raise ValueError("Invalid Division.ref Format")
     else:
-      raise ValueError("Invalid Ref Value")
+      raise ValueError("Invalid Division.ref Value")
 
   @property
   def chapters(self) -> List['Division']:
@@ -602,7 +628,6 @@ class Division(BaseObject):
       for division in self._divisions:
         if isinstance(division, Division):
           chapters.extend(division.chapters)
-          
     return chapters
 
   @property
@@ -614,25 +639,30 @@ class Division(BaseObject):
     if divisions is None:
       self._divisions = []
     elif isinstance(divisions, List):
-      for division in divisions:
-        if (isinstance(division, Division) == False) and (isinstance(division, ContentPiece) == False):
-           raise ValueError("Invalid Division or ContentPiece Object")
+      if (type == DivisionType.VOLUME):
+        for division in divisions:
+          if (not isinstance(division, Division)):
+            raise ValueError("Invalid Division.divisions Objects, should be Division")
+      elif (type == DivisionType.CHAPTER):
+        for division in divisions:
+          if (not isinstance(division, ContentPiece)):
+            raise ValueError("Invalid Division.divisions Objects, should be ContentPiece")
       self._divisions = divisions
     else:
-      raise ValueError("Invalid Division Object")
+      raise ValueError("Invalid Division.divisions Objects")
 
   def is_lost(self) -> bool:
     """
     如果(ref is None) and (divisions is None)表示该Division为丢失/亡佚。
     """
-    return (self._ref is None) and (self._divisions is None or len(self._divisions) == 0)
+    return (self._ref is None) and ((self._divisions is None) or len(self._divisions) == 0)
 
   def is_load(self) -> bool:
     """
     如果(ref is not None) and (divisions is None)表示该Division没有load。
     如果(ref is None) and (divisions is None)表示该Division为丢失/亡佚，表示已经load。    
     """
-    return not ((self._ref is not None) and (self._divisions is None or len(self._divisions) == 0))
+    return not ((self._ref is not None) and ((self._divisions is None) or len(self._divisions) == 0))
 
   def unload(self) -> bool:
     """
@@ -741,41 +771,42 @@ class Division(BaseObject):
             f"{'None' if self._attributes is None else repr(self._attributes)})")
 
   def to_dict(self) -> Dict:
-    return {
-        "id": str(self._id),
-        "order": self._order,
-        "title": self._title.to_dict(),
-        "authors": None if self._authors is None else [author.to_dict() for author in self._authors],
-        "type": str(self._type),
-        "ref": self._ref,
-        "divisions": None if self._divisions is None else [division.to_dict() for division in self._divisions],
-        "attrs": self._attributes
+    title = self._title.to_dict()
+    if (len(title) == 0):
+      return {}
+    else:
+      return {
+          "id": str(self._id),
+          "order": self._order,
+          "title": title,
+          "authors": None if self._authors is None else [author.to_dict() for author in self._authors],
+          "type": str(self._type),
+          "ref": self._ref,
+          "divisions": None if self._divisions is None else [division.to_dict() for division in self._divisions],
+          "attrs": self._attributes
     }
 
   @classmethod
   def from_dict(self, params: Union[Dict, None]) -> Union['Division', None]:
-    if params is not None and params.get('type') is not None:
-      try:
-        type = DivisionType[params.get('type').upper()]
-      except KeyError:
-        return None
-
+    # None or {}
+    if (params is None) or (len(params) == 0):
+      return None
+    elif (params is not None) and (params.get('title', None) is not None) and (params.get('type', None) is not None) and (params.get('id', None) is not None):
       authors = params.get('authors', None)
       divisions = params.get('divisions', None)
+      type = DivisionType[params.get('type').upper()]
       return self(
-          params.get('id', None),
+          params.get('id'),
           params.get('order', None),
-          Title.from_dict(params.get('title', "")),
-          None if authors is None else [
-              Author.from_dict(author) for author in authors],
+          Title.from_dict(params.get('title')),
+          None if authors is None else [Author.from_dict(author) for author in authors],
           type,
           params.get('ref', None),
-          None if divisions is None else [Division.from_dict(division) for division in divisions] if (type == DivisionType.VOLUME) else [
-              ContentPiece.from_dict(division) for division in divisions],
+          None if divisions is None else [Division.from_dict(division) for division in divisions] if (type == DivisionType.VOLUME) else [ContentPiece.from_dict(division) for division in divisions],
           params.get('attrs', None)
       )
     else:
-      return None
+      raise ValueError("Invalid Division Dict")
 
 
 class ContentPiece(BaseObject):
@@ -808,18 +839,19 @@ class ContentPiece(BaseObject):
     """
 
     # 初始化节、正文段落、注释段落类型。
-    self._type = type
+    self._type: DivisionType = None
+    self.type = type
 
-    # 卷册章内容。
-    self._content = content
+    # 节、正文段落、注释段落内容。
+    self._content: str = content
 
     # 节、正文段落、注释段落。
-    self._content_pieces = content_pieces if content_pieces is not None else []
+    self._content_pieces: List['ContentPiece'] = content_pieces if content_pieces is not None else []
 
     # 初始化其他属性
-    self._annotator = annotator
-    self._authorship = authorship
-    self._position = position
+    self._annotator: Union[str, None] = annotator
+    self._authorship: Union[str, None] = authorship
+    self._position: Union[int, None] = position
 
     super().__init__(attrs)
 
@@ -853,11 +885,10 @@ class ContentPiece(BaseObject):
 
   @type.setter
   def type(self, type: DivisionType):
-    if isinstance(type, DivisionType):
-      if (type == DivisionType.SECTION) or (type == DivisionType.PARAGRAPH) or (type == DivisionType.ANNOTATION):
-        self._type = type
-        return
-    raise ValueError("Invalid ContentType")
+    if isinstance(type, DivisionType) and ((type == DivisionType.SECTION) or (type == DivisionType.PARAGRAPH) or (type == DivisionType.ANNOTATION)):
+      self._type = type
+    else:
+      raise ValueError("Invalid ContentPiece.type value")
 
   @property
   def content(self) -> str:
@@ -875,7 +906,7 @@ class ContentPiece(BaseObject):
   def content_pieces(self, content_pieces: List['ContentPiece']):
     if isinstance(content_pieces, List):
       for content_piece in content_pieces:
-        if isinstance(content_piece, ContentPiece) == False:
+        if not isinstance(content_piece, ContentPiece):
            raise ValueError("Invalid ContentPiece Object")
       self._content_pieces = content_pieces
     else:
@@ -887,11 +918,10 @@ class ContentPiece(BaseObject):
     else:
       raise ValueError("Invalid ContentPiece Object")
 
-  def concat_content_piece(self, content_piece: 'ContentPiece'):
+  def concat_content_piece(self, content_piece: 'ContentPiece') -> bool:
     """
     将两个类型一致，且非SECTION的content_piece合并成为一个content_piece。
     """
-
     if isinstance(content_piece, ContentPiece):
       if (self._type != DivisionType.SECTION) and (self._type == content_piece.type) and content_piece.content and (len(content_piece.content) > 0):
         content_length = len(remove_html_tags(self._content)) + 1 # 换行符号+1
@@ -899,6 +929,8 @@ class ContentPiece(BaseObject):
         for _content_piece in content_piece.content_pieces:
           _content_piece.position += content_length
           self._content_pieces.append(_content_piece)
+        return True
+      return False
     else:
       raise ValueError("ContentPiece Object Type Error")
 
@@ -923,25 +955,22 @@ class ContentPiece(BaseObject):
 
   @classmethod
   def from_dict(self, params: Union[Dict, None]) -> Union['ContentPiece', None]:
-    if params is not None and params.get('type') is not None:
-      try:
-        type = DivisionType[params.get('type').upper()]
-      except KeyError:
-        return None
-
+    # None or {}
+    if (params is None) or (len(params) == 0):
+      return None
+    elif (params is not None) and (params.get('type', None) is not None):
       content_pieces = params.get('content_pieces', None)
       return self(
-          type,
+          DivisionType[params.get('type').upper()],
           params.get('content', ""),
           params.get('annotator', None),
           params.get('source', None),
           params.get('position', None),
-          None if content_pieces is None else [ContentPiece.from_dict(
-              content_piece) for content_piece in content_pieces],
+          None if content_pieces is None else [ContentPiece.from_dict(content_piece) for content_piece in content_pieces],
           params.get('attrs', None)
       )
     else:
-      return None
+      raise ValueError("Invalid ContentPiece Dict")
 
 
 class Indent2SectionHelper(object):
@@ -1010,7 +1039,8 @@ class Indent2SectionHelper(object):
         self._indent2sections = self._indent2sections[:index]
         break
 
-    if before_add_func is None or before_add_func(self._indent2sections[-1]['section'], content_piece):
+    # 如果before_add_func返回值为真，表示content_piece已经被处理过了，不需要再处理。
+    if before_add_func is None or not before_add_func(self._indent2sections[-1]['section'], content_piece):
       self._indent2sections[-1]['section'].add_content_piece(content_piece)
 
     if content_piece.type == DivisionType.SECTION:
@@ -1048,13 +1078,22 @@ class Extra(BaseObject):
   ):
   
     # 附加内容的名称，用于文章章节内容的标签内
-    self._name = name
+    self._name: str = ""
+    if (len(name) > 0):
+      self.name = name
+
     # 类型
-    self._type = type
+    self._type: ExtraContentType = ExtraContentType.ITEM_UNKNOWN
+    if (type != ExtraContentType.ITEM_UNKNOWN):
+      self.type = type
+    
     # 附加内容在外部引用地址，类似url
-    self._ref = ref
+    self._ref = None
+    self.ref = ref
+
     # 附加内容的实际内容，如果非None，表示内容已经被载入到内容中
     self._content = content
+    
     super().__init__(attrs)
 
   @property
@@ -1063,7 +1102,10 @@ class Extra(BaseObject):
 
   @name.setter
   def name(self, name: str):
-    self._name = name
+    if (name is not None) and (len(name) > 0):
+      self._name = name
+    else:
+      raise("Invalid Extra.name value")
 
   @property
   def type(self) -> ExtraContentType:
@@ -1071,7 +1113,10 @@ class Extra(BaseObject):
 
   @type.setter
   def type(self, type: ExtraContentType):
-    self._type = type
+    if isinstance(type, ExtraContentType):
+      self._type = type
+    else:
+      raise ValueError("Invalid Extra.type Value")
 
   @property
   def ref(self) -> Union[str, None]:
@@ -1081,13 +1126,13 @@ class Extra(BaseObject):
   def ref(self, ref: Union[str, None]):
     if ref is None:
       self._ref = None
-    elif isinstance(ref, str):
+    elif isinstance(ref, str) and (len(ref) > 0):
       if is_valid_url(ref):
         self._ref = ref
       else:
-        raise ValueError("Invalid Ref Format")
+        raise ValueError("Invalid Extra.ref Format")
     else:
-      raise ValueError("Invalid Ref Value")
+      raise ValueError("Invalid Extra.ref Value")
 
   @property
   def content(self) -> bytes:
@@ -1111,20 +1156,18 @@ class Extra(BaseObject):
 
   @classmethod
   def from_dict(self, params: Union[Dict, None]) -> Union['Extra', None]:
-    if params is not None and params.get('type') is not None:
-      try:
-        type = ExtraContentType[params.get('type').upper()]
-      except KeyError:
-        return None
-
+    # None or {}
+    if (params is None) or (len(params) == 0):
+      return None
+    elif (params is not None) and (len(params.get('name', '')) > 0) and (params.get('type', None) is not None)  and (len(params.get('ref', '')) > 0):
       return self(
-          params.get('name', None),
-          type,
-          params.get('ref', None),
+          params.get('name'),
+          ExtraContentType[params.get('type').upper()],
+          params.get('ref'),
           params.get('attrs', None)
       )
     else:
-      return None
+      raise ValueError("Invalid Extra Dict")
 
 class Book(BaseObject):
 
@@ -1146,7 +1189,7 @@ class Book(BaseObject):
   def __init__(
       self,
       id: Union[str, None] = None,
-      title: Union[Title, List[str], str] = "",
+      title: Union[Title, List[str], str] = None,
       authors: Union[List[Author], List[List[str]], List[str], None] = None,
       dynasty: Union[Dynasty, str, None] = None,
       categories: List[str] = None,
@@ -1162,15 +1205,12 @@ class Book(BaseObject):
     """
     self._id: uuid.UUID = uuid.uuid4()
     if id is not None:
-      try:
-        self._id = uuid.UUID(id)
-      except ValueError:
-        raise ValueError("Invalid UUID string")
+      self.id = id
 
     # 书籍名称。
     self._title: Union[Title, None] = None
-    self.title = title
-
+    if (title is not None):
+      self.title = title
     # 书籍著作者。
     self._authors: Union[List[Author], None] = None
     self.authors = authors
@@ -1213,11 +1253,11 @@ class Book(BaseObject):
       try:
         self._id = uuid.UUID(id)
       except ValueError:
-        raise ValueError("Invalid UUID string")
+        raise ValueError("Invalid Book.id value")
     elif isinstance(id, uuid.UUID):
       self._id = id
     else:
-      raise ValueError("Invalid UUID Value")
+      raise ValueError("Invalid Book.id value")
 
   @property
   def title(self) -> Union[Title, None]:
@@ -1232,7 +1272,7 @@ class Book(BaseObject):
     elif isinstance(title, Title):
       self._title = title
     else:
-      raise ValueError("Invalid Title Value")
+      raise ValueError("Invalid Division.title Object")
 
   @property
   def authors(self) -> Union[List[Author], None]:
@@ -1240,22 +1280,19 @@ class Book(BaseObject):
 
   @authors.setter
   def authors(self, authors: Union[List[Author], List[List[str]], List[str]]):
-    if authors is None:
-      self._authors = []
-    elif isinstance(authors, List) and len(authors) > 0:
+    if (authors is None) or (len(authors) == 0):
+      self._authors = None
+    elif isinstance(authors, List):
       if isinstance(authors[0], Author):
         self._authors = authors
       elif isinstance(authors[0], List):
-        self._authors = []
-        for author in authors:
-          self._authors.append(Author.from_list(author))
+        self._authors = [Author.from_list(author) for author in authors]
       elif isinstance(authors[0], str):
-        self._authors = []
-        self._authors.append(Author.from_list(authors))
+        self._authors = [Author.from_list(authors)]
       else:
-        raise ValueError("Invalid Authors Value")
+        raise ValueError("Invalid Book.authors Objects")
     else:
-      raise ValueError("Invalid Authors Value")
+      raise ValueError("Invalid Book.authors Objects")
 
   @property
   def dynasty(self) -> Union[Dynasty, None]:
@@ -1263,14 +1300,14 @@ class Book(BaseObject):
 
   @dynasty.setter
   def dynasty(self, dynasty: Union[Dynasty, str]):
-    if dynasty is None:
+    if (dynasty is None) or (isinstance(dynasty, str) and (len(dynasty) == 0)):
       self._dynasty = None
     elif isinstance(dynasty, str):
       self._dynasty = Dynasty(dynasty)
     elif isinstance(dynasty, Dynasty):
       self._dynasty = dynasty
     else:
-      raise ValueError("Invalid Dynasty Value")
+      raise ValueError("Invalid Book.dynasty Object")
 
   @property
   def categories(self) -> Union[List[str], None]:
@@ -1302,12 +1339,14 @@ class Book(BaseObject):
 
   @description.setter
   def utc_datetime(self, date: Union[datetime, str]):
-    if isinstance(date, datetime):
+    if (date is None):
+      self._utc_datetime = None
+    elif isinstance(date, datetime):
       self._utc_datetime = date
     elif isinstance(date, str):
       self._utc_datetime = datetime.strptime(date, "%Y-%m-%dT%H:%M:%SZ")
     else:
-      self._utc_datetime = None
+      raise ValueError("Invalid Book.datetime Object")
 
   @property
   def chapters(self) -> List[Division]:
@@ -1319,13 +1358,15 @@ class Book(BaseObject):
 
   @divisions.setter
   def divisions(self, divisions: List[Division]):
-    if isinstance(divisions, List):
+    if (divisions is None):
+      self._divisions = None
+    elif isinstance(divisions, List):
       for division in divisions:
-        if isinstance(division, Division) == False:
-           raise ValueError("Invalid Divisions Object")
+        if not isinstance(division, Division):
+           raise ValueError("Invalid Book.divisions Objects")
       self._divisions = divisions
     else:
-      raise ValueError("Invalid Divisions Object")
+      raise ValueError("Invalid Book.divisions Objects")
 
   @property
   def extras(self) -> Union[List[Extra], None]:
@@ -1333,13 +1374,15 @@ class Book(BaseObject):
 
   @extras.setter
   def extras(self, extras: List[Extra]):
-    if isinstance(extras, List):
+    if (extras is None):
+      self._extras = None
+    elif isinstance(extras, List):
       for extra in extras:
         if isinstance(extra, Extra) == False:
-           raise ValueError("Invalid Extras Object")
+           raise ValueError("Invalid Book.extras Object")
       self._extras = extras
     else:
-      raise ValueError("Invalid Extras Object")
+      raise ValueError("Invalid Book.extras Object")
 
   def get_chapters_directorys(self, use_object: bool = True) -> Union[List[Union[Tuple[uuid.UUID, str], Union['Division', 'Book']]], None]:
     directorys = []
@@ -1457,7 +1500,7 @@ class Book(BaseObject):
           return
       self._extras.append(extra)
     else:
-      raise ValueError("Invalid Extra Object")
+      raise ValueError("Invalid Book.extra Object")
 
   def get_extra(self, name: str) -> Extra:
     for index, e in enumerate(self._extras):
@@ -1477,41 +1520,44 @@ class Book(BaseObject):
             f"{'None' if self._attributes is None else repr(self._attributes)})")
 
   def to_dict(self):
-    return {
-        "id": str(self._id),
-        "title": self._title.to_dict(),
-        "authors": None if self._authors is None else [author.to_dict() for author in self._authors],
-        "dynasty": None if self._dynasty is None else self._dynasty.to_dict(),
-        "categories": self._categories,
-        "source": self._source,
-        "description": self._description,
-        "date": None if self._utc_datetime is None else self._utc_datetime.strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "divisions": None if self._divisions is None else [division.to_dict() for division in self._divisions],
-        "extras": None if self._extras is None else [extra.to_dict() for extra in self._extras],
-        "attrs": self._attributes
-    }
+    if (self._title is None) or (len(self._title.to_dict()) == 0):
+      return {}
+    else:
+      return {
+          "id": str(self._id),
+          "title": self._title.to_dict(),
+          "authors": None if self._authors is None else [author.to_dict() for author in self._authors],
+          "dynasty": None if self._dynasty is None else self._dynasty.to_dict(),
+          "categories": self._categories,
+          "source": self._source,
+          "description": self._description,
+          "date": None if self._utc_datetime is None else self._utc_datetime.strftime("%Y-%m-%dT%H:%M:%SZ"),
+          "divisions": None if self._divisions is None else [division.to_dict() for division in self._divisions],
+          "extras": None if self._extras is None else [extra.to_dict() for extra in self._extras],
+          "attrs": self._attributes
+      }
 
   @classmethod
   def from_dict(self, params: Union[Dict, None]) -> Union['Book', None]:
-    if params is not None:
+    # None or {}
+    if (params is None) or (len(params) == 0):
+      return None
+    elif (params is not None) and (params.get('title', None) is not None):
       authors = params.get('authors', None)
       divisions = params.get('divisions', None)
       extras = params.get('extras', None)
       return self(
-          params.get('id', ""),
-          Title.from_dict(params.get('title', None)),
-          None if authors is None else [
-              Author.from_dict(author) for author in authors],
+          params.get('id'),
+          Title.from_dict(params.get('title')),
+          None if authors is None else [Author.from_dict(author) for author in authors],
           Dynasty.from_dict(params.get('dynasty', None)),
           params.get('categories', None),
           params.get('source', None),
           params.get('description', None),
           params.get('date', None),
-          None if divisions is None else [
-              Division.from_dict(division) for division in divisions],
-          None if extras is None else [
-              Extra.from_dict(extra) for extra in extras],
+          None if divisions is None else [Division.from_dict(division) for division in divisions],
+          None if extras is None else [Extra.from_dict(extra) for extra in extras],
           params.get('attrs', None)
       )
     else:
-      return None
+      raise ValueError("Invalid Book Dict")

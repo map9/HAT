@@ -1,4 +1,4 @@
-import {Book, Division, DivisionType, ContentPiece, Title} from "./BookDefine";
+import {Book, Division, DivisionType, ContentPiece, Title, Author} from "./BookDefine";
 
 interface HtmlContentPiece {
   type: DivisionType,
@@ -134,6 +134,30 @@ export class HtmlParseDocument {
     return _class;
   }
 
+  //  作者
+  //  <p class="authors">
+  //  <span  class="dynasty">[{{author.dynasty.value}}]</span>&nbsp;&nbsp;
+  //  <span class="name">{{author.name}}</span>&nbsp;<span class="type">{{author.type}}</span>
+  //  ...
+  //  &nbsp;&nbsp;<span class="dot">·</span>&nbsp;&nbsp;
+  //  <span  class="dynasty">[{{author.dynasty.value}}]</span>&nbsp;&nbsp;
+  //  <span class="writer">{{author.name}}</span>&nbsp;<span class="writer">{{author.type}}</span>
+  //  </p>
+  static parseAuthors(authors: Author[]): string {
+    if (authors && authors.length){
+      const htmlString: string[] = authors.map(author => {
+        let itemString = '';
+        if (author.dynasty){
+          itemString = `<span  class="dynasty">[${author.dynasty.value}]</span>&nbsp;&nbsp;`;  
+        }
+        itemString += `<span class="name">${author.name}</span>&nbsp;<span class="type">${author.type === undefined? '著' : author.type}</span>`
+        return itemString;
+      });
+      return `<p class="authors">` + htmlString.join('&nbsp;&nbsp;<span class="dot">·</span>&nbsp;&nbsp;') + `</p>`;
+    }
+    return '';
+  }
+  
   //  标题
   //  <span class="prefix">{{ title.prefix }}</span>
   //  <span class='separator'>·</span>
@@ -160,6 +184,14 @@ export class HtmlParseDocument {
     return items.join(`<span class='separator'>·</span>`);
   }
 
+  static isParagraph(contentPiece: ContentPiece): boolean {
+    if ((contentPiece.type != DivisionType.ANNOTATION) && !((contentPiece.type == DivisionType.PARAGRAPH) && (contentPiece.content == undefined || contentPiece.content.length == 0))) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
   static parseContentPiece(contentPiece: ContentPiece, index: number, level: number = -1): HtmlContentPiece {
     let htmlString: string = "";
     const childs: HtmlContentPiece[] = [];
@@ -168,7 +200,7 @@ export class HtmlParseDocument {
     let order = 0;
     contentPiece.content_pieces?.forEach((contentPiece, _index) => {
       // 注释以及注释段落不给序号
-      if ((contentPiece.type != DivisionType.ANNOTATION) && !((contentPiece.type == DivisionType.PARAGRAPH) && (contentPiece.content == undefined || contentPiece.content.length == 0))) {
+      if (HtmlParseDocument.isParagraph(contentPiece)) {
         order ++;
       }
       childs.push(this.parseContentPiece(contentPiece, order, (level == -1)? level : (level + 1)));
@@ -247,14 +279,14 @@ export class HtmlParseDocument {
     // 段内注释。
     //  <annotation class="style[num]" key="">
     //    <span class="annotator">{{ annotation.annotator }}</span>
-    //    <span class="type">{{ annotation.source }}</span>
+    //    <span class="type">{{ annotation.authorship }}</span>
     //    {{ annotation.content }}
     //  </annotation>    
     else if (contentPiece.type == DivisionType.ANNOTATION) {
       if (contentPiece.content && contentPiece.content.length > 0){
-        htmlString += `<annotation class="${HtmlParseDocument.getAnnotatorStyle(contentPiece.annotator, contentPiece.source)}" key="${index}">`;
+        htmlString += `<annotation class="${HtmlParseDocument.getAnnotatorStyle(contentPiece.annotator, contentPiece.authorship)}" key="${index}">`;
         htmlString += ((contentPiece.annotator == undefined) || (contentPiece.annotator.length == 0))? '' : `<span class="annotator">${contentPiece.annotator}</span>`;
-        htmlString += ((contentPiece.source == undefined) || (contentPiece.source.length == 0))? '' : `<span class="type">${contentPiece.source}</span>`;
+        htmlString += ((contentPiece.authorship == undefined) || (contentPiece.authorship.length == 0))? '' : `<span class="type">${contentPiece.authorship}</span>`;
         
         const annotationString: string = HtmlParseDocument.insertAnnotations(contentPiece.content, childs);
         htmlString += `${annotationString}`;
@@ -271,7 +303,7 @@ export class HtmlParseDocument {
       type: contentPiece.type,
       content: htmlString,
       annotator: contentPiece.annotator,
-      source: contentPiece.source,
+      source: contentPiece.authorship,
       position: contentPiece.position,
     };
   }
@@ -295,8 +327,13 @@ export class HtmlParseDocument {
     const output: HtmlContentPiece[] = [];
 
     const level = 3; // 章：第3级别
+    let order = 0;
     chapter.divisions?.forEach((contentPiece, _index) => {
-      childs.push(this.parseContentPiece(contentPiece as ContentPiece, _index, (level + 1)));
+      // 注释以及注释段落不给序号
+      if (HtmlParseDocument.isParagraph(contentPiece as ContentPiece)) {
+        order ++;
+      }
+      childs.push(this.parseContentPiece(contentPiece as ContentPiece, order, (level + 1)));
     });
 
     const inserts: HtmlContentPiece[] = [];
@@ -314,6 +351,9 @@ export class HtmlParseDocument {
     htmlString += `<div class="number"></div>`;
     htmlString += `<div class="content">`;
     htmlString += `<h${level}>${chapterTitleString}</h${level}>`;
+    if (chapter.authors && chapter.authors.length > 0){
+      htmlString += HtmlParseDocument.parseAuthors(chapter.authors);
+    }
     htmlString += `</div></div>`;
     htmlString += output.map((v)=>v.content).join("");
     htmlString += `</div>`;
