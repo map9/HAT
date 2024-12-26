@@ -3,6 +3,7 @@ import uuid
 import logging
 
 from flask import Flask, jsonify, request
+from flask_compress import Compress
 from pypinyin import pinyin, Style
 
 from typing import Union, List, Dict, Tuple
@@ -14,6 +15,7 @@ from query import QueryResults, QueryResultPiece
 
 # 实例化并命名为 app 实例
 app = Flask(__name__)
+Compress(app)
 
 def sort_func(query_result_piece: QueryResultPiece):
   """
@@ -183,7 +185,7 @@ def get_book_chapters():
       return jsonify(error = "bid parameter is missing."), 400  # 使用HTTP状态码400表示错误请求
  
 def initialize():
-  setup_logging(log_file = convert_relativepath_to_abspath('../../logs/server.log', __file__), level = logging.INFO)
+  setup_logging(log_file = convert_relativepath_to_abspath('../../logs/docbook_server.log', __file__), level = logging.INFO)
   logger = logging.getLogger("server")
 
   # 禁止对jsonify输出json时按照键进行排序

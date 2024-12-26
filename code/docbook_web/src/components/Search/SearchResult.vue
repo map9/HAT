@@ -32,7 +32,6 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, nextTick } from 'vue';
-import { UUID } from "crypto";
 
 import { useToast } from "vue-toastification";
 
@@ -208,6 +207,7 @@ v-html指令会导致定义了scoped的css因作用域的问题无法使用，
   cursor: pointer;
   display: none;
 }
+
 .book-hit-copy:hover {
   fill: var(--primary-red-500);
 }

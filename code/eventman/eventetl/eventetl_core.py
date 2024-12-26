@@ -1,50 +1,20 @@
 """
-This script creates a ETL(Extract, transform, and load) application by used LLM+AutoGen.
-used most LLMs through Ollama OpenAI liked interfaces and library. 
-some LLMs can't used by Ollama, used by it's own API and library.
-
-pip install fire
-pip install ollama
-
-# - modify the prompt again and again, add more and more strict constraints, and limit the illusion and error output of llm.
-# - fixing seed to debugging prompt.
-# - used one model for extractor, another model from editor, will getting a worstest result.
-# - after many test cases, the Editor always give useless or error suggestions.
-# - modify the editor used Code Executor
-# - remove autogen support instead by ollama api
+This script creates a ETL(Extract, transform, and load) application by used Ollama.
 """
 
 import os
 import logging
-import fire
 import re
 import json
 
-from termcolor import colored
+from typing import Union, List, Dict, Tuple
+from enum import Enum
+
 import ollama
 
-import re
-import json
-from typing import List
+logger = logging.getLogger('eventetl.core.logger')
 
-logger = logging.getLogger('event_etl_logger')
-
-def initial_logger(level):
-  logger.setLevel(level)
-
-  # 创建一个文件处理器并设置级别为DEBUG
-  file_handler = logging.FileHandler('event_etl.log')
-  file_handler.setLevel(level)
-
-  # 创建一个日志格式器并将其添加到处理器
-  formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-  file_handler.setFormatter(formatter)
-
-  # 将文件处理器添加到日志器
-  logger.addHandler(file_handler)
-
-
-def decode_json_block(json_block: str) -> tuple[bool, str, dict]:
+def decode_json_block(json_block: str) -> Tuple[bool, str, Dict]:
   # 正则表达式匹配代码块 ``` 中的内容
   pattern = r'```json\s*([\s\S]+?)\s*```'
   matches = re.findall(pattern, json_block)
@@ -64,11 +34,13 @@ def decode_json_block(json_block: str) -> tuple[bool, str, dict]:
       json_result = json.loads(matches[0])
     except json.JSONDecodeError as e:
       ok = False
-      message = "输出内容中的json代码块中的json代码格式不符合json格式要求。"
+      message = f"输出内容中的json代码块中的json代码格式不符合json格式要求。错误为：\n{e}"
+      lines = json_block.splitlines()
+      message += f"\nLine: {lines[e.lineno]}\nColumn: {lines[e.lineno][e.colno - 2]}"
   
   return ok, message, json_result
 
-def _check_history_events_structure(events_json: dict) -> tuple[bool, List[str]]:
+def _check_history_events_structure(events_json: Dict) -> Tuple[bool, List[str]]:
   ok = True
   messages = []
 
@@ -84,7 +56,7 @@ def _check_history_events_structure(events_json: dict) -> tuple[bool, List[str]]
       messages.append(f"序号：{no}，修改意见：补充缺失条目{message}。")
   return ok, messages
 
-def _check_history_events_time(events_json: dict) -> tuple[bool, str]:
+def _check_history_events_time(events_json: dict) -> Tuple[bool, str]:
   ok = True
   messages = []
   regex = re.compile(f"(元年|[一二三四五六七八九十]+年)?(春|夏|秋|冬)?(闰月)?(正月|一月|二月|三月|四月|五月|六月|七月|八月|九月|十月|十一月|十二月)?(甲子|乙丑|丙寅|丁卯|戊辰|己巳|庚午|辛未|壬申|癸酉|甲戌|乙亥|丙子|丁丑|戊寅|己卯|庚辰|辛巳|壬午|癸未|甲申|乙酉|丙戌|丁亥|戊子|己丑|庚寅|辛卯|壬辰|癸巳|甲午|乙未|丙申|丁酉|戊戌|己亥|庚子|辛丑|壬寅|癸卯|甲辰|乙巳|丙午|丁未|戊申|己酉|庚戌|辛亥|壬子|癸丑|甲寅|乙卯|丙辰|丁巳|戊午|己未|庚申|辛酉|壬戌|癸亥)?")
@@ -130,7 +102,7 @@ def _check_history_events_time(events_json: dict) -> tuple[bool, str]:
   return ok, messages
 
 # 检查历史事件内容是否符合约定的格式要求以及内容是否正确
-def check_history_events(events_json_block: str) -> tuple[bool, str, List[dict]]:
+def check_history_events(events_json_block: str) -> Tuple[bool, str, List[Dict]]:
   ok, message, events_json = decode_json_block(events_json_block)
   if events_json is None:
     return ok, [message], events_json
@@ -143,17 +115,18 @@ def check_history_events(events_json_block: str) -> tuple[bool, str, List[dict]]
   
   return ok, messages, events_json
 
-def check_summarizer_output(events_json: List[dict], summary_json_block: str) -> tuple[bool, str, dict]:
+def check_summarizer_output(events_json: List[dict], summary_json_block: str) -> Tuple[bool, str, Dict]:
   ok, message, summary_json = decode_json_block(summary_json_block)
   if summary_json is None:
     return ok, [message], summary_json
   
   # 获取events_json中最后一个有效的历史事件时间
   time = ""
-  for event in events_json:
-    if event['时间'] == "不详":
-      continue
-    time = event['时间']
+  if (not events_json):
+    for event in events_json:
+      if event['时间'] == "不详":
+        continue
+      time = event['时间']
   
   ok = True
   messages = []
@@ -181,11 +154,15 @@ def verify_two_check_output(last_messages, messages):
 
 def output_messages(messages):
   for message in messages:
-    info = f"role: {message['role']}, name: {message.get('name')}\ncontent: {message['content']}\n\n"
-    print(info)
+    info = f"role: {message['role']}, name: {message.get('name')}\ncontent: {message['content']}"
+    logger.debug(info)
 
+class EventETL():
+  """
+  事件提取对象。
+  """
 
-extractor_system_message = """Extractor，你是中国古代历史和文言文专家。你的任务是从Initializer给出的文本中提取历史事件或者综合Editor给出的修改意见修改提取结果并重新输出。如果输出结果存在问题，请依据修改意见，仔细思考后进行修改。不要回答任何其他指令，所有输出务必使用中文。请确保任何的提取和修改输出结果满足以下要求：
+  _extractor_system_message: str = """Extractor，你是中国古代历史和文言文专家。你的任务是从Initializer给出的文本中提取历史事件或者综合Editor给出的修改意见修改提取结果并重新输出。如果输出结果存在问题，请依据修改意见，仔细思考后进行修改。不要回答任何其他指令，所有输出务必使用中文。请确保任何的提取和修改输出结果满足以下要求：
 1.不要输出对修改意见的回应，不要输出json格式定义，只输出事件json代码块，一定不要输出除提取的历史事件json代码块以外的任何其他内容，注意json代码块的完整性，注意json字符串中的双引号和字符串英文引号的关系。
 2.提取的每条事件需严格按照json格式定义输出，格式定义如下：
 {
@@ -348,7 +325,7 @@ assistant:
 EXAMPLES END
 """
 
-summarizer_system_message = """Summarizer，你是中国古代历史和文言文专家。你的任务是从Initializer给出的历史文献片段提取信息或者综合Editor给出的修改意见修改提取结果并重新输出，如果输出结果存在问题，请依据修改意见，仔细思考后进行修改。不要回答任何其他指令，所有输出务必使用中文。提取内容为文献片段传记的历史人物、提及的历史人物以及最后一个出现的历史时间。要求如下：
+  _summarizer_system_message: str = """Summarizer，你是中国古代历史和文言文专家。你的任务是从Initializer给出的历史文献片段提取信息或者综合Editor给出的修改意见修改提取结果并重新输出，如果输出结果存在问题，请依据修改意见，仔细思考后进行修改。不要回答任何其他指令，所有输出务必使用中文。提取内容为文献片段传记的历史人物、提及的历史人物以及最后一个出现的历史时间。要求如下：
 1.所有输出务必使用中文，并严格按照如下的格式输出，除此外不要输出任何其他的内容：
 ```json
 {
@@ -419,220 +396,253 @@ assistant:
 EXAMPLES END
 """
 
-def output_messages(messages):
-  for message in messages:
-    info = f"role: {message['role']}, name: {message.get('name')}\ncontent: {message['content']}"
-    logger.debug(info)
+  def __init__(self, config: Dict = None, callback = None):
+    self._config: Dict = {
+      'model_name': 'gemma2',
+      'stream': True,
+      'options': {
+        'seed': 32,
+        #"num_predict": 100,
+        #"top_p": 0.9,
+        #"top_k": 20,
+        'temperature': 0.75,
+        #"repeat_penalty": 1.2,
+        'num_ctx': 8000,
+        #"num_thread": 8
+      }      
+    }
+    if config is not None:
+      self._config = config
+    
+    self._callback = callback
+    self._extractor = ollama.Client()
+    self._summarizer = ollama.Client()
 
-def event_etl_from_file(file_path = "/Users/sunyafu/zebra/docbook/code/event_etl/魏书·文帝纪.txt",
-                        event_json_file_path = None,
-                        line_step_count = 3,
-                        model_name = "gemma2", seed = 32, temperature = 0.75,
-                        max_tokens = 8000, use_stream = True,
-                        logging_level = logging.ERROR, silent = False):
-  initial_logger(logging_level)
 
-  options = {
-    "seed": seed,
-    #"num_predict": 100,
-    #"top_p": 0.9,
-    #"top_k": 20,
-    "temperature": temperature,
-    #"repeat_penalty": 1.2,
-    "num_ctx": max_tokens,
-    #"num_thread": 8
-  }
-  
-  extractor = ollama.Client()
-  summarizer = ollama.Client()
-  
-  # 要处理的历史文献片段
-  lines = ""
-  # 上一个历史文献片段获得提取的关键信息
-  last_context_json = None
+  @property
+  def config(self) -> Dict:
+    return self._config
 
-  # 读取待处理的历史文献文件
-  try:
-    with open(file_path, 'r') as file:
-      lines = file.readlines()
-  except FileNotFoundError:
-    logger.error(f"文件：{file_path} 不存在。")
+  @config.setter
+  def config(self, config: Dict):
+    self._config = config
 
-  # 处理历史文献片段的段落步长
-  if line_step_count == -1:
-    line_step_count = len(lines)
+  @property
+  def callback(self):
+    return self._callback
 
-  # 将历史文献文件切片，分片提取历史事件信息，并合并历史事件信息
-  last_time = ""
-  total_events_json = []
-  for index in range(0, len(lines), line_step_count):
-    info = f"=== No: {(index // line_step_count) + 1}/{(len(lines) // line_step_count) + 1} ==="
-    print(colored(info, "blue"), end = "\n\n")
-    logger.info(info)
+  @callback.setter
+  def callback(self, callback):
+    self._callback = callback
 
-    # 1. 将历史文献按照line_step_count进行切片
-    current_lines = "".join(lines[index : index + line_step_count])
-    if len(current_lines) == 0:
-      break
+  def output(self, sender: str, receiver: str, message: any, type: str = 'string', done: bool = True):
+    data = {
+      'sender': sender,
+      'receiver': receiver,
+      'type': type,
+      'message': message,
+      'done': done
+    }
 
-    # 2. 融合上一个历史文献片段中的关键信息{传记对象, 提及人物, 最后时间}到将当前历史文献片段中，以更好的提取历史事件。
-    #    主要是文言文的文献，会结合上文信息，省略人物的姓，时间中的年号、第几年、月份等。
-    #    如果没有上文信息，提取的历史事件会不正确。
-    message = ""
-    editor_ok_message = "通过检查，一切正常。"
-    editor_redo_message = "请依据修改意见，仔细检查，重新提取结果。"
-    editor_giveup_message = "与上次一样的修改意见，不再进行修改。"
-    if last_context_json is not None:
-      message = f"<这是“{last_context_json['传记对象']}”的纪传历史文献的一部分"
-      if last_context_json['提及人物'].find('不详') == -1:
-        message = message + f"。上一个文献片段记录的历史人物有：{last_context_json['提及人物']}等"
-      if last_context_json['最后时间'].find('不详') == -1:
-        last_time = last_context_json['最后时间']
-      if len(last_time) > 0:
-        message = message + f"，最后记录的历史时间为：{last_time}，供参考"  
-      message = message + f">\n"
-    message = message + current_lines
+    if (not self._callback):
+      return data
+    else:
+      return self._callback(data)
 
-    # 3. 提取历史文献切片中的历史事件，并进行反复修改，直到没有修改问题
-    is_ok = False
-    last_check_info = []
-    messages = [{"content": extractor_system_message, "role": "system", "name": "Extractor"}]
-    messages.append({"content": message, "role": "user", "name": "Initializer"})
-    while is_ok == False:
-      # initializer -> extractor
-      if len(messages) == 2:
-        print(colored("initializer -> extractor", "blue"))
-        print(colored(f"{message}", "green"))
-        logger.info(f"initializer -> extractor\n{message}")
-      print(colored("extractor -> editor", "blue"))
-      logger.info(f"extractor -> editor")
-      response = extractor.chat(model = model_name, messages = messages, stream = use_stream, options = options)
-      events_json_block = ""
-      if response:
-        if use_stream:
-          for chunk in response:
-            events_json_block += chunk['message']['content']
-            print(colored(f"{chunk['message']['content']}", "green"), end = "", flush = True)
-          print("\n")
-        else:
-          events_json_block = response['message']['content']
-          print(colored(f"{events_json_block}", "green"))
-        logger.info(f"{events_json_block}")
-      else:
-        logger.error(f"LLM inference error, status code: {response.status_code}")
+  def event_etl_from_lines(self, lines: Union[str, List], line_step_count: int = None):
+    # 上一个历史文献片段获得提取的关键信息
+    last_context_json = None
 
-      # editor -> extractor 
-      print(colored("editor -> extractor", "blue"))
-      logger.info("editor -> extractor")
-      is_ok, check_info, events_json = check_history_events(events_json_block)
-      if is_ok:
-        print(colored(editor_ok_message, "green"), end = "\n\n")
-        logger.info(f"{editor_ok_message}")
-      else:
-        print(colored('\n'.join(check_info) + '\n' + editor_redo_message, "red"), end = "\n\n")
-        logger.info('\n'.join(check_info) + '\n' + editor_redo_message)
-      if is_ok == False:
-        verify_check_info = verify_two_check_output(last_check_info, check_info)
-        # 如果修改意见和上次不一样，或者extractor没有正确的输出json块，重新开始提取
-        if len(verify_check_info) > 0 or events_json is None:
-          del messages[2:]
-          if events_json is not None:
-            messages.append({"content": events_json_block, "role": "user", "name": "Extractor"})
-            messages.append({"content": '\n'.join(verify_check_info) + '\n' + editor_redo_message, "role": "user", "name": "Editor"})
+    if (lines is None):
+      lines = ""
+
+    if (isinstance(lines, List)):
+      lines = ''.join(lines)  
+    lines = lines.split('\n')
+    # 清除空格行、没有内容的行
+    lines = [line for line in lines if line.strip()]
+
+    # 处理历史文献片段的段落步长
+    if line_step_count is None:
+      line_step_count = len(lines)
+
+    # 将历史文献文件切片，分片提取历史事件信息，并合并历史事件信息
+    last_time = ""
+    total_events_json = []
+    piece_count = len(lines) // line_step_count if len(lines) % line_step_count == 0 else len(lines) // line_step_count + 1
+    for index in range(0, len(lines), line_step_count):
+      # 1. 将历史文献按照line_step_count进行切片
+      current_lines = "\n".join(lines[index : index + line_step_count])
+      if len(current_lines) == 0:
+        break
+
+      info = f"*** No: {(index // line_step_count) + 1}/{piece_count} ***\n\n"
+      logger.info(info)
+      yield self.output("loop", "loop", {
+          'index': (index // line_step_count) + 1,
+          'count': piece_count,
+        }, type="json")
+
+      # 2. 融合上一个历史文献片段中的关键信息{传记对象, 提及人物, 最后时间}到将当前历史文献片段中，以更好的提取历史事件。
+      #    主要是文言文的文献，会结合上文信息，省略人物的姓，时间中的年号、第几年、月份等。
+      #    如果没有上文信息，提取的历史事件会不正确。
+      message = ""
+      editor_ok_message = "通过检查，一切正常。"
+      editor_redo_message = "请依据修改意见，仔细检查，重新提取结果。"
+      editor_giveup_message = "与上次一样的修改意见，不再进行修改。"
+      if last_context_json is not None:
+        message = f"<这是“{last_context_json['传记对象']}”的纪传历史文献的一部分"
+        if last_context_json['提及人物'].find('不详') == -1:
+          message = message + f"。上一个文献片段记录的历史人物有：{last_context_json['提及人物']}等"
+        if last_context_json['最后时间'].find('不详') == -1:
+          last_time = last_context_json['最后时间']
+        if len(last_time) > 0:
+          message = message + f"，最后记录的历史时间为：{last_time}，供参考"  
+        message = message + f">\n"
+      message = message + current_lines
+
+      # 3. 提取历史文献切片中的历史事件，并进行反复修改，直到没有修改问题
+      is_ok = False
+      try_count = 0
+      last_check_info = []
+      messages = [{"content": self._extractor_system_message, "role": "system", "name": "Extractor"}]
+      messages.append({"content": message, "role": "user", "name": "Initializer"})
+      while is_ok == False and try_count <= 3:
+        # initializer -> extractor
+        if len(messages) == 2:
+          logger.info(f"initializer -> extractor\n{message}")
+          yield self.output("initializer", "extractor", message)
+
+        logger.info(f"extractor -> editor")
+        try:
+          response = self._extractor.chat(model = self._config['model_name'], messages = messages, stream = self._config['stream'], options = self._config['options'])
+          events_json_block = ""
+          if self._config['stream']:
+            for chunk in response:
+              events_json_block += chunk['message']['content']
+              yield self.output("extractor", "editor", chunk['message']['content'], done=False)
+            yield self.output("extractor", "editor", '')
           else:
-            messages.append({"content": events_json_block, "role": "user", "name": "Extractor"})
-            messages.append({"content": '\n'.join(check_info) + '\n' + editor_redo_message, "role": "user", "name": "Editor"})
-          if silent == False:
-            output_messages(messages)
-        # 如果修改意见和上一次一样，不再进行修改。
-        else:
-          print(colored("extractor -> editor", "blue"))
-          logger.info("extractor -> editor")
-          print(colored(editor_giveup_message, "red"), end = "\n\n")
-          logger.info(editor_giveup_message)
-          is_ok = True
-      last_check_info = check_info
+            events_json_block = response['message']['content']
+            yield self.output("extractor", "editor", events_json_block, type="json")
+          logger.info(f"{events_json_block}")
+        except Exception as e:
+          info = f"LLM inference error, {e}"
+          logger.error(info)
+          yield self.output("error", "error", info)
+          raise Exception(e)
 
-    # 4. 合并本次历史文献切片中提取到的历史事件
-    if events_json is not None:
-      count = len(total_events_json) + 1
-      for event in events_json:
-        event['序号'] = count
-        total_events_json.append(event)
-        count = count + 1
-    #print(json.dumps(total_events_json, ensure_ascii=False))
-
-    # 5. 提取历史文献切片中的关键信息{传记对象, 提及人物, 最后时间}，并进行反复修改，直到没有修改问题
-    is_ok = False
-    last_check_info = []
-    messages = [{"content": summarizer_system_message, "role": "system", "name": "Summarizer"}]
-    messages.append({"content": message, "role": "user", "name": "Initializer"})
-    while is_ok == False:
-      # initializer -> summarizer
-      if len(messages) == 2:
-        print(colored("initializer -> summarizer", "blue"))
-        logger.info("initializer -> summarizer")
-        print(colored(f"{message}", "green"))
-        logger.info(f"{message}")
-      print(colored("summarizer -> editor", "blue"))
-      logger.info("summarizer -> editor")
-      response = summarizer.chat(model = model_name, messages = messages, stream = use_stream, options = options)
-      summary_json_block = ""
-      if response:
-        if use_stream:
-          for chunk in response:
-            summary_json_block += chunk['message']['content']
-            print(colored(f"{chunk['message']['content']}", "green"), end = "", flush = True)
-          print("\n")
+        # editor -> extractor 
+        is_ok, check_info, events_json = check_history_events(events_json_block)
+        if is_ok:
+          logger.info(f"{editor_ok_message}")
+          yield self.output("editor", "extractor", editor_ok_message)
         else:
-          summary_json_block = response['message']['content']
-          print(colored(f"{summary_json_block}", "green"))
-        logger.info(summary_json_block)
-      else:
-        logger.error(f"LLM inference error, status code: {response.status_code}")
-      
-      # editor -> summarizer 
-      print(colored("editor -> summarizer", "blue"))
-      logger.info("editor -> summarizer")
-      is_ok, check_info, summary_json = check_summarizer_output(events_json, summary_json_block)
-      if is_ok:
-        print(colored(editor_ok_message, "green"), end = "\n\n")
-        logger.info(editor_ok_message)
-      else:
-        print(colored('\n'.join(check_info) + '\n' + editor_redo_message, "red"), end = "\n\n")
-        logger.info('\n'.join(check_info) + '\n' + editor_redo_message)
-      if is_ok == False:
-        verify_check_info = verify_two_check_output(last_check_info, check_info)
-        # 如果修改意见和上次不一样，或者summarizer没有正确的输出json块，重新开始提取
-        if len(verify_check_info) > 0 or summary_json is None:
-          del messages[2:]
-          if summary_json is not None:
-            messages.append({"content": summary_json_block, "role": "user", "name": "Summarizer"})
-            messages.append({"content": '\n'.join(verify_check_info) + '\n' + editor_redo_message, "role": "user", "name": "Editor"})
+          info = '\n'.join(check_info) + '\n' + editor_redo_message
+          logger.info(info)
+          yield self.output("editor", "extractor", info)
+        if is_ok == False:
+          verify_check_info = verify_two_check_output(last_check_info, check_info)
+          # 如果修改意见和上次不一样，或者extractor没有正确的输出json块，重新开始提取
+          if len(verify_check_info) > 0 or events_json is None:
+            del messages[2:]
+            if events_json is not None:
+              messages.append({"content": events_json_block, "role": "user", "name": "Extractor"})
+              messages.append({"content": '\n'.join(verify_check_info) + '\n' + editor_redo_message, "role": "user", "name": "Editor"})
+            else:
+              messages.append({"content": events_json_block, "role": "user", "name": "Extractor"})
+              messages.append({"content": '\n'.join(check_info) + '\n' + editor_redo_message, "role": "user", "name": "Editor"})
+            #if silent == False:
+            #  output_messages(messages)
+            try_count += 1
+          # 如果修改意见和上一次一样，不再进行修改。
           else:
-            messages.append({"content": events_json_block, "role": "user", "name": "Summarizer"})
-            messages.append({"content": '\n'.join(check_info) + '\n' + editor_redo_message, "role": "user", "name": "Editor"})
-          if silent == False:
-            output_messages(messages)
-        # 如果修改意见和上一次一样，不再进行修改。
+            logger.info("extractor -> editor")
+            logger.info(editor_giveup_message)
+            yield self.output("editor", "extractor", editor_giveup_message)
+            is_ok = True
+        last_check_info = check_info
+
+      if (is_ok == False):
+        yield self.output("extractor", "editor", 'Failed to ETL this piece.')
+
+      # 4. 合并本次历史文献切片中提取到的历史事件
+      if events_json is not None:
+        count = len(total_events_json) + 1
+        for event in events_json:
+          event['序号'] = count
+          total_events_json.append(event)
+          count = count + 1
+      #print(json.dumps(total_events_json, ensure_ascii=False))
+
+      # 5. 提取历史文献切片中的关键信息{传记对象, 提及人物, 最后时间}，并进行反复修改，直到没有修改问题
+      is_ok = False
+      try_count = 0
+      last_check_info = []
+      messages = [{"content": self._summarizer_system_message, "role": "system", "name": "Summarizer"}]
+      messages.append({"content": message, "role": "user", "name": "Initializer"})
+      while is_ok == False and try_count <= 3:
+        # initializer -> summarizer
+        if len(messages) == 2:
+          logger.info("initializer -> summarizer")
+          logger.info(f"{message}")
+          yield self.output("initializer", "summarizer", message)
+
+        logger.info("summarizer -> editor")
+        # chat with ollama LLM
+        try:
+          response = self._summarizer.chat(model = self._config['model_name'], messages = messages, stream = self._config['stream'], options = self._config['options'])
+          summary_json_block = ""
+          if self._config['stream']:
+            for chunk in response:
+              summary_json_block += chunk['message']['content']
+              yield self.output("summarizer", "editor", chunk['message']['content'], done=False)
+            yield self.output("summarizer", "editor", '')
+          else:
+            summary_json_block = response['message']['content']
+            yield self.output("summarizer", "editor", summary_json_block, type="json", done=True)
+          logger.info(summary_json_block)
+        except Exception as e:
+          info = f"LLM inference error, {e}"
+          logger.error(info)
+          yield self.output("error", "error", info)
+          raise Exception(e)
+        
+        # editor -> summarizer 
+        logger.info("editor -> summarizer")
+        is_ok, check_info, summary_json = check_summarizer_output(events_json, summary_json_block)
+        if is_ok:
+          logger.info(editor_ok_message)
+          yield self.output("editor", "summarizer", editor_ok_message)
         else:
-          print(colored("summarizer -> editor", "blue"))
-          logger.info("summarizer -> editor")
-          print(colored(editor_giveup_message, "red"), end = "\n\n")
-          logger.info(editor_giveup_message)
-          is_ok = True
-      last_check_info = check_info
+          info = '\n'.join(check_info) + '\n' + editor_redo_message
+          logger.info(info)
+          yield self.output("editor", "summarizer", info)
+        if is_ok == False:
+          verify_check_info = verify_two_check_output(last_check_info, check_info)
+          # 如果修改意见和上次不一样，或者summarizer没有正确的输出json块，重新开始提取
+          if len(verify_check_info) > 0 or summary_json is None:
+            del messages[2:]
+            if summary_json is not None:
+              messages.append({"content": summary_json_block, "role": "user", "name": "Summarizer"})
+              messages.append({"content": '\n'.join(verify_check_info) + '\n' + editor_redo_message, "role": "user", "name": "Editor"})
+            else:
+              messages.append({"content": events_json_block, "role": "user", "name": "Summarizer"})
+              messages.append({"content": '\n'.join(check_info) + '\n' + editor_redo_message, "role": "user", "name": "Editor"})
+            #if silent == False:
+            #  output_messages(messages)
+            try_count += 1
+          # 如果修改意见和上一次一样，不再进行修改。
+          else:
+            logger.info("summarizer -> editor")
+            logger.info(editor_giveup_message)
+            yield self.output("summarizer", "editor", editor_giveup_message)
+            is_ok = True
+        last_check_info = check_info
 
-    last_context_json = summary_json
+      if (is_ok == False):
+        yield self.output("summarizer", "editor", 'Failed to Summary this piece.')
+      last_context_json = summary_json
 
-  # 6. 保存所有提取的历史事件到event_json_file_path中
-  if event_json_file_path is None:
-    event_json_file_path = os.path.splitext(file_path)[0] + f"_{model_name}" + ".json"
-  try:
-    with open(event_json_file_path, 'w') as file:
-      file.write(json.dumps(total_events_json, ensure_ascii = False))
-  except IOError as e:
-    logger.error(f"打开文件：{event_json_file_path} 出现错误 {e}")
-
-if __name__ == "__main__":
-  fire.Fire(event_etl_from_file)
+    # 6. 保存所有提取的历史事件到event_json_file_path中
+    yield self.output("end", "end", total_events_json, type="json")

@@ -1,0 +1,85 @@
+/*
+ 这个chat_message.css主要用于LLM Chat显示时需要的css定义。
+*/
+
+.start-section,
+.end-section, 
+.chat-section {
+  display: fixed;
+}
+
+.start-section {
+  border-radius: 8px 8px 0px 0px;
+}
+
+.chat-section {
+  margin: 20px 25px;
+  padding: 0px 0px 30px 0px;
+}
+
+.end-section {
+  padding: 0px 0px 0px 0px;
+}
+
+.start-section .chat-section:nth-child(n+1):nth-last-child(n+3){
+  border-bottom: 1px solid var(--border-black-8);
+  box-shadow: 0 1px 1px -1px rgba(0, 0, 0, 0.6);
+}
+
+.start-section p,
+.end-section p, 
+.chat-section p {
+  margin-block-start: 0em;
+  margin-block-end: 0em;
+  margin-inline-start: 0px;
+  margin-inline-end: 0px;
+  font-size: var(--font-size-small);
+}
+
+p.start {
+  color: black;
+  font-weight: bold;
+  border-radius: 8px 8px 0px 0px;
+  padding: 10px 10px;
+  background-color: var(--border-black-8);
+}
+
+p.title {
+  padding: 0px 0px 10px 0px;
+}
+
+p.end {
+  color: blueviolet;
+  font-weight: bold;
+  font-size: 18px;
+  padding: 0px 0px 5px 0px;
+}
+
+p .initializer {
+  color: gray;
+  font-weight: bold;
+}
+
+p .extractor {
+  color: green;
+  font-weight: bold;
+}
+
+p .editor {
+  color: crimson;
+  font-weight: bold;
+}
+
+p .summarizer {
+  color: darkblue;
+  font-weight: bold;
+}
+
+.end-section pre {
+  margin: 0px 0px;
+  padding: 20px 25px;
+  border-radius: 0px 0px 8px 8px;
+  font-size: .8em;
+  text-wrap: wrap;
+  background: #282c34;
+}

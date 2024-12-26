@@ -20,8 +20,8 @@ export default defineConfig({
     extensions:['.mjs','.js','.ts','.jsx','.tsx','.json'],
   },
   server: {             
-    host: '127.0.0.1',	
-    // port: 8080,      
+    host: '127.0.0.1',
+    // port: 8080,
     open: true,
     proxy: {
       // 设置代理
@@ -29,12 +29,18 @@ export default defineConfig({
         target: "http://127.0.0.1:6060", // 访问数据的计算机域名，不能用localhost，好像有安全问题，访问返回403
         ws: true, // 是否启用websockets
         changeOrigin: true, //开启代理,
-        // 重写代理规则，/api开头，代理到 /api
+        // 重写代理规则，/api开头，代理到 /
         // 例：[本服务地址]/api/book/search代理到
         // http://localhost:5000/book/search
         // p.replace('/^\/api/', '') FAILED，要却掉正则表达式中的引号
         rewrite: (path)=>path.replace(/^\/api/, '')
+      },
+      "/llm": {
+        target: "http://127.0.0.1:6080",
+        ws: true,
+        changeOrigin: true,
+        rewrite: (path)=>path.replace(/^\/llm/, '')
       }
-    }
+    },
   },
 })

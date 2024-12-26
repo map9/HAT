@@ -20,7 +20,7 @@ import BookShelf from './Books/BookShelf.vue';
 import LoadingStatus from "./ts/LoadingStatus";
 import { QueryResults, SearchRange } from "./ts/BookDefine"
 import { getStringParam } from "./ts/Helper"
-import { getBookList } from './ts/BookServiceHelper';
+import { getBookList } from './ts/ServiceHelper';
 import HeadType from './ts/HeadType';
 
 const route = useRoute();

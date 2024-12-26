@@ -35,7 +35,7 @@ import { debounce } from 'lodash-es';
 
 import LoadingStatus from "../ts/LoadingStatus";
 import { Division, BookReaderChapter, DirectoryTuple } from "../ts/BookDefine";
-import { getBookChapters, getBookChapter } from '../ts/BookServiceHelper';
+import { getBookChapters, getBookChapter } from '../ts/ServiceHelper';
 import { HtmlParseDocument } from '../ts/DocBookParser';
 
 const toast = useToast();
@@ -320,7 +320,7 @@ const debouncedCheckScroll = debounce(checkScroll, 200);
 </script>
 
 <style>
-@import '../theme/book_body.css';
+@import '../theme/book_reader.css';
 @import '../theme/atom_one_dark.scss';
 @import '../theme/atom_one_light.scss';
 </style>

@@ -38,8 +38,7 @@ import LoadingStatus from "./ts/LoadingStatus";
 import { Book, SearchRange } from "./ts/BookDefine";
 import { getStringParam } from "./ts/Helper"
 import HeadType from './ts/HeadType';
-import { getBookCatalogue } from './ts/BookServiceHelper';
-import { Bottom } from '@element-plus/icons-vue';
+import { getBookCatalogue } from './ts/ServiceHelper';
 
 const route = useRoute();
 const router = useRouter();

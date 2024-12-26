@@ -26,6 +26,9 @@
   --annotation-font-family: SourceHanSansSC-Regular, SourceHanSansCN-Regular, PingFangSC-Regular, "Microsoft YaHei", system-ui, -apple-system, Segoe UI, Roboto, Emoji, Helvetica, Arial, sans-serif;
   /* page width */
   --page-size: 1200px;
+  /* other font size*/
+  --font-size-normal: 16px;
+  --font-size-small: 14px;
 
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;

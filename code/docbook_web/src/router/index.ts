@@ -31,6 +31,12 @@ const routes: Array<RouteRecordRaw> = [
 		meta: { title: '开卷 编辑' },
 		component:()=>import('../components/Editor.vue'),
 	},
+	{
+		path: '/Chat',
+		name: 'Chat',
+		meta: { title: '开卷 编辑' },
+		component:()=>import('../components/LLM/LLMChat.vue'),
+	},
 ]
 
 const router = createRouter({

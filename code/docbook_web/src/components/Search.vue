@@ -19,7 +19,6 @@
 <script setup lang="ts">
 import { withDefaults, ref, onMounted, nextTick, watch } from 'vue';
 import { useRoute } from 'vue-router';
-import axios from "axios";
 import { useToast } from "vue-toastification";
 
 import HeadBar from "./HeadBar.vue";
@@ -29,7 +28,7 @@ import SearchResultDirectory from "./Search/SearchResultDirectory.vue";
 
 import LoadingStatus from "./ts/LoadingStatus";
 import { QueryResults, SearchRange, QueryResultsDirectory, QueryResultPiece, DirectoryTuple } from "./ts/BookDefine"
-import { searchArchive } from "./ts/BookServiceHelper"
+import { searchArchive } from "./ts/ServiceHelper"
 import { getStringParam } from "./ts/Helper"
 import HeadType from './ts/HeadType';
 
