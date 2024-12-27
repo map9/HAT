@@ -37,11 +37,11 @@ _MODEL_NAME_ = 'glm4:9b-text-q8_0' # 不理解指令 delete
 _MODEL_NAME_ = 'gemma2:9b-text-q8_0' # 不理解指令 delete，text的模型不是指令模型
 _MODEL_NAME_ = 'mistral-nemo:latest' # json输出中{不匹配，有的时候会缺失}，经过提示，能修改回来。
 
-_MODEL_NAME_ = 'gemma2' # 9b 无法解决json输出中用 ” 符号代替 " 的问题，多次提示，怎么提示，均无法解决。
 _MODEL_NAME_ = 'gemma2:27b' # 有些中文字，不识别，导致输出为字母，应该是中文字库太少的问题。
 _MODEL_NAME_ = 'qwen2.5:7b' # ok
 _MODEL_NAME_ = 'qwen2.5:7b-instruct-q8_0' # ok
 _MODEL_NAME_ = 'qwen2.5:14b' # 时间提取问题比较多
+_MODEL_NAME_ = 'gemma2' # 9b 无法解决json输出中用 ” 符号代替 " 的问题，多次提示，怎么提示，均无法解决。
 
 def event_etl_from_file(file_path,
                         event_json_file_path,

@@ -178,7 +178,7 @@ class BookFile(object):
         chapter.divisions = division.divisions
         file.close()
 
-    logger.info(f"Load chapter: '{chapter.title.title}', ref: '{chapter.ref}', success.")
+    #logger.info(f"Load chapter: '{chapter.title.title}', ref: '{chapter.ref}', success.")
     return True
 
   def load_chapter_byid(self, id : Union[uuid.UUID, str]) -> Tuple[bool, Union[Division, None]]:
