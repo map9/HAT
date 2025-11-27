@@ -40,6 +40,7 @@ const light_style = `
 
     .timeline-axis .yearly text {
       fill: var(--yearly-label-color);
+      pointer-events: none;
     }
 
     .timeline-axis .daily line {
@@ -48,6 +49,7 @@ const light_style = `
 
     .timeline-axis .daily text {
       color: var(--daily-label-color);
+      pointer-events: none;
     }
 
     .timeline-axis .grid line {
@@ -113,6 +115,7 @@ const light_style = `
 
   .timeline-axis .yearly text {
     fill: var(--yearly-label-color);
+    pointer-events: none;
   }
 
   .timeline-axis .daily line {
@@ -121,6 +124,7 @@ const light_style = `
 
   .timeline-axis .daily text {
     fill: var(--daily-label-color);
+    pointer-events: none;
   }
 
   .timeline-axis .grid line {

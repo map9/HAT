@@ -84,7 +84,6 @@ class Converter():
     toc_item["order"] = item.attrs['playOrder']
     toc_item["src"] = item.content.attrs['src']
     toc_item["sub_items"] = []
-    #print(f"label: {toc_item["label"]}, order: {toc_item["order"]}, src: {toc_item["src"]}.")
 
     for child in item.children:
       if child.name == 'navPoint':
@@ -128,9 +127,16 @@ class Converter():
       division.add_division(item_division)
     return division
 
+  def print_toc_items(self, toc_items: List[dict[str, Union[str, List]]], level: int = 0):
+    for toc_item in toc_items:
+      print(f"{'  '*level}label: {toc_item['label']}, order: {toc_item['order']}, src: {toc_item['src']}.")
+      if len(toc_item["sub_items"]) > 0:
+        self.print_toc_items(toc_item["sub_items"], level + 1)
+
   def decode_book(self) -> docbook.Book:
     content = self._epub_book.get_toc_content()
     toc_items = self.decode_toc(content)
+    #self.print_toc_items(toc_items)
 
     # Volume or Chapter
     for toc_item in toc_items:

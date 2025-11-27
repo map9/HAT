@@ -17,7 +17,7 @@
     </div>
     <div class="body" v-show="collapse === false">
       <div v-for="(innerChatSet, index) in inInnerChatSets" :key="index" class="loop-section">
-        <p class="loop">提取第<span class='order'>{{ innerChatSet.index }}</span>个片段，共<span class='order'>{{ innerChatSet.count }}</span>个片段</p>
+        <p class="loop">提取第<span class='order'>{{ innerChatSet.startLineNo }}</span>~<span class='order'>{{ innerChatSet.endLineNo }}</span>行，共<span class='order'>{{ innerChatSet.lineCount }}</span>行</p>
         <div v-for="(message, index) in innerChatSet.messages" :key="index" class="chat-section">
           <p class="middle"><span :class="message.sender">{{ message.sender }}</span>&nbsp;&nbsp;-&gt;&nbsp;&nbsp;<span :class="message.receiver">{{ message.receiver }}</span></p>
           <div class="text" v-if= "message.type == 'string' || message.done == false"  v-html="md.render(message.message)">
@@ -63,7 +63,7 @@
       if (props.inInnerChatSets !== undefined) {
         const innerChatSet = props.inInnerChatSets[props.inInnerChatSets.length - 1];
         if (innerChatSet !== undefined) {
-          status = `提取第${innerChatSet.index}个片段，共${innerChatSet.count}个片段...`;
+          status = `提取第${innerChatSet.startLineNo}~${innerChatSet.endLineNo}行，共${innerChatSet.lineCount}行...`;
         }
       }
     } else {

@@ -1,6 +1,8 @@
 """
 decoder-epub-zztj.py
 将电子书《資治通鑑胡三省註版》转换为docbook格式
+资治通鉴·繁体竖排版 294卷全 - 「宋」司马光 编集 「宋」胡三省 辑注
+浙江出版集團數字傳媒有限公司 2018 版本
 
 usage: epub2dbook-zztj.py epub_dir [-h] [--output_dir OUTPUT_DIR]
 

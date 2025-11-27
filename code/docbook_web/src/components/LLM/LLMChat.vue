@@ -228,16 +228,25 @@ function receiveETLAgentResponse(eventSource) {
   const etlMessageContent = new EtlResponseObject()
   chatMessages.value[chatMessages.value.length - 1].content = etlMessageContent;
 
+  let error : string | undefined = undefined;
   eventSource.onmessage = async (event) => {
     let sseData = event.data;
     praseSSEData(sseData, (d) => {
       //console.log(sseData);
-      etlMessageContent.addResponse(d);
+      error = etlMessageContent.addResponse(d);
+      if (error != undefined) {
+        toast.error(error);
+      }
     });
     //console.log(etlMessageContent.getInnerChatSets());
 
     // 强制重新赋值以确保响应式系统检测到更改
-    chatMessages.value[chatMessages.value.length - 1].content = etlMessageContent;
+    if (error != undefined) {
+      chatMessages.value[chatMessages.value.length - 1].role = ChatRoleType.ASSISTANT;
+      chatMessages.value[chatMessages.value.length - 1].content = error;
+    }
+    else
+      chatMessages.value[chatMessages.value.length - 1].content = etlMessageContent;
     chatMessages.value = [...chatMessages.value];
     await nextTick();
     scrollToBottom();

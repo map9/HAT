@@ -63,9 +63,13 @@ class BookFile(object):
   @property
   def type(self):
     return self._type
+
   @property
   def book(self):
     return self._book
+
+  def isLoad(self):
+    return self._book is not None
 
   @staticmethod
   def save_to_docbook(path: str, book: Book, type: BookFileType = BookFileType.SINGLE_FILE) -> bool:

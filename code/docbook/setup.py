@@ -13,7 +13,7 @@ setup(
     },
 
     author='Map9',
-    author_email='map9@yeah.com',
+    author_email='map9@yeah.net',
     description='docbook is a new ancient document file used json, can process comments and notes in ancient document, and search and analysis document content.',
     url='https://github.com/map9/docbook'
 )

@@ -9,8 +9,9 @@ export interface ETLInnerChatMessage {
 
 // ETL Agent Message
 export interface ETLInnerChat {
-  index: number;
-  count: number;
+  startLineNo: number;
+  endLineNo: number;
+  lineCount: number;
   messages: ETLInnerChatMessage[];
 }
 
@@ -62,8 +63,9 @@ export class EtlResponseObject {
         if (ro.sender == 'loop') {
           const message: Record<string, any> = ro.message as Record<string, any>;
           this.innerChatSets.push({
-            index: message.index,
-            count: message.count,
+            startLineNo: message.startLineNo,
+            endLineNo: message.endLineNo,
+            lineCount: message.lineCount,
             messages: [],
           });
         }

@@ -129,7 +129,7 @@ action = "起兵"
 
 帮我设计一个历史事件的数据库，可以考虑知识图谱或者关系数据库的方式，需要考虑，历史人物、历史地点、历史事件的关系，历史事件应该能够包含绝大部份的历史事件，包括人类社会的事件（如：人的生老病死、官场升迁任免、阴谋斗争、战争等）、自然地理的事件（如：天灾、天象等），可应该能完整的看到人物之间的关系，以及可以通过时间、人物、事件类型、地点等几个方面来对历史事件进行梳理、整理。
 
-1.历史实体 (Historical Objects)
+1 历史实体 (Historical Objects)
 - 实体ID (oid)
 - 姓名 (name)
 - 类型 (type)
@@ -138,27 +138,36 @@ action = "起兵"
   o 人造实体 (Artificial Objects): 人造的实体，如：少林寺、太和殿等。
 - 简介 (biography)
 
-2.历史地点 (Historical Places)
+2 历史地点 (Historical Places)
 - 地点ID (pid)
 - 名称 (name)
-- 经度 (longitude) 
-- 纬度 (latitude)
+- 坐标 (coordinates): WKT字符串
 - 简介 (description)
 
-3.历史事件 (Historical Events)
+3 历史事件 (Historical Events)
 - 事件ID (eid)
 - 名称 (name)
 - 发生日期 (date)
 - 结束日期 (end_date)
-- 类型 (type)
-- 子类型 (sub_type)
-- 来源 (source)
+- 类型 (type): 
+- 子类型 (sub_type): 
+- 内容集合（contents）
 
-4.事件与实体关系 (Event Participants)
+3.1 历史时间（Event Date）
+- 公历时间（date）
+- 干支时间（）
+- 时间精度（precision）
+
+3.2 历史内容（Event Content）
+- 内容（content）
+- 格式（format）
+- 引用来源（citation）
+
+4 事件与实体关系 (Event Participants)
 - 事件实体关系ID (aoid)
 - 事件ID (eid)
 - 实体ID (oid)
-- 角色 (role): 在事件中的角色。默认为主角。
+- 角色 (role): 在事件中的角色，默认为主角。
 - 健值对 (key/value): 主要记录事件中参与的实体某些发生变化的属性，如：历史人物实体的职位、封号等。如没有，则没有。
   o key = [name, alias, pseudonym, official_title, honorary_title, noble_rank, honor, emperor_title,temple_name, posthumous_name, ...]
   o name: 姓名
@@ -175,12 +184,12 @@ action = "起兵"
   o temple_name: 庙号，皇帝死后在太庙立庙时所用的称号，通常用于纪念皇帝在位时的功绩。唐太宗（太宗是庙号），宋太祖（太祖是庙号）。
   o posthumous_name: 谥号，在一个人去世后，根据其生前的行为和品德给予的称号。
 
-5.事件与地点关系 (Event Places)
+5 事件与地点关系 (Event Places)
 - 事件地点关系ID (apid)
 - 事件ID (eid)
 - 地点ID (pid)
 
-6.事件与事件关系 (Event Relationships)
+6 事件与事件关系 (Event Relationships)
 - 事件间关系ID (aeid)
 - 事件ID1 (eid1)
 - 事件ID2 (eid2)

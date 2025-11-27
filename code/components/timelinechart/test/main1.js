@@ -1,10 +1,8 @@
-import "./style.css";
 import * as d3 from "d3";
 
-import {timelineChart} from "./timelineChart.js"
-import {dataProvider} from "./dataProvider.js";
+import {timelineChart, dataProvider} from "../src/index.js"
 
-const timeline_data_url = "./history001.csv";
+const timeline_data_url = "./test/history001.csv";
 
 new dataProvider(timeline_data_url, (dp) => {
   const width = document.body.clientWidth;
