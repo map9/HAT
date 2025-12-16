@@ -1,0 +1,172 @@
+{
+  "monthNames": {
+    "0": "January",
+    "1": "February",
+    "2": "March",
+    "3": "April",
+    "4": "May",
+    "5": "June",
+    "6": "July",
+    "7": "August",
+    "8": "September",
+    "9": "October",
+    "10": "November",
+    "11": "December"
+  },
+  "weeks": {
+    "0": "Sun",
+    "1": "Mon",
+    "2": "Tue",
+    "3": "Wed",
+    "4": "Thu",
+    "5": "Fri",
+    "6": "Sat"
+  },
+  "heaven": {
+    "0": "Jiǎ",
+    "1": "Yǐ",
+    "2": "Bǐng",
+    "3": "Dīng",
+    "4": "Wù",
+    "5": "Jǐ",
+    "6": "Gēng",
+    "7": "Xīn",
+    "8": "Rén",
+    "9": "Guǐ"
+  },
+  "earth": {
+    "0": "zǐ",
+    "1": "chǒu",
+    "2": "yín",
+    "3": "mǎo",
+    "4": "chén",
+    "5": "sì",
+    "6": "wǔ",
+    "7": "wèi",
+    "8": "shēn",
+    "9": "yǒu",
+    "10": "xū",
+    "11": "hài"
+  },
+  "animals": {
+    "0": "Rat",
+    "1": "Ox",
+    "2": "Tiger",
+    "3": "Rabbit",
+    "4": "Dragon",
+    "5": "Snake",
+    "6": "Horse",
+    "7": "Goat",
+    "8": "Monkey",
+    "9": "Chicken",
+    "10": "Dog",
+    "11": "Pig"
+  },
+  "monthNumbers": {
+    "0": "1",
+    "1": "2",
+    "2": "3",
+    "3": "4",
+    "4": "5",
+    "5": "6",
+    "6": "7",
+    "7": "8",
+    "8": "9",
+    "9": "10",
+    "10": "11",
+    "11": "12"
+  },
+  "monthNumbers1": "1",
+  "moonStatuses": {
+    "0": "Q0",
+    "1": "Q1",
+    "2": "Q2",
+    "3": "Q3"
+  },
+  "monthSizes": {
+    "0": "S",
+    "1": "L"
+  },
+  "soltermNames": {
+    "0": "J12",
+    "1": "Z12",
+    "2": "J1",
+    "3": "Z1",
+    "4": "J2",
+    "5": "Z2 (March equinox)",
+    "6": "J3",
+    "7": "Z3",
+    "8": "J4",
+    "9": "Z4",
+    "10": "J5",
+    "11": "Z5 (June solstice)",
+    "12": "J6",
+    "13": "Z6",
+    "14": "J7",
+    "15": "Z7",
+    "16": "J8",
+    "17": "Z8 (Sep. equinox)",
+    "18": "J9",
+    "19": "Z9",
+    "20": "J10",
+    "21": "Z10",
+    "22": "J11",
+    "23": "Z11 (Dec. solstice)",
+    "24": "J12"
+  },
+  "eclipseNames" : {
+    "0": "Partial solar eclipse",
+    "1": "Annular solar eclipse",
+    "2": "Total solar eclipse",
+    "3": "Hybrid solar eclipse",
+    "4": "Penumbral lunar eclipse",
+    "5": "Partial lunar eclipse",
+    "6": "Total lunar eclipse"
+  },
+
+  "noteEarly": "The lunar conjunction/new moon (Q0) is close to the midnight. The start day of the month may be one day earlier.",
+  "noteLater": "The lunar conjunction/new moon (Q0) is close to the midnight. The start day of the month may be one day later.",
+  "note1914": "Note that the lunar conjunction/new moon (Q0) did not fall on the first day of the month. This was caused by two factors: 1) Before 1929, the times of lunar conjunction were calculated for the Beijing meridian (116&deg;25'E), which are about 14 minutes earlier than the times listed here based on the meridians of 120&deg;E; 2) Before 1914, the method used to calculate the lunar conjunction was not very accurate.",
+  "note1929": "Note that the lunar conjunction/new moon (Q0) occurred past the midnight of the second day of the month. Before 1929, the times of lunar conjunction were calculated for the Beijing meridian (116&deg;25' E), which are about 14 minutes earlier than the times listed here based on the meridians of 120&deg;E. This explains why the lunar conjunction date listed here is one day later than the first day of the month.",
+
+  "cYearHtml": "<h1>{{gcal}} Year:{{yearc}}</h1><h1>Chinese year:</h1>",
+  "cYearHtml0": "<h2>{{cyears0}}</h2><br/>",
+  "cYearHtml1": "<h2>{{cyears0}} before {{cSpanMonths0}} {{cSpanDates0}},<br/>{{cyears1}} on and after {{cSpanMonths0}} {{cSpanDates0}}</h2><br/>",
+  "cYearHtml1-24": "<h2>{{cyears0}} before {{cSpanMonths0}} {{cSpanDates0}},<br/>{{cyears1}} on and after {{cSpanMonths0}} {{cSpanDates0}}</h2><br/>",
+  "cYearHtml2": "<h2>{{cyears0}} before {{cSpanMonths0}} {{cSpanDates0}},<br/>{{cyears1}} between {{cSpanMonths0}} {{cSpanDates0}} and {{cSpanMonths1}} {{cSpanDates1l}},<br/>{{cyears2}} on and after {{cSpanMonths1}} {{cSpanDates1}}</h2><br/>",
+
+  "yearInfoQinearlyHan": "The calendars used between 221 BCE and 104 BCE were modified versions of the Zhuanxu calendar, one of the old calendars used in the third century BCE in the state of Qin. The first month was the h&#224;i month (present-day month 10). However, it was still called month 10 instead of month 1. The numerical order of the months in a year was 10, 11, 12, 1, 2, ..., 9. The intercalary month was placed at the end of a year, called post month 9. There was a major calendar reform in 104 BCE, where the first month of a year was changed to month 1 and the intercalary month was placed in the month that did not contain a major solar term. The Chinese year in 104 BCE had 15 Chinese months as a result of the change.<br />The calendars in this period are reconstructed according to the description in the article \"Researches on Calendars from Qin to early Han (246 B.C. to 104 B.C.) &mdash; centering on excavated calendrical bamboo slips\" (秦至汉初(前246至前104)历法研究&mdash;以出土历简为中心), L&#464; Zh&#333;ngl&#237;n (李忠林), in <i>Studies in Chinese History</i> (《中国史研究》), issue no. 2, pp. 17&ndash;69 (2012). Our computation method is explained on <a href='QinHanCalendars.html'>this page</a>.",
+  "yearInfoXin": "The Xin dynasty was established in 9 CE The ch&#466;u month (present day month 12) was designated as the first month of a year; the y&#237;n month (present day month 1) became month 2 and so on. The Chinese month numbers were shifted by one. As a result, the Chinese year in 8 CE (W&#249; ch&#233;n) had only 11 months. When the Xin dynasty was overthrown in 23 CE, the month numbers were switched back with month 1 being the y&#237;n month again.",
+  "yearInfoXin24": "<br />As a result, the Chinese year in 23 CE had two sets of calendar: one for the Xin dynasty (ch&#466;u month being the first month) and the other for the restored Han dynasty (y&#237;n month being the first month), also known as Gengshi. The two sets of calendar had 11 overlapping months: months 2-12 in the Xin calendar were the same as months 1-11 in the Gengshi calendar.",
+  "yearInfoWei": "In 237 CE, emperor Mingdi of the Wei dynasty declared that the ch&#466;u month (present day month 12) would be the first month of a year; the y&#237;n month (present day month 1) became month 2 and so on. The Chinese month numbers were shifted by one. The new system was imposed after month 2 in the Chinese year in 237, in which month 4 was followed by month 2. When the emperor died in 239 CE, the month numbers were switched back with month 1 being the y&#237;n month again in the following year. As a result, the Chinese year in 239 had 13 months, where month 12 appeared twice.",
+  "yearInfoWuZhou": "In December 689, Empress Consort Wu designated the z&#464; month (month 11) as the first month of a year. However, the month numbers did not change. The z&#464; month was named Zheng, which is usually referred to month 1; ch&#466;u month was stilled called month 12; y&#237;n month was month 1 and so on. Here the Zheng month is still labelled as month 11. The first month of a year was changed back to month 1 in February 701. The Chinese year in 689 only had 11 months (one leap month), whereas the Chinese year in 700 had 15 months (one leap month).",
+  "yearInfoTang": "In December 761, emperor Suzong of the Tang dynasty designated the z&#464; month (present day month 11) as the first month of a year; the ch&#466;u month (present day month 12) became month 2; the y&#237;n month (present day month 1) became month 3 and so on. The Chinese month numbers were shifted by two. As a result, the Chinese year in 761 (X&#299;n ch&#466;u) had only 10 months. The month numbers ware switched back to the old system in April 762. The Chinese year in 762 (R&#233;n y&#237;n) had 14 months, with two month 4s and two month 5s.",
+  "yearInfoGCalenderReform": "Gregorian calendar reform: Julian calendar was used until October 4, after which the Gregorian calendar was used. To restore the March equinox to the date it had in 325 CE (March 21), the date was advanced so that October 4 was followed by October 15.",
+  "yearInfoQing": "Following the Calendar Case (see, e.g., <a href=\"https://halshs.archives-ouvertes.fr/halshs-01222267/document\" target=\"_blank\">Jami 2015</a> and <a href=\"https://journals.sagepub.com/doi/full/10.1177/0021828620901887\" target=\"_blank\">Cullen &amp; Jami 2020</a>), the Qing government abolished the Western system of astronomy in the calendar computation in <strike>1666</strike> 1667-1669. The calendars in this period were calculated by the <i>D&#224;t&#466;ng</i> system, which was used in the Ming dynasty. The 24 solar terms were calculated based on the <i>p&#237;nq&#236;</i> rule, which took into account only the mean motion of the Sun. Two sets of calendrical solar terms are provided here for reference: the X&#299;nf&#462; solar terms are based on <i>3500 Years of Calendars and Astronomical Phenomena</i>, which are recomputed using the Western system; the <i>D&#224;t&#466;ng</i> solar terms are based on the <i>D&#224;t&#466;ng</i> system. As for the lunar conjunctions, the dates calculated using the <i>D&#224;t&#466;ng</i> astronomical system are identical to those computed using the Western system in these years.<br /><i>Update in May 2024:</i> There are imperial planetary ephemerides for 1662-1671 on the <a href=\"https://qingarchives.npm.edu.tw/index.php\" target=\"_blank\">Digital Library of Qing Archives</a> managed by the National Palace Museum in Taiwan. The dates and times of solar terms in the ephemeris for 1666 agree with the calculations by Western system, whereas those for 1667-1669 agree with the calculations by the <i>D&#224;t&#466;ng</i> system.",
+
+  "WesternCalendarEarly": "(Proleptic) Julian",
+  "WesternCalendar7": "Julian",
+  "WesternCalendar1582": "Julian/Gregorian",
+  "WesternCalendar": "Gregorian",
+
+  "leap": "leap ",
+  "post": "post ",
+  "post9": "post 9",
+
+  "cMonth0": "month: {{number}} ({{size}}, {{heaven}} {{earth}})",
+  "cMonth1": "month: {{number}} ({{size}}{{noZhong}})",
+  "noZhong": ", no Zh&#333;ngq&#236;",
+
+  "cYear": "year: {{year}}",
+  "cYear0": "{{year}}",
+  "cYear1": "{{year}} BCE",
+
+  "cDate0": "{{number}}-{{date}}",
+  "cDate1": "{{number}}-{{date}}",
+  "cDate2": "{{number}}-{{date}}",
+
+  "Sexagenary": "{{heaven}} {{earth}}",
+
+  "MoonPhases": "Moon Phases",
+  "24SolarTerms1": "24 solar terms(dìngqì)"
+}
