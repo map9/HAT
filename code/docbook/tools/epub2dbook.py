@@ -1,5 +1,5 @@
 """
-decoder-epub.py
+epub2dbook.py
 将电子书转换为docbook格式
 """
 

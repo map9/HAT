@@ -5,8 +5,8 @@ export default defineConfig({
   build: {
     lib: {
       entry: './src/index.js', // 库的入口文件
-      name: 'ChineseCalendar', // 全局变量名
-      fileName: 'chinesecalendar', // 输出文件名
+      name: 'TimelineChart', // 全局变量名
+      fileName: 'TimelineChart', // 输出文件名
       formats: ['umd', 'es', 'cjs'], // 打包格式
     },
     rollupOptions: {

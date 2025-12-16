@@ -1,10 +1,10 @@
 """
-decoder-epub-sgzjj.py
+epub2dbook-sgzjj.py
 将电子书《三国志集解 (陈寿著，裴松之注，卢弼集解，三国志吧点校)》转换为docbook格式
 三国志集解 (陈寿著，裴松之注，卢弼集解，三国志吧点校) 版本
 该版本和2009年的上海古籍出版社的版本内容不同，缺少钱剑夫校注整理的内容。
 
-usage: decoder-epub-sgzjj.py epub_dir [-h] [--output_dir OUTPUT_DIR]
+usage: epub2dbook-sgzjj.py epub_dir [-h] [--output_dir OUTPUT_DIR]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -228,6 +228,9 @@ class SGZJJConverter(Converter):
             stack[-1].content_buffer = ""
             stack[-1].marked_buffer = ""
 
+          #if (len(root_piece.content) == 0):
+          #  print(f"  Found full annotation paragraph by {item.text}.")
+
           # 创建新注释
           new_annotation = docbook.ContentPiece(type=docbook.DivisionType.ANNOTATION)
 
@@ -365,6 +368,9 @@ class SGZJJConverter(Converter):
     # 调用核心方法处理嵌套
     self._parse_content_with_nested_annotations(item, root_piece, None)
 
+    #if (len(root_piece.content) == 0):
+    #  print(f"  Found full annotation paragraph by {item.text}.")
+
     return root_piece, section_indent
 
   def decode_chapter_title(self, item) -> docbook.Division:
@@ -477,7 +483,9 @@ class SGZJJConverter(Converter):
       if 'color' in css_rule['properties'] and len(css_rule['selectors']) > 0:
         color_value = css_rule['properties']['color']
         for class_name in css_rule['selectors']:
-          if (color_value == '#F00'):
+          if (color_value == '#F0F'):
+              self._class2annotators[class_name[1:]] = ('陈寿', '自注')
+          elif (color_value == '#F00'):
               self._class2annotators[class_name[1:]] = ('裴松之', '注')
           elif (color_value == '#00F') or (color_value == '#36F'):
             self._class2annotators[class_name[1:]] = ('卢弼', '集解')
@@ -536,20 +544,22 @@ if __name__ == "__main__":
   dbook: docbook.Book = converter.decode_custom()
   
   dbook.title = ["三国志", "", "集解"]
-  dbook.authors = [['陈寿', '著', '西晋', '平阳侯相'],['裴松之', '注', '南宋', '中书侍郎|西乡侯'],['卢弼', '集解', '民国'], ['三国志吧', '点校', '现代']]
+  dbook.authors = [['陈寿', '撰', '西晋', '平阳侯相'],['裴松之', '注', '南宋', '中书侍郎|西乡侯'],['卢弼', '集解', '民国'], ['三国志吧', '点校', '现代']]
   dbook.dynasty = "西晋"
   dbook.categories = ['经史子集|史', '纪传史', '二十四史']
   dbook.source = ""
   dbook.description = ("")
 
   chapters: List[docbook.Division] = dbook.chapters
-  # 胡刻通鑑正文校宋記述略
-  #chapters[0].authors = [['章鈺', '序', '民國']]
-  # 新註資治通鑑序
-  #chapters[1].authors = [['胡三省', '序', '南宋']]
-  # 興文署新刊資治通鑑序
-  #chapters[2].authors = [['王磐', '序', '元']]
-  # 興文署新刊資治通鑑序
-  #chapters[3].authors = [['趙頊', '序', '北宋']]
+  # 三国志集解序例
+  chapters[0].authors = [['卢弼', '撰', '民国']]
+  # 三国志集解序
+  chapters[1].authors = [['胡玉缙', '序', '民国']]
+  # 覆胡绥之先生书
+  chapters[2].authors = [['卢弼', '撰', '民国']]
+  # 覆王季芗书
+  chapters[3].authors = [['卢弼', '撰', '民国']]
+  # 致伯兄木斋书
+  chapters[4].authors = [['卢弼', '撰', '民国']]
 
   converter.save_book(args.output_dir)

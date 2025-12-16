@@ -1,5 +1,5 @@
 """
-decoder-epub-zztj.py
+epub2dbook-sjsjz.py
 将[漢川草廬](http://www.sidneyluo.net/)《史记三家注》转换为docbook格式
 史記三家注20200508横排 - 漢川草廬 版本
 

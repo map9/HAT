@@ -1,6 +1,8 @@
 # HAT
 Historical document Analysis Tools for chinese historical document Read, Search, Event ETL, Analysis, include open historical archive library.
 
+## Architecture
+
 ## docbook
 a python package for historical document: docbook object or file create, edit, build archive.
 
