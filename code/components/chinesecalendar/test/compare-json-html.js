@@ -154,25 +154,3 @@ if (passedChecks === totalChecks) {
   console.log(`✗ 存在 ${totalChecks - passedChecks} 项不匹配`);
 }
 console.log('='.repeat(60));
-
-// 额外检查：测试不同年份和月份
-console.log('\n\n【额外测试】其他年份月份抽查:');
-const testCases = [
-  { year: 2024, month: 0, desc: '2024年1月' },
-  { year: 1900, month: 5, desc: '1900年6月' },
-  { year: 0, month: 11, desc: '公元1年12月' }
-];
-
-for (let tc of testCases) {
-  let jsonYr = JSON.parse(cc.exportYear(tc.year, null, 'json'));
-  let jsonMo = jsonYr.months[tc.month];
-
-  console.log(`\n${tc.desc}:`);
-  console.log(`  - 天数: ${jsonMo.days.length}`);
-  console.log(`  - 农历月数: ${jsonMo.chineseMonths.length}`);
-  console.log(`  - 月相数: ${jsonMo.moonPhases.length}`);
-  console.log(`  - 节气数: ${jsonMo.solarTerms.length}`);
-  console.log(`  - 第1天干支: ${ganNames[jsonMo.days[0].sexagenary.day[0]]}${zhiNames[jsonMo.days[0].sexagenary.day[1]]}`);
-}
-
-console.log('\n=== 测试完成 ===');

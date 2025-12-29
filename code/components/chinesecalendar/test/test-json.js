@@ -4,8 +4,8 @@ import { ChineseCalendar } from '../src/index.js';
 // Test JSON output for a specific year
 let cc = new ChineseCalendar({lng: 'zh-Hant'});
 
-// Export year -103 in JSON format
-let jsonOutput = cc.exportYear(-104, null, 'json');
+let year = -721;
+let jsonOutput = cc.exportYear(year, null, 'json');
 
 // Parse the JSON to verify it's valid
 let yearData = JSON.parse(jsonOutput);
@@ -47,5 +47,5 @@ if (yearData.months && yearData.months.length > 0) {
 }
 
 // Save to file for inspection
-fs.writeFileSync('./test-output.json', jsonOutput, 'utf8');
+fs.writeFileSync(`./test-output-${year}.json`, jsonOutput, 'utf8');
 console.log('\n=== Full JSON output saved to test-output.json ===');

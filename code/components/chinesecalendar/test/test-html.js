@@ -10,7 +10,6 @@ var html =
   <head>
   <title>公曆和農曆日期對照(公元前722年&mdash;公元2200年)</title>
   <link rel="stylesheet" href="calendar_chinese_min.css">
-  <script src="index_c.js"></script>
   <base href="https://ytliu0.github.io/ChineseCalendar/">
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-SN0QJRDXXT"></script>
   <script>function gtag() { dataLayer.push(arguments) } window.dataLayer = window.dataLayer || [], gtag("js", new Date), gtag("config", "G-SN0QJRDXXT")</script>
@@ -19,8 +18,9 @@ var html =
 
 //html += calendar(2, 264, 'Tki.Wu', 'Lu');
 //html += calendar(2, -102, undefined, undefined, 'html');
-let cc = new ChineseCalendar({lng: 'zh-Hant'});
-html += cc.exportYear(-104, null, 'html');
+let cc = new ChineseCalendar({lng: 'zh-Hans'});
+//let cc = new ChineseCalendar({lng: 'en'});
+html += cc.exportYear(-103, null, 'html');
 //html += cc.exportYear(264, 'Tki.Wu', 'html');
 
 html += 
