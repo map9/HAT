@@ -1,4 +1,4 @@
-import { ChineseCalendar } from "../../chinesecalendar/src/calendar.js";
+import { ChineseCalendar, CALENDAR_RANGE_MIN_YEAR, CALENDAR_RANGE_MAX_YEAR } from "../../chinesecalendar/src/calendar.js";
 import * as d3 from "d3";
 
 /*
@@ -19,13 +19,22 @@ export const calendar = new ChineseCalendar({ lng: 'zh-Hans', debug: false });
 // 默认区域
 const DEFAULT_REGION = 'default';
 
-// 扩展的时间范围（支持公元前721年到公元2200年）
-// 注意：ChineseCalendar 库的数据从公元前721年开始
-const limitedDomain = [new Date('-000721-01-01'), new Date('2200-12-31')];
+// 年份范围
+const MIN_YEAR = CALENDAR_RANGE_MIN_YEAR;
+const MAX_YEAR = CALENDAR_RANGE_MAX_YEAR;
 
-// 年份范围常量
-const MIN_YEAR = -721;
-const MAX_YEAR = 2200;
+const limitedDomain = [
+  (() => {
+    const d = new Date(0);
+    d.setUTCFullYear(MIN_YEAR, 0, 1);
+    return d;
+  })(),
+  (() => {
+    const d = new Date(0);
+    d.setUTCFullYear(MAX_YEAR, 11, 31);
+    return d;
+  })(),
+];
 
 /**
  * 格式化农历日期为本地化字符串
@@ -49,16 +58,17 @@ const toLocaleString2 = (chineseDate, local, config = {
   let total = '';
   let s = '';
 
-  if (config.year === 'normal') config.year = config.yearShengXiao ? 'normal' : 'short';
-  else if (config.year === 'ganzhi') config.year = config.yearShengXiao ? 'normal.ganZhi' : 'short.ganZhi';
+  const convertConfig = {};
+  if (config.year === 'normal') convertConfig.year = config.yearShengXiao ? 'normal' : 'short';
+  else if (config.year === 'ganzhi') convertConfig.year = config.yearShengXiao ? 'normal.ganZhi' : 'short.ganZhi';
 
-  if (config.month === 'normal') config.month = config.monthShengXiao ? 'normal' : 'short';
-  else if (config.month === 'ganzhi') config.month = config.monthShengXiao ? 'normal.ganZhi' : 'short.ganZhi';
+  if (config.month === 'normal') convertConfig.month = config.monthShengXiao ? 'normal' : 'short';
+  else if (config.month === 'ganzhi') convertConfig.month = config.monthShengXiao ? 'normal.ganZhi' : 'short.ganZhi';
 
-  if (config.day === 'normal') config.day = config.dayShengXiao ? 'normal' : 'short';
-  else if (config.day === 'ganzhi') config.day = config.dayShengXiao ? 'normal.ganZhi' : 'short.ganZhi';
+  if (config.day === 'normal') convertConfig.day = config.dayShengXiao ? 'normal' : 'short';
+  else if (config.day === 'ganzhi') convertConfig.day = config.dayShengXiao ? 'normal.ganZhi' : 'short.ganZhi';
 
-  s = calendar.lunarDateToString(chineseDate, config);
+  s = calendar.lunarDateToString(chineseDate, convertConfig);
 
   // 时辰（暂不实现，因为 ChineseCalendar 未提供时辰相关方法）
   if (config.hour !== null && config.hour !== 'none') {
