@@ -1,15 +1,8 @@
 import * as d3 from "d3";
+import { eraName } from "../../chinesecalendar/src/eras.js";
 
-//import { ChineseCalendar } from "../../chinesecalendar/src/calendar.js";
-//import { chineseYear2, chineseMonth2, chineseDay2 } from "../src/chineseCalendarAxises2.js";
 import * as chineseCalendarAxises2 from '../src/chineseCalendarAxises2.js'
-
-import { timelineChart, chineseCalendarAxises, timelineChartStyle, eventChart, tooltipHelper, dataProvider } from "../src/index.js"
-import { eraName } from "../src/eras.js"
-
-
-const earName = eraName('zh-Hans', 419);
-console.log(earName);
+import { timelineChart, timelineChartStyle, eventChart, tooltipHelper, dataProvider } from "../src/index.js"
 
 // 正式代码
 const width = document.body.clientWidth;
@@ -60,17 +53,24 @@ function resize(left, top, width, height) {
 }
 
 function updateTooltips(date, localDateString) {
-  const chineseDate = chineseCalendarAxises2.calendar.getChineseDateFromGregorian(date);
+  try {
+    const chineseDate = chineseCalendarAxises2.calendar.getChineseDateFromGregorian(date);
 
-  let s = chineseCalendarAxises2.calendar.lunarDateToString(
-    chineseDate,
-    {
-      year: 'normal',
-      month: 'normal',
-      day: 'normal'
-    }
-  );
-  localDateString.value += '\n' + s;
+    const chineseCalendarString = chineseCalendarAxises2.calendar.lunarDateToString(
+      chineseDate,
+      {
+        year: 'normal',
+        month: 'normal',
+        day: 'normal'
+      }
+    );
+    localDateString.value += '\n' + chineseCalendarString;
+    
+    const earName = eraName('zh-Hans', chineseDate.year);
+    if (earName) localDateString.value += '\n' + earName;
+  } catch (e) {
+    localDateString.value += '\n';
+  }
 }
 
 var tooltip = tooltip || new tooltipHelper();

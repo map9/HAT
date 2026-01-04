@@ -1,5 +1,5 @@
-import { ChineseCalendar, CALENDAR_RANGE_MIN_YEAR, CALENDAR_RANGE_MAX_YEAR } from "../../chinesecalendar/src/calendar.js";
 import * as d3 from "d3";
+import { ChineseCalendar, CALENDAR_RANGE_MIN_YEAR, CALENDAR_RANGE_MAX_YEAR } from "../../chinesecalendar/src/calendar.js";
 
 /*
  * chineseCalendarAxises2.js
@@ -78,6 +78,28 @@ const toLocaleString2 = (chineseDate, local, config = {
   total += s;
   return total.trim();
 };
+
+export const westernDate2ChineseDateString = (date) => {
+  try {
+    const year = date.getFullYear();
+    if (isNaN(year) || year < MIN_YEAR || year > MAX_YEAR) {
+      throw new Error('Year out of range or invalid year');
+    }
+
+    const chineseDate = calendar.getChineseDateFromGregorian(date);
+    const chineseDateString = calendar.lunarDateToString(
+      chineseDate,
+      {
+        year: 'normal',
+        month: 'normal',
+        day: 'normal'
+      }
+    );
+    return chineseDateString;
+  } catch (e) {
+    return '';
+  }
+}
 
 /**
  * Chinese Year（农历年）
