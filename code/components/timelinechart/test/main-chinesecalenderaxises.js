@@ -19,8 +19,11 @@ const height = document.body.clientHeight;
 const timeline_data_url = "./test/history001.csv";
 
 let eChart = null;
-let layout = 'Naive';
-
+let layout = 'Lanes';
+// StackI
+// StackII
+// Lanes
+// Naive
 function resetTooltip() {
   if (eChart && eChart.getTooltip()) {
     // 获取元素的相对于 svg 根的变换矩阵

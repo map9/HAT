@@ -20,8 +20,8 @@ export const calendar = new ChineseCalendar({ lng: 'zh-Hans', debug: false });
 const DEFAULT_REGION = 'default';
 
 // 年份范围
-const MIN_YEAR = CALENDAR_RANGE_MIN_YEAR;
-const MAX_YEAR = CALENDAR_RANGE_MAX_YEAR;
+export const MIN_YEAR = CALENDAR_RANGE_MIN_YEAR;
+export const MAX_YEAR = CALENDAR_RANGE_MAX_YEAR;
 
 const limitedDomain = [
   (() => {

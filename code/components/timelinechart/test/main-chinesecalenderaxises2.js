@@ -8,10 +8,15 @@ import { timelineChart, timelineChartStyle, eventChart, tooltipHelper, dataProvi
 const width = document.body.clientWidth;
 const height = document.body.clientHeight;
 
-const timeline_data_url = "./test/history001.csv";
+//const timeline_data_url = "./test/data/history001.csv";
+const timeline_data_url = "./test/data/historical_periods.json"
 
 let eChart = null;
 let layout = 'Naive';
+// StackI
+// StackII
+// Lanes
+// Naive
 
 function resetTooltip() {
   if (eChart && eChart.getTooltip()) {
@@ -54,6 +59,11 @@ function resize(left, top, width, height) {
 
 function updateTooltips(date, localDateString) {
   try {
+    const year = date.getFullYear();
+    if (isNaN(year) || year < chineseCalendarAxises2.MIN_YEAR || year > chineseCalendarAxises2.MAX_YEAR) {
+      return localDateString.value += '\n';
+    }
+
     const chineseDate = chineseCalendarAxises2.calendar.getChineseDateFromGregorian(date);
 
     const chineseCalendarString = chineseCalendarAxises2.calendar.lunarDateToString(
@@ -84,7 +94,7 @@ var chart = new timelineChart({
   width: width,
   height: height,
   margin: {left: 20, top: 20, right: 20, bottom: 20},
-  timeDomain: [new Date(-1000, 1, 1), new Date(2030, 1, 1)],
+  timeDomain: [new Date(-1200, 1, 1), new Date(2000, 1, 1)],
   //axises: [],
   //zoomLimited: [0.0005, 5],
   //hasIndexAxis: false,

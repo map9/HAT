@@ -1,6 +1,12 @@
 import * as d3 from "d3";
 
 /**
+ * This is timeline Data Processing Class
+ * refrence: 
+ * 1. https://observablehq.com/@anbnyc/timeline-layout-algorithm
+ */
+
+/**
  * Polyfill for Object.assign().  Assigns enumerable and own properties from
  * one or more source objects to a target object.
  *
@@ -89,25 +95,83 @@ export class dataProvider {
     self.onDataReady = onDataReady || function () { };
     self.timeDomain = [Infinity, -Infinity];
 
-    var data = d3.csv(timeline_data_url);
+    // Auto-detect data type by file extension
+    const isJSON = timeline_data_url.toLowerCase().endsWith('.json');
+    var data = isJSON ? d3.json(timeline_data_url) : d3.csv(timeline_data_url);
     //var other_data = d3.csv("other_data.csv")
     Promise.all([data /*, other_data*/]).then(data_ready);
+
+    /**
+     * Convert JSON time object to JavaScript Date
+     * @param {Object} timeObj - {year, month, day} object
+     * @returns {Date|null}
+     */
+    function jsonTimeToDate(timeObj) {
+      if (!timeObj || timeObj.year === undefined || timeObj.year === null) {
+        return null;
+      }
+
+      // Date构造函数的month参数是0-11，而gMonth是1-12，需要减1
+      // 对于0-99年份，需要使用setFullYear来避免被解析为19xx或20xx年
+      const date = new Date(2000, 0, 1, 0, 0, 0, 0, 0); // 临时初始化为2000年1月1日
+      date.setFullYear(timeObj.year);
+      date.setMonth((timeObj.month || 1) - 1);
+      date.setDate(timeObj.day || 1);
+      date.setHours(0, 0, 0, 0);
+      return date;
+    }
 
     function data_ready(values) {
       self.timeline_data = values[0];
       /*
       self.other_data = values[1];
       */
+
+      // Filter and convert data
+      const validData = [];
       self.timeline_data.forEach(function (v, i, a) {
-        v.startYear = new Date(Date.parse(v.startYear));
-        v.endYear = new Date(Date.parse(v.endYear));
-        self.timeDomain[0] = Math.min(self.timeDomain[0], v.startYear);
-        self.timeDomain[1] = Math.max(self.timeDomain[1], v.endYear);
+        // Handle different data formats
+        if (isJSON) {
+          // JSON format: {start_time: {year, month, day}, end_time: {year, month, day}}
+          const startDate = jsonTimeToDate(v.start_time);
+          const endDate = jsonTimeToDate(v.end_time);
+
+          if (!startDate) {
+            console.error(`Invalid start_time in JSON data at index ${i}:`, v);
+            return; // Skip this item
+          }
+          if (!endDate) {
+            console.error(`Invalid end_time in JSON data at index ${i}:`, v);
+            return; // Skip this item
+          }
+
+          v.start_time = startDate;
+          v.end_time = endDate;
+        } else {
+          // CSV format: {start_time: "ISO date string", end_time: "ISO date string"}
+          v.start_time = new Date(Date.parse(v.start_time));
+          v.end_time = new Date(Date.parse(v.end_time));
+
+          if (isNaN(v.start_time.getTime())) {
+            console.error(`Invalid start_time in CSV data at index ${i}:`, v);
+            return; // Skip this item
+          }
+          if (isNaN(v.end_time.getTime())) {
+            console.error(`Invalid end_time in CSV data at index ${i}:`, v);
+            return; // Skip this item
+          }
+        }
+
+        validData.push(v);
+        self.timeDomain[0] = Math.min(self.timeDomain[0], v.start_time);
+        self.timeDomain[1] = Math.max(self.timeDomain[1], v.end_time);
       });
+
+      self.timeline_data = validData;
       self.timeline_data.sort(
-        (a, b) => d3.ascending(a.startYear, b.startYear) || d3.ascending(a.endYear, b.endYear)
+        (a, b) => d3.ascending(a.start_time, b.start_time) || d3.ascending(a.end_time, b.end_time)
       );
-      self.timeDomain = [d3.min(self.timeline_data, (d) => d.startYear), d3.max(self.timeline_data, (d) => d.endYear)];
+      self.timeDomain = [d3.min(self.timeline_data, (d) => d.start_time), d3.max(self.timeline_data, (d) => d.end_time)];
 
       // for testing， verify data
       if (options.debug_info) {
@@ -146,8 +210,8 @@ export class dataProvider {
       let stack = [];
       this.timeline_data.slice().forEach((e) => {
         if (stack.length &&
-          stack[stack.length - 1].endYear <= e.startYear &&
-          stack[stack.length - 1].startYear < e.startYear) {
+          stack[stack.length - 1].end_time <= e.start_time &&
+          stack[stack.length - 1].start_time < e.start_time) {
           stack.pop();
         }
         stackData.push({
@@ -162,8 +226,8 @@ export class dataProvider {
       let stack = [];
       this.timeline_data.slice().forEach((e) => {
         while (stack.length &&
-          stack[stack.length - 1].endYear <= e.startYear &&
-          stack[stack.length - 1].startYear < e.startYear) {
+          stack[stack.length - 1].end_time <= e.start_time &&
+          stack[stack.length - 1].start_time < e.start_time) {
           stack.pop();
         }
         stackData.push({
@@ -178,7 +242,7 @@ export class dataProvider {
       let stack = [];
       this.timeline_data.slice().forEach((e) => {
         const lane = stack.findIndex(
-          (s) => s.endYear <= e.startYear && s.startYear < e.startYear
+          (s) => s.end_time <= e.start_time && s.start_time < e.start_time
         );
         const yIndex = lane === -1 ? stack.length : lane;
         lanesData.push({

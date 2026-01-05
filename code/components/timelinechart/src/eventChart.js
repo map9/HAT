@@ -29,16 +29,16 @@ export class eventChart {
       .data(eventsData)
       .join('g')
       .attr('class', 'event')
-      .attr('transform', d => `translate(${this.xScale(d.startYear)}, ${this.yScale(d.yIndex)})`)
+      .attr('transform', d => `translate(${this.xScale(d.start_time)}, ${this.yScale(d.yIndex)})`)
       .style("cursor", "pointer");
     e.append('rect')
-      .attr("width", d => (d.startYear >= d.endYear ? 3 : this.xScale(d.endYear) - this.xScale(d.startYear)))
+      .attr("width", d => (d.start_time >= d.end_time ? 3 : this.xScale(d.end_time) - this.xScale(d.start_time)))
       .attr('height', this.yScale.bandwidth());
     e.append('text')
       .attr('x', -3)
       .attr('y', this.yScale.bandwidth() - 2)
-      .text(d => d.event)
-      .style('font-size', this.yScale.bandwidth() + 'px')
+      .text(d => d.name)
+      .style('font-size', this.yScale.bandwidth() > 12 ? '12px' : this.yScale.bandwidth() + 'px')
       .style('text-anchor', 'end');
 
     this.setTooltip(this.tooltip);
@@ -48,14 +48,14 @@ export class eventChart {
     this.xScale = xScale;
     if (this.yScale) {
       this.parentNode.selectAll("g.event")
-        .attr('transform', d => `translate(${xScale(d.startYear)}, ${this.yScale(d.yIndex)})`);
+        .attr('transform', d => `translate(${xScale(d.start_time)}, ${this.yScale(d.yIndex)})`);
 
       this.parentNode.selectAll("g.event rect")
-        .attr("width", d => (d["startYear"] >= d["endYear"] ? 3 : xScale(d["endYear"]) - xScale(d["startYear"])))
+        .attr("width", d => (d["start_time"] >= d["end_time"] ? 3 : xScale(d["end_time"]) - xScale(d["start_time"])))
         .attr('height', this.yScale.bandwidth());
       this.parentNode.selectAll("g.event text")
         .attr('y', this.yScale.bandwidth() - 2)
-        .style('font-size', this.yScale.bandwidth() + 'px')
+        .style('font-size', this.yScale.bandwidth() > 12 ? '12px' : this.yScale.bandwidth() + 'px')
     }
   }
 
@@ -122,7 +122,7 @@ export class eventChart {
       });
 
       const formatDate = (d) => {
-        const [begin, end] = [convert(d.startYear), convert(d.endYear)];
+        const [begin, end] = [convert(d.start_time), convert(d.end_time)];
 
         return begin === end ? begin : `${begin} – ${end}`;
       };
@@ -137,10 +137,9 @@ export class eventChart {
 
       const hr = '<hr style="padding:0; margin:5px;"/>';
 
-      const arr = Object.entries(info).map(([key, value]) => value ? `<b>${key}:</b> ${value}` : null
-      );
+      const arr = Object.entries(info).map(([key, value]) => value ? `<b>${key}:</b> ${value}` : null);
 
-      return arr.filter(Boolean).join("<br/>") + hr + d.event;
+      return arr.filter(Boolean).join("<br/>") + hr + d.name;
     }
 
     function getEventTooltipFullContent(d) {
