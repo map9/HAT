@@ -11,12 +11,83 @@ console.debug = console.log;
 //console.debug = function () {}
 
 export class eventChart {
-  constructor(parentNode, box = { left: 0, top: 0, width: 0, height: 0 }, xScale, tooltip) {
+  constructor(parentNode, box = { left: 0, top: 0, width: 0, height: 0 }, xScale, tooltip, options = {}) {
     this.parentNode = parentNode;
     this.box = box;
     this.xScale = xScale;
     this.tooltip = tooltip;
     this.yScale = undefined;
+
+    // Corner radius configuration
+    this.options = {
+      cornerRadius: undefined,      // Fixed corner radius value (px), overrides ratio if set
+      cornerRadiusRatio: 0.2,      // Corner radius as ratio of rect height (0-1)
+      maxCornerRadius: 5,          // Maximum corner radius (px)
+      textPosition: 'left',        // Text position: 'left', 'center', 'right'
+      textNameCallback: d => d.name, // Callback to get text content
+      rectStyleCallback: null,     // Callback to set rect styles (fill, stroke, etc.)
+      ...options
+    };
+  }
+
+  /**
+   * Calculate corner radius for rect elements
+   * @returns {number} Corner radius in pixels
+   */
+  getCornerRadius() {
+    const { cornerRadius, cornerRadiusRatio, maxCornerRadius } = this.options;
+
+    // If fixed corner radius is set, use it directly
+    if (cornerRadius !== undefined && cornerRadius !== null) {
+      return cornerRadius;
+    }
+
+    // Calculate dynamic corner radius based on rect height
+    if (this.yScale) {
+      const bandwidth = this.yScale.bandwidth();
+      const dynamicRadius = bandwidth * cornerRadiusRatio;
+      return Math.min(dynamicRadius, maxCornerRadius);
+    }
+
+    // Fallback to 0 if yScale is not initialized
+    return 0;
+  }
+
+  /**
+   * Calculate text x position based on textPosition option
+   * @param {Object} d - Data object
+   * @returns {number} X position in pixels
+   */
+  getTextX(d) {
+    const rectWidth = d.start_time >= d.end_time ? 3 : this.xScale(d.end_time) - this.xScale(d.start_time);
+
+    switch (this.options.textPosition) {
+      case 'left':
+        return -3; // Position to the left of rect
+      case 'center':
+        return rectWidth / 2; // Center of rect
+      case 'right':
+        return rectWidth + 3; // Position to the right of rect
+      default:
+        return -3;
+    }
+  }
+
+  /**
+   * Get text anchor based on textPosition option
+   * @returns {string} Text anchor value ('start', 'middle', 'end')
+   */
+  getTextAnchor() {
+    switch (this.options.textPosition) {
+      case 'left':
+        return 'end';
+      case 'center':
+        return 'middle';
+      case 'right':
+        return 'start';
+      default:
+        return 'end';
+    }
   }
 
   create(eventsData) {
@@ -25,21 +96,33 @@ export class eventChart {
       .range([0, this.box.height])
       .paddingInner(0.2);
 
+    const cornerRadius = this.getCornerRadius();
+
     const e = this.parentNode.selectAll("g.event")
       .data(eventsData)
       .join('g')
       .attr('class', 'event')
       .attr('transform', d => `translate(${this.xScale(d.start_time)}, ${this.yScale(d.yIndex)})`)
       .style("cursor", "pointer");
-    e.append('rect')
+    const rects = e.append('rect')
       .attr("width", d => (d.start_time >= d.end_time ? 3 : this.xScale(d.end_time) - this.xScale(d.start_time)))
-      .attr('height', this.yScale.bandwidth());
+      .attr('height', this.yScale.bandwidth())
+      .attr('rx', cornerRadius)
+      .attr('ry', cornerRadius);
+
+    // Apply custom styles if callback is provided
+    if (this.options.rectStyleCallback) {
+      rects.each((d, i, nodes) => {
+        this.options.rectStyleCallback(d3.select(nodes[i]), d);
+      });
+    }
     e.append('text')
-      .attr('x', -3)
-      .attr('y', this.yScale.bandwidth() - 2)
-      .text(d => d.name)
+      .attr('x', d => this.getTextX(d))
+      .attr('y', this.yScale.bandwidth() / 2)
+      .attr('dy', '0.35em') // Offset for vertical centering
+      .text(d => this.options.textNameCallback(d))
       .style('font-size', this.yScale.bandwidth() > 12 ? '12px' : this.yScale.bandwidth() + 'px')
-      .style('text-anchor', 'end');
+      .style('text-anchor', this.getTextAnchor());
 
     this.setTooltip(this.tooltip);
   }
@@ -47,15 +130,29 @@ export class eventChart {
   update(xScale) {
     this.xScale = xScale;
     if (this.yScale) {
+      const cornerRadius = this.getCornerRadius();
+
       this.parentNode.selectAll("g.event")
         .attr('transform', d => `translate(${xScale(d.start_time)}, ${this.yScale(d.yIndex)})`);
 
-      this.parentNode.selectAll("g.event rect")
+      const rects = this.parentNode.selectAll("g.event rect")
         .attr("width", d => (d["start_time"] >= d["end_time"] ? 3 : xScale(d["end_time"]) - xScale(d["start_time"])))
-        .attr('height', this.yScale.bandwidth());
+        .attr('height', this.yScale.bandwidth())
+        .attr('rx', cornerRadius)
+        .attr('ry', cornerRadius);
+
+      // Apply custom styles if callback is provided
+      if (this.options.rectStyleCallback) {
+        rects.each((d, i, nodes) => {
+          this.options.rectStyleCallback(d3.select(nodes[i]), d);
+        });
+      }
       this.parentNode.selectAll("g.event text")
-        .attr('y', this.yScale.bandwidth() - 2)
+        .attr('x', d => this.getTextX(d))
+        .attr('y', this.yScale.bandwidth() / 2)
+        .attr('dy', '0.35em')
         .style('font-size', this.yScale.bandwidth() > 12 ? '12px' : this.yScale.bandwidth() + 'px')
+        .style('text-anchor', this.getTextAnchor())
     }
   }
 

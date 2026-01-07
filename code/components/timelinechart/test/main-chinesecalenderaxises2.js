@@ -36,7 +36,15 @@ function resetTooltip() {
 }
 
 function initial(left, top, width, height, xScale) {
-  eChart = new eventChart(this, { left: left, top: top, width: width, height: height }, xScale, tooltip);
+  // Create color scale for categories
+  const colorScale = d3.scaleOrdinal(d3.schemeSet2);
+
+  eChart = new eventChart(this, { left: left, top: top, width: width, height: height }, xScale, tooltip, {
+    textPosition: 'center',
+    rectStyleCallback: (selection, d) => {
+      selection.style('fill', colorScale(d.category));
+    }
+  });
   new dataProvider(timeline_data_url, (dp) => {
     layout = layout || 'Naive';
     var eventsData = dp.getTimelineData(layout);
@@ -45,7 +53,7 @@ function initial(left, top, width, height, xScale) {
   }, {
     debug_info: false
   });
-  
+
 }
 
 function update(xScale) {
