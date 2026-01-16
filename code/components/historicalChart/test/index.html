@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HistoricalChart 配置演示</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .header {
+      background: white;
+      padding: 15px 30px;
+      border-bottom: 1px solid #e0e0e0;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .header h1 {
+      font-size: 22px;
+      color: #333;
+    }
+
+    .header .subtitle {
+      font-size: 13px;
+      color: #666;
+      margin-top: 2px;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .header-actions button {
+      padding: 8px 16px;
+      font-size: 13px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      background: white;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .header-actions button:hover {
+      background: #f0f0f0;
+    }
+
+    .header-actions button.primary {
+      background: #1976d2;
+      color: white;
+      border-color: #1976d2;
+    }
+
+    .header-actions button.primary:hover {
+      background: #1565c0;
+    }
+
+    .container {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .sidebar {
+      width: 360px;
+      background: white;
+      border-right: 1px solid #e0e0e0;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+
+    .config-section {
+      padding: 15px 20px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .config-section h2 {
+      font-size: 14px;
+      color: #333;
+      margin-bottom: 12px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid #1976d2;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .control-group {
+      margin-bottom: 12px;
+    }
+
+    .control-group:last-child {
+      margin-bottom: 0;
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: #555;
+      margin-bottom: 4px;
+    }
+
+    select, input[type="range"], input[type="number"] {
+      width: 100%;
+      padding: 6px 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 12px;
+      background: white;
+    }
+
+    select:focus, input:focus {
+      outline: none;
+      border-color: #1976d2;
+      box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.1);
+    }
+
+    input[type="range"] {
+      padding: 0;
+      height: 6px;
+      cursor: pointer;
+    }
+
+    .range-value {
+      display: inline-block;
+      margin-left: 6px;
+      color: #1976d2;
+      font-weight: 600;
+      font-size: 11px;
+      min-width: 40px;
+    }
+
+    .range-row {
+      display: flex;
+      align-items: center;
+    }
+
+    .range-row input {
+      flex: 1;
+    }
+
+    .field-info {
+      font-size: 10px;
+      color: #888;
+      margin-top: 3px;
+      font-style: italic;
+    }
+
+    .control-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .control-row .control-group {
+      flex: 1;
+    }
+
+    .chart-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .chart-toolbar {
+      background: white;
+      padding: 10px 20px;
+      border-bottom: 1px solid #e0e0e0;
+      display: flex;
+      gap: 15px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .chart-toolbar .toolbar-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .chart-toolbar label {
+      margin: 0;
+      font-size: 12px;
+    }
+
+    .chart-toolbar select {
+      width: auto;
+      min-width: 120px;
+    }
+
+    .chart-toolbar button {
+      padding: 5px 12px;
+      font-size: 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      background: white;
+      cursor: pointer;
+    }
+
+    .chart-toolbar button:hover {
+      background: #f5f5f5;
+    }
+
+    .chart-container {
+      flex: 1;
+      background: white;
+      overflow: auto;
+      padding: 20px;
+    }
+
+    #chart {
+      background: white;
+      border-radius: 8px;
+      min-height: 500px;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 60px 20px;
+      color: #999;
+      font-size: 14px;
+    }
+
+    .info-panel {
+      background: white;
+      padding: 10px 20px;
+      border-top: 1px solid #e0e0e0;
+      font-size: 12px;
+      color: #666;
+      display: flex;
+      gap: 20px;
+    }
+
+    .info-panel .info-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .info-panel .info-value {
+      color: #1976d2;
+      font-weight: 600;
+    }
+
+    .multi-select {
+      width: 100%;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 4px;
+      font-size: 12px;
+      background: white;
+    }
+
+    .multi-select option {
+      padding: 4px 6px;
+    }
+
+    .multi-select option:checked {
+      background: linear-gradient(0deg, #1976d2 0%, #1976d2 100%);
+      color: white;
+    }
+
+    .control-group.disabled {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+
+    .toggle-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      font-size: 11px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      background: white;
+      cursor: pointer;
+      margin-top: 5px;
+    }
+
+    .toggle-btn.active {
+      background: #e3f2fd;
+      border-color: #1976d2;
+      color: #1976d2;
+    }
+
+    /* Lane group styles */
+    .lane-group {
+      background: #f9f9f9;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+
+    .lane-group-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid #ddd;
+    }
+
+    .lane-group-title {
+      font-weight: 600;
+      font-size: 12px;
+      color: #555;
+    }
+
+    .btn-remove-lane {
+      background: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 3px 8px;
+      font-size: 10px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-remove-lane:hover {
+      background: #c82333;
+    }
+
+    .btn-add-lane {
+      width: 100%;
+      padding: 8px;
+      background: #28a745;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-top: 8px;
+    }
+
+    .btn-add-lane:hover {
+      background: #218838;
+    }
+
+    .lane-values-select {
+      width: 100%;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 4px;
+      font-size: 11px;
+      background: white;
+      height: 120px;
+    }
+
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .checkbox-group input[type="checkbox"] {
+      cursor: pointer;
+    }
+
+    .checkbox-group label {
+      margin: 0;
+      cursor: pointer;
+      font-weight: normal;
+      font-size: 11px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1>HistoricalChart 配置演示</h1>
+    </div>
+    <div class="header-actions">
+      <button onclick="resetConfig()">重置配置</button>
+      <button class="primary" onclick="exportConfig()">导出配置</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- 左侧配置面板 -->
+    <div class="sidebar">
+      <!-- 时间轴配置 -->
+      <div class="config-section">
+        <h2>📅 时间轴配置</h2>
+
+        <div class="control-group">
+          <label>时间轴类型</label>
+          <select id="axisType">
+            <option value="western" selected>西历 (Gregorian)</option>
+            <option value="lunar">农历 (Lunar, 1-9999 CE)</option>
+            <option value="chinese">农历 (ChineseCalendar, 722 BCE-2200 CE)</option>
+            <option value="dual">双轴 (西历 + 农历)</option>
+          </select>
+        </div>
+
+        <div class="control-row">
+          <div class="control-group">
+            <label>起始年份</label>
+            <input type="number" id="startYear" value="1850" min="-722" max="2200">
+          </div>
+          <div class="control-group">
+            <label>结束年份</label>
+            <input type="number" id="endYear" value="2020" min="-722" max="2200">
+          </div>
+        </div>
+
+        <div class="control-group">
+          <label>显示索引轴 (IndexAxis)</label>
+          <select id="hasIndexAxis">
+            <option value="true" selected>显示</option>
+            <option value="false">隐藏</option>
+          </select>
+        </div>
+
+        <div class="control-row">
+          <div class="control-group">
+            <label>最小缩放 (像素/小时)</label>
+            <input type="number" id="zoomMin" value="-1" min="-1" step="0.001">
+            <div class="field-info">-1 = 不限制</div>
+          </div>
+          <div class="control-group">
+            <label>最大缩放 (像素/小时)</label>
+            <input type="number" id="zoomMax" value="-1" min="-1" step="0.001">
+            <div class="field-info">-1 = 不限制</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 布局配置 -->
+      <div class="config-section">
+        <h2>📐 布局配置</h2>
+
+        <div class="control-group">
+          <label>行高: <span class="range-value" id="rowHeightValue">25</span>px</label>
+          <div class="range-row">
+            <input type="range" id="rowHeight" min="15" max="50" value="25" step="1">
+          </div>
+        </div>
+
+        <div class="control-group">
+          <label>标签宽度: <span class="range-value" id="labelWidthValue">240</span>px</label>
+          <div class="range-row">
+            <input type="range" id="labelWidth" min="80" max="300" value="240" step="10">
+          </div>
+        </div>
+
+        <div class="control-group">
+          <label>标签位置</label>
+          <select id="labelPosition">
+            <option value="left" selected>左侧</option>
+            <option value="right">右侧</option>
+            <option value="none">不显示</option>
+          </select>
+        </div>
+
+        <div class="control-row">
+          <div class="control-group">
+            <label>水平间距: <span class="range-value" id="xPaddingValue">2</span>px</label>
+            <input type="range" id="xPadding" min="0" max="10" value="2" step="0.5">
+          </div>
+          <div class="control-group">
+            <label>垂直间距: <span class="range-value" id="yPaddingValue">2</span>px</label>
+            <input type="range" id="yPadding" min="0" max="10" value="2" step="0.5">
+          </div>
+        </div>
+
+        <div class="control-group">
+          <label>圆角半径: <span class="range-value" id="roundRadiusValue">4</span>px</label>
+          <input type="range" id="roundRadius" min="0" max="15" value="4" step="1">
+        </div>
+      </div>
+
+      <!-- 分组配置 -->
+      <div class="config-section">
+        <h2>📊 泳道层级配置</h2>
+        <div id="laneGroupsContainer"></div>
+        <button class="btn-add-lane" onclick="addLaneGroup()">+ 添加层级</button>
+
+        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e0e0e0;">
+          <div class="control-group">
+            <label>分组条模式</label>
+            <select id="groupBarMode">
+              <option value="separate" selected>独立行 (separate)</option>
+              <option value="background">背景 (background)</option>
+            </select>
+          </div>
+
+          <div class="control-group">
+            <label>分组条透明度: <span class="range-value" id="groupBarOpacityValue">0.3</span></label>
+            <input type="range" id="groupBarOpacity" min="0.1" max="0.8" value="0.3" step="0.05">
+          </div>
+
+          <div class="control-group">
+            <label>分组间距: <span class="range-value" id="groupYPaddingValue">5</span>px</label>
+            <input type="range" id="groupYPadding" min="0" max="20" value="5" step="1">
+          </div>
+        </div>
+      </div>
+
+      <!-- 样式配置 -->
+      <div class="config-section">
+        <h2>🎨 样式配置</h2>
+
+        <div class="control-group">
+          <label>主题</label>
+          <select id="theme">
+            <option value="light" selected>浅色 (Light)</option>
+            <option value="dark">深色 (Dark)</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <label>语言区域</label>
+          <select id="locale">
+            <option value="zh-cn" selected>中文 (zh-cn)</option>
+            <option value="en-us">英文 (en-us)</option>
+            <option value="ja-jp">日文 (ja-jp)</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <label>功能开关</label>
+          <button class="toggle-btn active" id="toggleActiveAxis" onclick="toggleFeature('activeAxis')">
+            <span>ActiveAxis</span>
+          </button>
+          <button class="toggle-btn active" id="toggleTooltip" onclick="toggleFeature('tooltip')">
+            <span>Tooltip</span>
+          </button>
+          <button class="toggle-btn active" id="toggleScrollable" onclick="toggleFeature('scrollable')">
+            <span>Scrollable</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 右侧图表区域 -->
+    <div class="chart-area">
+      <div class="chart-toolbar">
+        <div class="toolbar-group">
+          <label>缩放:</label>
+          <button onclick="zoomIn()">放大</button>
+          <button onclick="zoomOut()">缩小</button>
+          <button onclick="resetZoom()">重置</button>
+        </div>
+        <div class="toolbar-group">
+          <label>导航:</label>
+          <button onclick="panLeft()">← 左移</button>
+          <button onclick="panRight()">右移 →</button>
+        </div>
+        <div class="toolbar-group">
+          <label>展开:</label>
+          <button onclick="expandAll()">全部展开</button>
+          <button onclick="collapseAll()">全部折叠</button>
+        </div>
+      </div>
+
+      <div class="chart-container">
+        <div id="chart">
+          <div class="loading">正在加载...</div>
+        </div>
+      </div>
+
+      <div class="info-panel">
+        <div class="info-item">
+          <span>数据条目:</span>
+          <span class="info-value" id="infoDataCount">0</span>
+        </div>
+        <div class="info-item">
+          <span>可见范围:</span>
+          <span class="info-value" id="infoDomain">-</span>
+        </div>
+        <div class="info-item">
+          <span>缩放级别:</span>
+          <span class="info-value" id="infoZoom">-</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import {
+      HistoricalChart,
+      westernAxises,
+      lunarAxises,
+      chineseCalendarAxises,
+      initLunar,
+      initChineseCalendar,
+      isLunarLoaded,
+      isChineseCalendarLoaded,
+      LIGHT,
+      DARK
+    } from '../src/index.js';
+
+    // Global state
+    let chart = null;
+    let currentData = [];
+    let featureFlags = {
+      activeAxis: true,
+      tooltip: true,
+      scrollable: true
+    };
+    let laneGroupCounter = 0;
+
+    // 可用分组字段
+    const availableFields = [
+      { value: 'country', label: '国家' },
+      { value: 'countryCode', label: '国家代码' },
+      { value: 'exit', label: '离任方式' },
+      { value: 'gender', label: '性别' }
+    ];
+
+    // 添加泳道层级
+    window.addLaneGroup = function(defaultField = null) {
+      const id = laneGroupCounter++;
+      const container = document.getElementById('laneGroupsContainer');
+
+      const groupDiv = document.createElement('div');
+      groupDiv.className = 'lane-group';
+      groupDiv.dataset.id = id;
+
+      const field = defaultField || availableFields[0].value;
+
+      groupDiv.innerHTML = `
+        <div class="lane-group-header">
+          <span class="lane-group-title">层级 ${id + 1}</span>
+          <button class="btn-remove-lane" onclick="removeLaneGroup(${id})">删除</button>
+        </div>
+
+        <div class="control-group">
+          <label>分组字段</label>
+          <select class="lane-field-select" data-id="${id}" onchange="onFieldChange(${id})">
+            ${availableFields.map(f =>
+              `<option value="${f.value}" ${f.value === field ? 'selected' : ''}>${f.label}</option>`
+            ).join('')}
+          </select>
+        </div>
+
+        <div class="control-group">
+          <div class="checkbox-group">
+            <input type="checkbox" id="expanded-${id}" class="lane-expanded-checkbox" data-id="${id}" checked>
+            <label for="expanded-${id}">默认展开</label>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <label>筛选值（多选）</label>
+          <select multiple class="lane-values-select" data-id="${id}">
+            <option disabled>加载中...</option>
+          </select>
+          <div class="field-info">Ctrl/Cmd 多选，留空表示全选</div>
+        </div>
+      `;
+
+      container.appendChild(groupDiv);
+
+      // 初始化值选择器
+      updateFieldValues(id, field);
+
+      // 绑定事件：值选择器变化时更新图表
+      const valuesSelect = groupDiv.querySelector('.lane-values-select');
+      valuesSelect.addEventListener('change', updateChart);
+
+      // 绑定事件：展开复选框变化时更新图表
+      const expandedCheckbox = groupDiv.querySelector('.lane-expanded-checkbox');
+      expandedCheckbox.addEventListener('change', updateChart);
+    };
+
+    // 移除泳道层级
+    window.removeLaneGroup = function(id) {
+      const group = document.querySelector(`.lane-group[data-id="${id}"]`);
+      if (group) {
+        group.remove();
+        updateChart();
+      }
+    };
+
+    // 字段改变时更新值列表
+    window.onFieldChange = function(id) {
+      const select = document.querySelector(`.lane-field-select[data-id="${id}"]`);
+      const field = select.value;
+      updateFieldValues(id, field);
+      updateChart();
+    };
+
+    // 更新字段值列表
+    function updateFieldValues(id, field) {
+      if (!currentData || currentData.length === 0) return;
+
+      const uniqueValues = [...new Set(currentData.map(d => d[field]))].filter(v => v).sort();
+      const valuesSelect = document.querySelector(`.lane-values-select[data-id="${id}"]`);
+
+      if (valuesSelect) {
+        valuesSelect.innerHTML = uniqueValues.map(value =>
+          `<option value="${value}" selected>${value || '(空)'}</option>`
+        ).join('');
+      }
+    }
+
+    // 获取泳道层级配置
+    function getLaneGroupsConfig() {
+      const groups = [];
+      document.querySelectorAll('.lane-group').forEach(groupDiv => {
+        const id = groupDiv.dataset.id;
+        const fieldSelect = groupDiv.querySelector('.lane-field-select');
+        const expandedCheckbox = groupDiv.querySelector('.lane-expanded-checkbox');
+        const valuesSelect = groupDiv.querySelector('.lane-values-select');
+
+        const selectedValues = Array.from(valuesSelect.selectedOptions).map(opt => opt.value);
+
+        groups.push({
+          field: fieldSelect.value,
+          label: fieldSelect.options[fieldSelect.selectedIndex].text,
+          expanded: expandedCheckbox.checked,
+          selectedValues: selectedValues.length > 0 ? selectedValues : null
+        });
+      });
+      return groups;
+    }
+
+    // 初始化默认泳道层级
+    function initDefaultLaneGroups() {
+      addLaneGroup('country');
+    }
+
+    // Load and parse archigos.csv data
+    async function loadArchigosData() {
+      try {
+        const response = await fetch('./data/archigos.csv');
+        const text = await response.text();
+        const lines = text.split('\n');
+        const headers = lines[0].split(',');
+
+        const data = [];
+        for (let i = 1; i < lines.length; i++) {
+          if (!lines[i].trim()) continue;
+
+          // Parse CSV line (handle quoted values)
+          const values = parseCSVLine(lines[i]);
+
+          const obsid = values[1];
+          const idacr = values[3];
+          const leader = values[4];
+          const startdate = values[5];
+          const enddate = values[6];
+          const exit = values[7];
+          const gender = values[8];
+          const countryname = values[9];
+
+          if (!startdate || !enddate) continue;
+
+          data.push({
+            id: obsid,
+            country: countryname,
+            countryCode: idacr,
+            leader: leader,
+            exit: exit,
+            gender: gender,
+            start: parseDate(startdate),
+            end: parseDate(enddate),
+            label: leader,
+            title: `<strong>${leader}</strong><br/>${countryname}<br/>${startdate} - ${enddate}<br/>Exit: ${exit}`,
+            color: getColorByCountry(idacr)
+          });
+        }
+
+        return data;
+      } catch (e) {
+        console.error('Failed to load archigos.csv:', e);
+        return generateFallbackData();
+      }
+    }
+
+    // Parse CSV line handling quoted values
+    function parseCSVLine(line) {
+      const values = [];
+      let current = '';
+      let inQuotes = false;
+
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+          values.push(current.trim());
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      values.push(current.trim());
+      return values;
+    }
+
+    // Parse date string (YYYY-MM-DD)
+    function parseDate(dateStr) {
+      const parts = dateStr.split('-');
+      if (parts.length !== 3) return new Date();
+      const year = parseInt(parts[0]);
+      const month = parseInt(parts[1]) - 1;
+      const day = parseInt(parts[2]);
+      const date = new Date(2000, 0, 1);
+      date.setFullYear(year);
+      date.setMonth(month);
+      date.setDate(day);
+      return date;
+    }
+
+    // Get color by country code
+    function getColorByCountry(countryCode) {
+      const colors = {
+        'USA': '#3498db',
+        'CAN': '#e74c3c',
+        'GBR': '#9b59b6',
+        'FRN': '#2ecc71',
+        'GMY': '#f39c12',
+        'ITA': '#1abc9c',
+        'JPN': '#e91e63',
+        'CHN': '#ff5722',
+        'RUS': '#607d8b',
+        'AUL': '#00bcd4',
+        'BRA': '#8bc34a',
+        'MEX': '#ff9800',
+        'ARG': '#795548',
+        'IND': '#9c27b0'
+      };
+      return colors[countryCode] || '#95a5a6';
+    }
+
+    // Fallback data if CSV load fails
+    function generateFallbackData() {
+      const data = [];
+      const leaders = [
+        { id: '1', country: 'United States', countryCode: 'USA', leader: 'Washington', start: '1789-04-30', end: '1797-03-04', exit: 'Regular' },
+        { id: '2', country: 'United States', countryCode: 'USA', leader: 'Adams', start: '1797-03-04', end: '1801-03-04', exit: 'Regular' },
+        { id: '3', country: 'United States', countryCode: 'USA', leader: 'Jefferson', start: '1801-03-04', end: '1809-03-04', exit: 'Regular' }
+      ];
+
+      leaders.forEach(l => {
+        data.push({
+          id: l.id,
+          country: l.country,
+          countryCode: l.countryCode,
+          leader: l.leader,
+          exit: l.exit,
+          start: parseDate(l.start),
+          end: parseDate(l.end),
+          label: l.leader,
+          title: `<strong>${l.leader}</strong><br/>${l.country}<br/>${l.start} - ${l.end}`,
+          color: getColorByCountry(l.countryCode)
+        });
+      });
+
+      return data;
+    }
+
+    // 避免公元前后，new Date 的错误
+    function getDate(year, month, day) {
+      const date = new Date(2000, 0, 1, 0, 0, 0, 0, 0);
+      date.setFullYear(year);
+      date.setMonth(month - 1);
+      date.setDate(day);
+      date.setHours(0, 0, 0, 0);
+      return date;
+    }
+
+    // Get axes based on axis type
+    function getAxises(axisType) {
+      switch (axisType) {
+        case 'lunar':
+          if (!isLunarLoaded()) {
+            console.warn('Lunar calendar not loaded, falling back to western');
+            return [
+              westernAxises.yearlyAxis,
+              westernAxises.dailyAxis,
+              westernAxises.yearlyGrid,
+              westernAxises.dailyGrid
+            ];
+          }
+          return [
+            lunarAxises.yearlyAxis,
+            lunarAxises.dailyAxis,
+            lunarAxises.yearlyGrid,
+            lunarAxises.dailyGrid
+          ];
+        case 'chinese':
+          if (!isChineseCalendarLoaded()) {
+            console.warn('ChineseCalendar not loaded, falling back to western');
+            return [
+              westernAxises.yearlyAxis,
+              westernAxises.dailyAxis,
+              westernAxises.yearlyGrid,
+              westernAxises.dailyGrid
+            ];
+          }
+          return [
+            chineseCalendarAxises.yearlyAxis,
+            chineseCalendarAxises.dailyAxis,
+            chineseCalendarAxises.yearlyGrid,
+            chineseCalendarAxises.dailyGrid
+          ];
+        case 'dual':
+          // Western + Chinese (if loaded)
+          const dualAxises = [
+            westernAxises.yearlyAxis,
+            westernAxises.yearlyGrid
+          ];
+          if (isChineseCalendarLoaded()) {
+            dualAxises.push(chineseCalendarAxises.dailyAxis);
+            dualAxises.push(chineseCalendarAxises.dailyGrid);
+          } else if (isLunarLoaded()) {
+            dualAxises.push(lunarAxises.dailyAxis);
+            dualAxises.push(lunarAxises.dailyGrid);
+          } else {
+            dualAxises.push(westernAxises.dailyAxis);
+            dualAxises.push(westernAxises.dailyGrid);
+          }
+          return dualAxises;
+        case 'western':
+        default:
+          return [
+            westernAxises.yearlyAxis,
+            westernAxises.dailyAxis,
+            westernAxises.yearlyGrid,
+            westernAxises.dailyGrid
+          ];
+      }
+    }
+
+    // Get current configuration
+    function getConfig() {
+      const startYear = parseInt(document.getElementById('startYear').value);
+      const endYear = parseInt(document.getElementById('endYear').value);
+      const axisType = document.getElementById('axisType').value;
+
+      // Build groups array from dynamic lane groups
+      const groups = getLaneGroupsConfig();
+
+      return {
+        width: document.getElementById('chart').offsetWidth || 1000,
+        height: 600,
+        timeDomain: [
+          getDate(startYear, 1, 1),
+          getDate(endYear, 12, 31)
+        ],
+        axises: getAxises(axisType),
+        hasIndexAxis: document.getElementById('hasIndexAxis').value === 'true',
+        zoomLimited: [
+          parseFloat(document.getElementById('zoomMin').value),
+          parseFloat(document.getElementById('zoomMax').value)
+        ],
+        rowHeight: parseInt(document.getElementById('rowHeight').value),
+        labelWidth: parseInt(document.getElementById('labelWidth').value),
+        labelPosition: document.getElementById('labelPosition').value,
+        xPadding: parseFloat(document.getElementById('xPadding').value),
+        yPadding: parseFloat(document.getElementById('yPadding').value),
+        roundRadius: parseInt(document.getElementById('roundRadius').value),
+        groups: groups.length > 0 ? groups : null,
+        groupBarMode: document.getElementById('groupBarMode').value,
+        groupBarOpacity: parseFloat(document.getElementById('groupBarOpacity').value),
+        groupYPadding: parseInt(document.getElementById('groupYPadding').value),
+        style: document.getElementById('theme').value === 'dark' ? DARK : LIGHT,
+        locale: document.getElementById('locale').value,
+        activeAxis: featureFlags.activeAxis,
+        tooltip: featureFlags.tooltip,
+        scrollable: featureFlags.scrollable
+      };
+    }
+
+    // Filter data based on lane groups configuration
+    function getFilteredData() {
+      const groups = getLaneGroupsConfig();
+
+      // If no groups configured, return all data
+      if (groups.length === 0) {
+        return currentData;
+      }
+
+      // Filter data based on selectedValues in each group
+      return currentData.filter(d => {
+        for (const group of groups) {
+          // If selectedValues is null (all selected), skip this filter
+          if (group.selectedValues === null) continue;
+
+          // Check if the data item's field value is in the selected values
+          const fieldValue = d[group.field];
+          if (!group.selectedValues.includes(fieldValue)) {
+            return false;
+          }
+        }
+        return true;
+      });
+    }
+
+    // Update chart
+    function updateChart() {
+      const config = getConfig();
+      const filteredData = getFilteredData();
+
+      // Destroy old chart
+      if (chart) {
+        chart.destroy();
+      }
+
+      // Create new chart
+      chart = new HistoricalChart('#chart', config);
+
+      chart.render(filteredData, {
+        key: d => d.id,
+        start: d => d.start,
+        end: d => d.end,
+        label: d => d.label,
+        color: d => d.color,
+        title: d => d.title
+      });
+
+      // Event listeners
+      chart.on('domainChange', (domain) => {
+        document.getElementById('infoDomain').textContent =
+          `${domain[0].getFullYear()} - ${domain[1].getFullYear()}`;
+      });
+
+      chart.on('barClick', (data) => {
+        console.log('Clicked:', data);
+      });
+
+      chart.on('groupToggle', (node, expanded) => {
+        console.log('Toggle:', node.key, expanded);
+      });
+
+      // Update info
+      document.getElementById('infoDataCount').textContent = filteredData.length;
+    }
+
+    // Toggle feature
+    window.toggleFeature = function(feature) {
+      featureFlags[feature] = !featureFlags[feature];
+      const btn = document.getElementById('toggle' + feature.charAt(0).toUpperCase() + feature.slice(1));
+      btn.classList.toggle('active', featureFlags[feature]);
+      updateChart();
+    };
+
+    // Zoom controls
+    window.zoomIn = function() {
+      if (chart && chart.zoomManager) {
+        chart.zoomManager.zoomIn(1.5);
+      }
+    };
+
+    window.zoomOut = function() {
+      if (chart && chart.zoomManager) {
+        chart.zoomManager.zoomOut(1.5);
+      }
+    };
+
+    window.resetZoom = function() {
+      if (chart) {
+        chart.resetZoom();
+      }
+    };
+
+    window.panLeft = function() {
+      if (chart && chart.zoomManager) {
+        chart.zoomManager.pan(100);
+      }
+    };
+
+    window.panRight = function() {
+      if (chart && chart.zoomManager) {
+        chart.zoomManager.pan(-100);
+      }
+    };
+
+    window.expandAll = function() {
+      // TODO: Implement expand all
+      console.log('Expand all - requires tree access');
+    };
+
+    window.collapseAll = function() {
+      // TODO: Implement collapse all
+      console.log('Collapse all - requires tree access');
+    };
+
+    // Reset config
+    window.resetConfig = function() {
+      if (!confirm('确定要重置所有配置吗？')) return;
+
+      document.getElementById('axisType').value = 'western';
+      document.getElementById('startYear').value = '1850';
+      document.getElementById('endYear').value = '2020';
+      document.getElementById('hasIndexAxis').value = 'true';
+      document.getElementById('zoomMin').value = '-1';
+      document.getElementById('zoomMax').value = '-1';
+      document.getElementById('rowHeight').value = '25';
+      document.getElementById('rowHeightValue').textContent = '25';
+      document.getElementById('labelWidth').value = '240';
+      document.getElementById('labelWidthValue').textContent = '240';
+      document.getElementById('labelPosition').value = 'left';
+      document.getElementById('xPadding').value = '2';
+      document.getElementById('xPaddingValue').textContent = '2';
+      document.getElementById('yPadding').value = '2';
+      document.getElementById('yPaddingValue').textContent = '2';
+      document.getElementById('roundRadius').value = '4';
+      document.getElementById('roundRadiusValue').textContent = '4';
+      document.getElementById('groupBarMode').value = 'separate';
+      document.getElementById('groupBarOpacity').value = '0.3';
+      document.getElementById('groupBarOpacityValue').textContent = '0.3';
+      document.getElementById('groupYPadding').value = '5';
+      document.getElementById('groupYPaddingValue').textContent = '5';
+      document.getElementById('theme').value = 'light';
+      document.getElementById('locale').value = 'zh-cn';
+
+      featureFlags = { activeAxis: true, tooltip: true, scrollable: true };
+      document.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.add('active'));
+
+      // Reset lane groups
+      document.getElementById('laneGroupsContainer').innerHTML = '';
+      laneGroupCounter = 0;
+      initDefaultLaneGroups();
+
+      updateChart();
+    };
+
+    // Export config
+    window.exportConfig = function() {
+      const config = getConfig();
+      const json = JSON.stringify(config, (key, value) => {
+        if (value instanceof Date) return value.toISOString();
+        if (typeof value === 'function') return '[Function]';
+        return value;
+      }, 2);
+
+      console.log('Current Configuration:');
+      console.log(json);
+      alert('配置已输出到控制台');
+    };
+
+    // Bind events
+    function bindEvents() {
+      // Range sliders
+      const rangeInputs = ['rowHeight', 'labelWidth', 'xPadding', 'yPadding', 'roundRadius', 'groupBarOpacity', 'groupYPadding'];
+      rangeInputs.forEach(id => {
+        const input = document.getElementById(id);
+        const valueSpan = document.getElementById(id + 'Value');
+        input.addEventListener('input', function() {
+          valueSpan.textContent = this.value;
+          updateChart();
+        });
+      });
+
+      // Select inputs (removed group1/2/3Field - now using dynamic lane groups)
+      const selectInputs = ['axisType', 'hasIndexAxis', 'labelPosition', 'groupBarMode', 'theme', 'locale'];
+      selectInputs.forEach(id => {
+        document.getElementById(id).addEventListener('change', updateChart);
+      });
+
+      // Number inputs
+      const numberInputs = ['startYear', 'endYear', 'zoomMin', 'zoomMax'];
+      numberInputs.forEach(id => {
+        document.getElementById(id).addEventListener('change', updateChart);
+      });
+    }
+
+    // Initialize
+    async function init() {
+      // Try to load Chinese calendar libraries
+      console.log('Attempting to load Chinese calendar libraries...');
+
+      // Try to load ChineseCalendar (722 BCE - 2200 CE)
+      try {
+        const chineseCalendarModule = await import('../../chinesecalendar/src/calendar.js');
+        await initChineseCalendar(chineseCalendarModule);
+        console.log('ChineseCalendar loaded successfully');
+      } catch (e) {
+        console.warn('ChineseCalendar not available:', e.message);
+      }
+
+      // Try to load lunar-javascript (1 CE - 9999 CE)
+      try {
+        await initLunar();
+        console.log('lunar-javascript loaded successfully');
+      } catch (e) {
+        console.warn('lunar-javascript not available:', e.message);
+      }
+
+      // Load archigos.csv data
+      currentData = await loadArchigosData();
+
+      // Initialize default lane groups (after data is loaded)
+      initDefaultLaneGroups();
+
+      bindEvents();
+      updateChart();
+
+      console.log(`HistoricalChart Demo initialized with ${currentData.length} events`);
+      console.log(`Calendar support: Lunar=${isLunarLoaded()}, ChineseCalendar=${isChineseCalendarLoaded()}`);
+    }
+
+    init();
+
+    // Handle resize
+    window.addEventListener('resize', () => {
+      if (chart) {
+        const newWidth = document.getElementById('chart').offsetWidth;
+        chart.resize(newWidth, 600);
+      }
+    });
+  </script>
+</body>
+</html>
