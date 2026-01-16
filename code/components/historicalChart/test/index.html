@@ -553,6 +553,35 @@
         </div>
       </div>
 
+      <!-- 颜色配置 -->
+      <div class="config-section">
+        <h2>🎨 颜色配置</h2>
+
+        <div class="control-group">
+          <label>Bar 颜色依据</label>
+          <select id="barColorField">
+            <option value="default" selected>默认 (d.color)</option>
+            <!-- 动态生成 -->
+          </select>
+        </div>
+
+        <div class="control-group">
+          <label>Group 颜色依据</label>
+          <select id="groupColorMode">
+            <option value="level" selected>按层级 (默认)</option>
+            <option value="field">按分组字段值</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <div class="checkbox-group">
+            <input type="checkbox" id="enableColorFn" checked>
+            <label for="enableColorFn">启用 colorFn 回调</label>
+          </div>
+          <div class="field-info">关闭后使用默认颜色逻辑</div>
+        </div>
+      </div>
+
     </div>
 
     <!-- 右侧图表区域 -->
@@ -600,6 +629,7 @@
   </div>
 
   <script type="module">
+    import * as d3 from 'd3';
     import {
       HistoricalChart,
       westernAxises,
@@ -623,13 +653,65 @@
     };
     let laneGroupCounter = 0;
 
-    // 可用分组字段
-    const availableFields = [
-      { value: 'country', label: '国家' },
-      { value: 'countryCode', label: '国家代码' },
-      { value: 'exit', label: '离任方式' },
-      { value: 'gender', label: '性别' }
-    ];
+    // 可用分组字段 (动态生成)
+    let availableFields = [];
+
+    // 从数据中提取可用的分类字段
+    function detectCategoryFields(data) {
+      if (!data || data.length === 0) return [];
+
+      const sample = data[0];
+      const fields = [];
+
+      // 排除的字段 (时间、ID、标签等)
+      const excludeFields = new Set(['id', 'start', 'end', 'label', 'title', 'color']);
+
+      for (const key of Object.keys(sample)) {
+        if (excludeFields.has(key)) continue;
+
+        const value = sample[key];
+        // 只保留字符串类型的字段作为分类字段
+        if (typeof value === 'string') {
+          // 统计唯一值数量
+          const uniqueValues = new Set(data.map(d => d[key]).filter(v => v != null));
+          // 唯一值数量在合理范围内才作为分类字段
+          // 上限设为数据量的一半，避免每条记录都不同的字段（如 leader）
+          const maxUnique = Math.min(500, Math.floor(data.length / 2));
+          if (uniqueValues.size >= 2 && uniqueValues.size <= maxUnique) {
+            fields.push({
+              value: key,
+              label: key,
+              uniqueCount: uniqueValues.size
+            });
+          }
+        }
+      }
+
+      // 按唯一值数量排序 (少的在前)
+      return fields.sort((a, b) => a.uniqueCount - b.uniqueCount);
+    }
+
+    // 初始化字段选择器
+    function initFieldSelectors() {
+      // 更新 Bar 颜色字段选择器
+      const barColorSelect = document.getElementById('barColorField');
+      // 保留默认选项，添加动态字段
+      const defaultOption = barColorSelect.querySelector('option[value="default"]');
+      barColorSelect.innerHTML = '';
+      barColorSelect.appendChild(defaultOption);
+
+      availableFields.forEach(field => {
+        const option = document.createElement('option');
+        option.value = field.value;
+        option.textContent = `按 ${field.label} (${field.uniqueCount})`;
+        barColorSelect.appendChild(option);
+      });
+
+      // 默认选择第一个分类字段
+      if (availableFields.length > 0) {
+        barColorSelect.value = availableFields[0].value;
+      }
+    }
 
     // 添加泳道层级
     window.addLaneGroup = function(defaultField = null) {
@@ -741,7 +823,11 @@
 
     // 初始化默认泳道层级
     function initDefaultLaneGroups() {
-      addLaneGroup('country');
+      // 使用第一个检测到的分类字段
+      const defaultField = availableFields.length > 0 ? availableFields[0].value : null;
+      if (defaultField) {
+        addLaneGroup(defaultField);
+      }
     }
 
     // Load and parse archigos.csv data
@@ -781,7 +867,7 @@
             end: parseDate(enddate),
             label: leader,
             title: `<strong>${leader}</strong><br/>${countryname}<br/>${startdate} - ${enddate}<br/>Exit: ${exit}`,
-            color: getColorByCountry(idacr)
+            //color: getColorByCountry(idacr)
           });
         }
 
@@ -827,25 +913,57 @@
       return date;
     }
 
-    // Get color by country code
+    // D3 颜色比例尺 - 按字段分别创建
+    const colorScales = {
+      country: d3.scaleOrdinal(d3.schemeTableau10),
+      countryCode: d3.scaleOrdinal(d3.schemeTableau10),
+      exit: d3.scaleOrdinal(d3.schemeSet2),
+      gender: d3.scaleOrdinal(d3.schemeSet1),
+      level: d3.scaleOrdinal(d3.schemeDark2)
+    };
+
+    // 获取字段值的颜色
+    function getFieldColor(field, value) {
+      if (!value) return '#95a5a6';
+      const scale = colorScales[field] || d3.scaleOrdinal(d3.schemeSet2);
+      return scale(value);
+    }
+
+    // Get color by country code (用于默认 d.color)
     function getColorByCountry(countryCode) {
-      const colors = {
-        'USA': '#3498db',
-        'CAN': '#e74c3c',
-        'GBR': '#9b59b6',
-        'FRN': '#2ecc71',
-        'GMY': '#f39c12',
-        'ITA': '#1abc9c',
-        'JPN': '#e91e63',
-        'CHN': '#ff5722',
-        'RUS': '#607d8b',
-        'AUL': '#00bcd4',
-        'BRA': '#8bc34a',
-        'MEX': '#ff9800',
-        'ARG': '#795548',
-        'IND': '#9c27b0'
+      return colorScales.countryCode(countryCode);
+    }
+
+    // 统一颜色回调函数
+    function createColorFn() {
+      const barColorField = document.getElementById('barColorField').value;
+      const groupColorMode = document.getElementById('groupColorMode').value;
+      const enableColorFn = document.getElementById('enableColorFn').checked;
+
+      if (!enableColorFn) {
+        return null;
+      }
+
+      return function(type, ctx) {
+        if (type === 'bar') {
+          // Bar 颜色
+          if (barColorField === 'default') {
+            return null; // 使用默认 d.color
+          }
+          return getFieldColor(barColorField, ctx.data[barColorField]);
+        }
+
+        if (type === 'groupBar' || type === 'groupBackground') {
+          // Group 颜色
+          if (groupColorMode === 'level') {
+            return colorScales.level(ctx.node.level);
+          }
+          // 按分组字段值着色
+          return getFieldColor(ctx.node.field, ctx.node.key);
+        }
+
+        return null;
       };
-      return colors[countryCode] || '#95a5a6';
     }
 
     // Fallback data if CSV load fails
@@ -984,7 +1102,8 @@
         locale: document.getElementById('locale').value,
         activeAxis: featureFlags.activeAxis,
         tooltip: featureFlags.tooltip,
-        scrollable: featureFlags.scrollable
+        scrollable: featureFlags.scrollable,
+        colorFn: createColorFn()
       };
     }
 
@@ -1134,6 +1253,11 @@
       featureFlags = { activeAxis: true, tooltip: true, scrollable: true };
       document.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.add('active'));
 
+      // Reset color config
+      document.getElementById('barColorField').value = availableFields.length > 0 ? availableFields[0].value : 'default';
+      document.getElementById('groupColorMode').value = 'level';
+      document.getElementById('enableColorFn').checked = true;
+
       // Reset lane groups
       document.getElementById('laneGroupsContainer').innerHTML = '';
       laneGroupCounter = 0;
@@ -1170,10 +1294,13 @@
       });
 
       // Select inputs (removed group1/2/3Field - now using dynamic lane groups)
-      const selectInputs = ['axisType', 'hasIndexAxis', 'labelPosition', 'groupBarMode', 'theme', 'locale'];
+      const selectInputs = ['axisType', 'hasIndexAxis', 'labelPosition', 'groupBarMode', 'theme', 'locale', 'barColorField', 'groupColorMode'];
       selectInputs.forEach(id => {
         document.getElementById(id).addEventListener('change', updateChart);
       });
+
+      // Checkbox inputs
+      document.getElementById('enableColorFn').addEventListener('change', updateChart);
 
       // Number inputs
       const numberInputs = ['startYear', 'endYear', 'zoomMin', 'zoomMax'];
@@ -1206,6 +1333,13 @@
 
       // Load archigos.csv data
       currentData = await loadArchigosData();
+
+      // 检测可用的分类字段
+      availableFields = detectCategoryFields(currentData);
+      console.log('Detected category fields:', availableFields.map(f => f.value));
+
+      // 初始化字段选择器
+      initFieldSelectors();
 
       // Initialize default lane groups (after data is loaded)
       initDefaultLaneGroups();

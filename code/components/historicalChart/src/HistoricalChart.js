@@ -66,6 +66,12 @@ export class HistoricalChart {
       groupBarOpacity: 0.3,
       groupYPadding: 5,
 
+      // Color callback
+      // colorFn(type, context) => string | null
+      // type: 'bar' | 'groupBar' | 'groupBackground'
+      // context: { data, accessors } for 'bar', { node, mode } for group types
+      colorFn: null,
+
       // Scrolling
       scrollable: true,
 
@@ -357,6 +363,7 @@ export class HistoricalChart {
       roundRadius: this.options.roundRadius,
       yPadding: this.options.yPadding,
       textPosition: 'center',
+      colorFn: this.options.colorFn,
       onClick: (d, event) => this.dispatch.call('barClick', this, d, event),
       onHover: (d, event) => this._onBarHover(d, event),
       onLeave: (d, event) => this._onBarLeave(d, event)
@@ -368,7 +375,8 @@ export class HistoricalChart {
       mode: this.options.groupBarMode,
       opacity: this.options.groupBarOpacity,
       roundRadius: this.options.roundRadius,
-      yPadding: this.options.yPadding
+      yPadding: this.options.yPadding,
+      colorFn: this.options.colorFn
     });
     this.groupBarRenderer.create(this.bodyGroup);
 

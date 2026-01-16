@@ -100,7 +100,7 @@ export class GroupBarRenderer {
       const width = Math.max(1, xScale(node.timeEnd) - x);
       const y = node.groupBarRow * rowHeight + this.yPadding;
       const height = rowHeight - 2 * this.yPadding;
-      const color = this._getColor(node);
+      const color = this._getColor(node, 'groupBar');
 
       const g = this.container.append('g')
         .classed('group-bar', true)
@@ -134,7 +134,7 @@ export class GroupBarRenderer {
       const width = Math.max(1, xScale(node.timeEnd) - x);
       const y = node.rowStart * rowHeight;
       const height = (node.rowEnd - node.rowStart + 1) * rowHeight;
-      const color = this._getColor(node);
+      const color = this._getColor(node, 'groupBackground');
 
       const g = this.container.append('g')
         .classed('group-bar', true)
@@ -157,10 +157,15 @@ export class GroupBarRenderer {
 
   /**
    * Get color for a node
+   * @param {LaneNode} node - The lane node
+   * @param {string} type - 'groupBar' or 'groupBackground'
    */
-  _getColor(node) {
+  _getColor(node, type = 'groupBar') {
     if (this.colorFn) {
-      return this.colorFn(node);
+      const color = this.colorFn(type, { node, mode: this.mode });
+      if (color != null) {
+        return color;
+      }
     }
     return DEFAULT_GROUP_COLORS[node.level % DEFAULT_GROUP_COLORS.length];
   }

@@ -18,6 +18,7 @@ export class BarRenderer {
     this.roundRadius = options.roundRadius ?? 4;
     this.yPadding = options.yPadding ?? 2;
     this.textPosition = options.textPosition ?? 'center';
+    this.colorFn = options.colorFn ?? null;
 
     this.onClick = options.onClick ?? (() => {});
     this.onHover = options.onHover ?? (() => {});
@@ -51,12 +52,16 @@ export class BarRenderer {
     this.xScale = xScale;
     this.rowHeight = rowHeight;
 
+    const defaultColorAccessor = accessors.color ?? (d => d.color);
+
     this.accessors = {
       key: accessors.key ?? (d => d.id),
       start: accessors.start ?? (d => d.start),
       end: accessors.end ?? (d => d.end),
       label: accessors.label ?? (d => d.label ?? ''),
-      color: accessors.color ?? (d => d.color),
+      color: this.colorFn
+        ? (d => this.colorFn('bar', { data: d, accessors }) ?? defaultColorAccessor(d))
+        : defaultColorAccessor,
       title: accessors.title ?? (d => d.title ?? '')
     };
 
