@@ -44,8 +44,8 @@ export class HistoricalChart {
       axises: [
         westernAxises.yearlyAxis,
         westernAxises.dailyAxis,
-        westernAxises.yearlyGrid,
-        westernAxises.dailyGrid
+        //westernAxises.yearlyGrid,
+        //westernAxises.dailyGrid
       ],
       hasIndexAxis: true,
       indexAxisHeight: 28,
@@ -865,6 +865,45 @@ export class HistoricalChart {
    */
   resetZoom() {
     this.zoomManager.reset();
+    if (this.indexAxisManager) {
+      this.indexAxisManager.updateFromZoom(this.zoomManager.getDomain());
+    }
+  }
+
+  /**
+   * Programmatically zoom in
+   * @param {number} factor - Zoom factor (> 1), default 1.5
+   */
+  zoomIn(factor = 1.5) {
+    this.zoomManager.zoomIn(factor);
+    // Sync index axis (zoomManager.zoomIn triggers _onZoom but sourceEvent is null)
+    if (this.indexAxisManager) {
+      this.indexAxisManager.updateFromZoom(this.zoomManager.getDomain());
+    }
+  }
+
+  /**
+   * Programmatically zoom out
+   * @param {number} factor - Zoom factor (> 1), default 1.5
+   */
+  zoomOut(factor = 1.5) {
+    this.zoomManager.zoomOut(factor);
+    // Sync index axis
+    if (this.indexAxisManager) {
+      this.indexAxisManager.updateFromZoom(this.zoomManager.getDomain());
+    }
+  }
+
+  /**
+   * Pan by amount in pixels
+   * @param {number} dx - Horizontal pan amount
+   */
+  pan(dx) {
+    this.zoomManager.pan(dx);
+    // Sync index axis
+    if (this.indexAxisManager) {
+      this.indexAxisManager.updateFromZoom(this.zoomManager.getDomain());
+    }
   }
 
   /**

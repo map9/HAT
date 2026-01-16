@@ -894,15 +894,15 @@
             return [
               westernAxises.yearlyAxis,
               westernAxises.dailyAxis,
-              westernAxises.yearlyGrid,
-              westernAxises.dailyGrid
+              //westernAxises.yearlyGrid,
+              //westernAxises.dailyGrid
             ];
           }
           return [
             lunarAxises.yearlyAxis,
             lunarAxises.dailyAxis,
-            lunarAxises.yearlyGrid,
-            lunarAxises.dailyGrid
+            //lunarAxises.yearlyGrid,
+            //lunarAxises.dailyGrid
           ];
         case 'chinese':
           if (!isChineseCalendarLoaded()) {
@@ -910,31 +910,31 @@
             return [
               westernAxises.yearlyAxis,
               westernAxises.dailyAxis,
-              westernAxises.yearlyGrid,
-              westernAxises.dailyGrid
+              //westernAxises.yearlyGrid,
+              //westernAxises.dailyGrid
             ];
           }
           return [
             chineseCalendarAxises.yearlyAxis,
             chineseCalendarAxises.dailyAxis,
-            chineseCalendarAxises.yearlyGrid,
-            chineseCalendarAxises.dailyGrid
+            //chineseCalendarAxises.yearlyGrid,
+            //chineseCalendarAxises.dailyGrid
           ];
         case 'dual':
           // Western + Chinese (if loaded)
           const dualAxises = [
             westernAxises.yearlyAxis,
-            westernAxises.yearlyGrid
+            //westernAxises.yearlyGrid
           ];
           if (isChineseCalendarLoaded()) {
             dualAxises.push(chineseCalendarAxises.dailyAxis);
-            dualAxises.push(chineseCalendarAxises.dailyGrid);
+            //dualAxises.push(chineseCalendarAxises.dailyGrid);
           } else if (isLunarLoaded()) {
             dualAxises.push(lunarAxises.dailyAxis);
-            dualAxises.push(lunarAxises.dailyGrid);
+            //dualAxises.push(lunarAxises.dailyGrid);
           } else {
             dualAxises.push(westernAxises.dailyAxis);
-            dualAxises.push(westernAxises.dailyGrid);
+            //dualAxises.push(westernAxises.dailyGrid);
           }
           return dualAxises;
         case 'western':
@@ -942,8 +942,8 @@
           return [
             westernAxises.yearlyAxis,
             westernAxises.dailyAxis,
-            westernAxises.yearlyGrid,
-            westernAxises.dailyGrid
+            //westernAxises.yearlyGrid,
+            //westernAxises.dailyGrid
           ];
       }
     }
@@ -1064,13 +1064,13 @@
     // Zoom controls
     window.zoomIn = function() {
       if (chart && chart.zoomManager) {
-        chart.zoomManager.zoomIn(1.5);
+        chart.zoomIn(1.5);
       }
     };
 
     window.zoomOut = function() {
       if (chart && chart.zoomManager) {
-        chart.zoomManager.zoomOut(1.5);
+        chart.zoomOut(1.5);
       }
     };
 
@@ -1082,13 +1082,13 @@
 
     window.panLeft = function() {
       if (chart && chart.zoomManager) {
-        chart.zoomManager.pan(100);
+        chart.pan(100);
       }
     };
 
     window.panRight = function() {
       if (chart && chart.zoomManager) {
-        chart.zoomManager.pan(-100);
+        chart.pan(-100);
       }
     };
 
