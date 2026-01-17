@@ -723,9 +723,22 @@ export class HistoricalChart {
   _assignRowsToTree(root) {
     const { start, end } = this.currentAccessors;
     const useSeparateRow = this.options.groupBarMode === 'separate';
+    const useBackground = this.options.groupBarMode === 'background';
+    const groupYPadding = this.options.groupYPadding || 0;
+    const rowHeight = this.options.rowHeight;
+
+    // Calculate how many padding rows needed for groupYPadding
+    //const paddingRows = useBackground ? Math.ceil(groupYPadding / rowHeight) : 0;
+    const paddingRows = useBackground ? groupYPadding / rowHeight : 0;
+
     let currentRow = 0;
 
     const traverse = (node) => {
+      // Add padding rows at group start (for all groups in background mode)
+      if (useBackground && node.level >= 0) {
+        currentRow += paddingRows;
+      }
+
       node.rowStart = currentRow;
 
       if (node.isCollapsed() || node.isLeaf()) {
@@ -755,6 +768,11 @@ export class HistoricalChart {
       }
 
       node.rowEnd = currentRow - 1;
+
+      // Add padding rows at group end (for all groups in background mode)
+      if (useBackground && node.level >= 0) {
+        currentRow += paddingRows;
+      }
     };
 
     root.children.forEach(child => traverse(child));

@@ -26,9 +26,9 @@ export class LabelRenderer {
    * @param {Function} options.onToggle - Callback when group is toggled
    */
   constructor(options = {}) {
-    this.position = options.position || 'left';
-    this.width = options.width || 160;
-    this.padding = options.padding || 6;
+    this.position = options.position ?? 'left';
+    this.width = options.width ?? 160;
+    this.padding = options.padding ?? 6;
     this.onToggle = options.onToggle || (() => {});
 
     this.container = null;

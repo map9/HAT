@@ -15,7 +15,7 @@ export class AxisManager {
   constructor(options = {}) {
     this.axises = options.axises || [];
     this.locale = options.locale || 'en-us';
-    this.gap = options.gap || 1;
+    this.gap = options.gap ?? 1;
 
     this.axisObjects = {};
     this.axisNodes = {};

@@ -14,7 +14,7 @@ export class TooltipManager {
    */
   constructor(options = {}) {
     this.locale = options.locale || 'en-us';
-    this.gap = options.gap || 1;
+    this.gap = options.gap ?? 1;
 
     this.axisTooltip = null;
     this.eventTooltip = null;

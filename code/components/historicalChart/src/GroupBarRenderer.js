@@ -18,9 +18,9 @@ export class GroupBarRenderer {
    */
   constructor(options = {}) {
     this.mode = options.mode || 'separate';
-    this.opacity = options.opacity || 0.3;
-    this.roundRadius = options.roundRadius || 4;
-    this.yPadding = options.yPadding || 2;
+    this.opacity = options.opacity ?? 0.3;
+    this.roundRadius = options.roundRadius ?? 4;
+    this.yPadding = options.yPadding ?? 2;
     this.colorFn = options.colorFn || null;
 
     this.container = null;
