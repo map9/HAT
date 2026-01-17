@@ -14,6 +14,10 @@ let LunarYear = null;
 let LunarMonth = null;
 let lunarLoaded = false;
 
+// Year range constants (lunar-javascript supports 1 CE to 9999 CE)
+export const MIN_YEAR = 1;
+export const MAX_YEAR = 9999;
+
 /**
  * Initialize lunar-javascript library
  * Must be called before using lunar axes
@@ -33,9 +37,8 @@ export async function initLunar(lunarModule = null) {
       return true;
     }
 
-    // Try dynamic import with variable to avoid Vite static analysis
-    const moduleName = 'lunar-javascript';
-    const module = await import(/* @vite-ignore */ moduleName);
+    // Try dynamic import
+    const module = await import('lunar-javascript');
     Lunar = module.Lunar;
     LunarYear = module.LunarYear;
     LunarMonth = module.LunarMonth;
@@ -54,6 +57,15 @@ export async function initLunar(lunarModule = null) {
 export function isLunarLoaded() {
   return lunarLoaded;
 }
+
+// Limited domain based on year range
+const getLimitedDomain = () => {
+  const minDate = new Date(0);
+  minDate.setUTCFullYear(MIN_YEAR, 0, 1);
+  const maxDate = new Date(0);
+  maxDate.setUTCFullYear(MAX_YEAR, 11, 31);
+  return [minDate, maxDate];
+};
 
 // Convert Solar to Date
 const solarToDate = (solar) => {
@@ -138,9 +150,6 @@ const toLocaleString = (lunar, local, config = {
   total += s;
   return total.trim();
 };
-
-// Domain limited to years 1 CE to 9999 CE
-const limitedDomain = [new Date('0001-01-01'), new Date('9999-12-31')];
 
 // Chinese Year interval
 export const chineseYear = d3.timeInterval(
@@ -287,7 +296,7 @@ export const yearlyAxis = {
   height: 18,
   isGrid: false,
   class: 'yearly',
-  domain: limitedDomain,
+  domain: getLimitedDomain(),
   map: (hoursPerPixel, local) => {
     if (!lunarLoaded) return [[Infinity, [d3.utcYear, () => '']]];
 
@@ -351,7 +360,7 @@ export const dailyAxis = {
   height: 15,
   isGrid: false,
   class: 'daily',
-  domain: limitedDomain,
+  domain: getLimitedDomain(),
   map: (hoursPerPixel, local) => {
     if (!lunarLoaded) return [[Infinity, [d3.utcYear, () => '']]];
 
@@ -391,7 +400,7 @@ export const dailyGrid = {
   height: -1,
   isGrid: true,
   class: 'daily-grid',
-  domain: limitedDomain,
+  domain: getLimitedDomain(),
   map: (hoursPerPixel, local) => {
     if (!lunarLoaded) return [[Infinity, [d3.utcYear, '']]];
 
@@ -417,7 +426,7 @@ export const yearlyGrid = {
   height: -1,
   isGrid: true,
   class: 'yearly-grid',
-  domain: limitedDomain,
+  domain: getLimitedDomain(),
   map: (hoursPerPixel, local) => {
     if (!lunarLoaded) return [[Infinity, [d3.utcYear, '']]];
 

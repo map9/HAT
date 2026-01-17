@@ -1,17 +1,8 @@
 /**
  * Chinese Calendar axis configurations
  * Based on ChineseCalendar library (supports 722 BCE to 2200 CE)
- *
- * Usage:
- *   import { initChineseCalendar, isChineseCalendarLoaded, yearlyAxis, dailyAxis } from './chineseCalendarAxises.js';
- *
- *   // Initialize before use (pass the ChineseCalendar module)
- *   import * as ChineseCalendarModule from '../../chinesecalendar/src/calendar.js';
- *   await initChineseCalendar(ChineseCalendarModule);
- *
- *   // Or let it auto-load (requires chinesecalendar to be in correct path)
- *   await initChineseCalendar();
  */
+
 import * as d3 from 'd3';
 
 // ChineseCalendar library references - must be initialized before use

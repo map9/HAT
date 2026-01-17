@@ -2,6 +2,9 @@ import { defineConfig } from 'vite';
 import { resolve } from 'path';
 
 export default defineConfig({
+  optimizeDeps: {
+    include: ['lunar-javascript']
+  },
   build: {
     lib: {
       entry: resolve(__dirname, 'src/index.js'),

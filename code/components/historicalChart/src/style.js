@@ -123,7 +123,7 @@ const base_styles = `
   }
 
   /* Index axis container */
-  .hc-index-container {
+  .hc-indexaxis-container {
     flex-shrink: 0;
     position: sticky;
     bottom: 0;
@@ -208,7 +208,7 @@ const base_styles = `
   }
 
   /* Event tooltip (HTML) */
-  .hc-event-tooltip {
+  .hc-tooltip {
     position: absolute;
     font-size: 12px;
     visibility: hidden;

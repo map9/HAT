@@ -21,15 +21,15 @@ export { GroupBarRenderer } from './GroupBarRenderer.js';
 export { LaneNode } from './LaneNode.js';
 
 // Axis configurations - Western (Gregorian) calendar
-export * as westernAxises from './westernAxises.js';
+export * as westernAxises from './axises/westernAxises.js';
 
 // Axis configurations - Chinese Lunar calendar (lunar-javascript, 1 CE - 9999 CE)
-export * as lunarAxises from './lunarAxises.js';
-export { initLunar, isLunarLoaded } from './lunarAxises.js';
+export * as lunarAxises from './axises/lunarAxises.js';
+export { initLunar, isLunarLoaded } from './axises/lunarAxises.js';
 
 // Axis configurations - Chinese calendar (ChineseCalendar, 722 BCE - 2200 CE)
-export * as chineseCalendarAxises from './chineseCalendarAxises.js';
-export { initChineseCalendar, isChineseCalendarLoaded, getAxises as getChineseCalendarAxises } from './chineseCalendarAxises.js';
+export * as chineseCalendarAxises from './axises/chineseCalendarAxises.js';
+export { initChineseCalendar, isChineseCalendarLoaded, getAxises as getChineseCalendarAxises } from './axises/chineseCalendarAxises.js';
 
 // Styles
 export { LIGHT, DARK } from './style.js';

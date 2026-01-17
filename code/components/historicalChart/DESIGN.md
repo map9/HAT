@@ -142,7 +142,7 @@ historicalChart/
   </div>
 
   <!-- IndexAxis 区域 (sticky bottom) -->
-  <div class="hc-index-container">
+  <div class="hc-indexaxis-container">
     <svg class="hc-index-svg">
       <g class="index-axis"/>
       <g class="brush"/>

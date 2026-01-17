@@ -14,7 +14,7 @@ import { LabelRenderer } from './LabelRenderer.js';
 import { BarRenderer } from './BarRenderer.js';
 import { GroupBarRenderer } from './GroupBarRenderer.js';
 import { assignRowsLanes, getMaxRow } from './utils/layout.js';
-import * as westernAxises from './westernAxises.js';
+import * as westernAxises from './axises/westernAxises.js';
 
 export class HistoricalChart {
   /**
@@ -291,7 +291,7 @@ export class HistoricalChart {
     const labelWidth = this.options.labelPosition === 'none' ? 0 : this.options.labelWidth;
 
     this.indexContainer = this.chartDiv.append('div')
-      .classed('hc-index-container', true);
+      .classed('hc-indexaxis-container', true);
 
     this.indexSvg = this.indexContainer.append('svg')
       .classed('hc-index-svg', true)
@@ -311,7 +311,8 @@ export class HistoricalChart {
   _createTooltip() {
     this.tooltipManager = new TooltipManager({
       locale: this.options.locale,
-      gap: 1
+      gap: 1,
+      roundRadius: this.options.roundRadius
     });
 
     // Create axis tooltip in axis SVG

@@ -15,6 +15,7 @@ export class TooltipManager {
   constructor(options = {}) {
     this.locale = options.locale || 'en-us';
     this.gap = options.gap ?? 1;
+    this.roundRadius = options.roundRadius ?? 4;
 
     this.axisTooltip = null;
     this.eventTooltip = null;
@@ -32,8 +33,8 @@ export class TooltipManager {
     this.axisTooltip.append('rect')
       .attr('width', 0)
       .attr('height', 0)
-      .attr('rx', 3)
-      .attr('ry', 3);
+      .attr('rx', this.roundRadius)
+      .attr('ry', this.roundRadius);
 
     this.axisTooltip.append('text')
       .attr('x', 0)
@@ -49,7 +50,7 @@ export class TooltipManager {
   createEventTooltip(container) {
     this.eventTooltip = d3.select(container)
       .append('div')
-      .classed('hc-event-tooltip', true);
+      .classed('hc-tooltip', true);
 
     return this.eventTooltip;
   }
