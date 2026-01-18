@@ -632,6 +632,8 @@
     import * as d3 from 'd3';
     import {
       HistoricalChart,
+      GroupBarLayer,
+      GridLayer,
       westernAxises,
       lunarAxises,
       chineseCalendarAxises,
@@ -1012,15 +1014,15 @@
             return [
               westernAxises.yearlyAxis,
               westernAxises.dailyAxis,
-              //westernAxises.yearlyGrid,
-              //westernAxises.dailyGrid
+              westernAxises.yearlyGrid,
+              westernAxises.dailyGrid
             ];
           }
           return [
             lunarAxises.yearlyAxis,
             lunarAxises.dailyAxis,
-            //lunarAxises.yearlyGrid,
-            //lunarAxises.dailyGrid
+            lunarAxises.yearlyGrid,
+            lunarAxises.dailyGrid
           ];
         case 'chinese':
           if (!isChineseCalendarLoaded()) {
@@ -1028,31 +1030,31 @@
             return [
               westernAxises.yearlyAxis,
               westernAxises.dailyAxis,
-              //westernAxises.yearlyGrid,
-              //westernAxises.dailyGrid
+              westernAxises.yearlyGrid,
+              westernAxises.dailyGrid
             ];
           }
           return [
             chineseCalendarAxises.yearlyAxis,
             chineseCalendarAxises.dailyAxis,
-            //chineseCalendarAxises.yearlyGrid,
-            //chineseCalendarAxises.dailyGrid
+            chineseCalendarAxises.yearlyGrid,
+            chineseCalendarAxises.dailyGrid
           ];
         case 'dual':
           // Western + Chinese (if loaded)
           const dualAxises = [
             westernAxises.yearlyAxis,
-            //westernAxises.yearlyGrid
+            westernAxises.yearlyGrid
           ];
           if (isChineseCalendarLoaded()) {
             dualAxises.push(chineseCalendarAxises.dailyAxis);
-            //dualAxises.push(chineseCalendarAxises.dailyGrid);
+            dualAxises.push(chineseCalendarAxises.dailyGrid);
           } else if (isLunarLoaded()) {
             dualAxises.push(lunarAxises.dailyAxis);
-            //dualAxises.push(lunarAxises.dailyGrid);
+            dualAxises.push(lunarAxises.dailyGrid);
           } else {
             dualAxises.push(westernAxises.dailyAxis);
-            //dualAxises.push(westernAxises.dailyGrid);
+            dualAxises.push(westernAxises.dailyGrid);
           }
           return dualAxises;
         case 'western':
@@ -1060,8 +1062,8 @@
           return [
             westernAxises.yearlyAxis,
             westernAxises.dailyAxis,
-            //westernAxises.yearlyGrid,
-            //westernAxises.dailyGrid
+            westernAxises.yearlyGrid,
+            westernAxises.dailyGrid
           ];
       }
     }
@@ -1144,8 +1146,33 @@
 
       // Create new chart
       chart = new HistoricalChart('#chart', config);
-
-      chart.render(filteredData, {
+      
+      const gridLayer = new GridLayer('grid', {
+        axises: getAxises(axisType),
+        locale: 'en-us',
+        gap: 1,
+        visible: true
+      })
+      chart.layerManager.addLayer(gridLayer, 0);
+      
+      const groupbarLayer = new GroupBarLayer('groupBars', {
+        rowHeight: config.rowHeight,
+        minRowHeight: config.minRowHeight,
+        labelWidth: config.labelWidth,
+        labelPosition: config.labelPosition,
+        xPadding: config.xPadding,
+        yPadding: config.yPadding,
+        roundRadius: config.roundRadius,
+        groups: config.groups,
+        mode: config.groupBarMode,
+        opacity: config.groupBarOpacity,
+        roundRadius: config.roundRadius,
+        groupYPadding: config.groupYPadding,
+        colorFn: config.colorFn,
+        visible: true
+      })
+      chart.layerManager.addLayer(groupbarLayer, 1);
+      groupbarLayer.setLayerData(filteredData, {
         key: d => d.id,
         start: d => d.start,
         end: d => d.end,
@@ -1154,13 +1181,15 @@
         title: d => d.title
       });
 
+      chart.render()
+
       // Event listeners
       chart.on('domainChange', (domain) => {
         document.getElementById('infoDomain').textContent =
           `${domain[0].getFullYear()} - ${domain[1].getFullYear()}`;
       });
 
-      chart.on('barClick', (data) => {
+      chart.on('itemClick', (data) => {
         console.log('Clicked:', data);
       });
 

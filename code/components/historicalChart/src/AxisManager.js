@@ -16,6 +16,11 @@ export class AxisManager {
     this.axises = options.axises || [];
     this.locale = options.locale || 'en-us';
     this.gap = options.gap ?? 1;
+    this.type = options.type ?? 'both';  // 'mark' | 'grid' | 'both'
+
+    this.axises = this.axises.filter(
+      axis => (this.type == 'both' || (this.type == 'mark' && !axis.isGrid) || (this.type == 'grid' && axis.isGrid))
+    );
 
     this.axisObjects = {};
     this.axisNodes = {};
@@ -134,7 +139,7 @@ export class AxisManager {
   /**
    * Update all axes with new scale
    * @param {d3.ScaleTime} xScale - Current time scale
-   * @param {number} bodyHeight - Height of body area (for grid extension)
+   * @param {number} bodyHeight - Height of body area
    */
   update(xScale, bodyHeight = 0) {
     const hoursPerPixel = getHoursPerPixel(xScale);
@@ -170,10 +175,12 @@ export class AxisManager {
    */
   addAxises(newAxises) {
     for (const axis of newAxises) {
-      if (!this.axisObjects[axis.name]) {
-        this.axises.push(axis);
-        this.axisObjects[axis.name] = this.createAxisObject(axis);
-        this.axisNodes[axis.name] = this.axisContainer.append('g').classed(axis.class, true);
+      if (this.type == 'both' || (this.type == 'mark' && !axis.isGrid) || (this.type == 'grid' && axis.isGrid)) {
+        if (!this.axisObjects[axis.name]) {
+          this.axises.push(axis);
+          this.axisObjects[axis.name] = this.createAxisObject(axis);
+          this.axisNodes[axis.name] = this.axisContainer.append('g').classed(axis.class, true);
+        }
       }
     }
     this.sortAxises();

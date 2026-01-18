@@ -52,13 +52,13 @@ export class LabelRenderer {
   render(laneTree, rowHeight, options = {}) {
     if (!this.container || this.position === 'none') return;
 
-    const { groupBarMode = 'separate' } = options;
+    const { mode = 'separate' } = options;
 
     // Clear existing labels
     this.container.selectAll('*').remove();
 
     // Use different render strategies based on mode
-    if (groupBarMode === 'background') {
+    if (mode === 'background') {
       this._renderBackgroundModeLabels(laneTree, rowHeight);
     } else {
       this._renderSeparateModeLabels(laneTree, rowHeight);

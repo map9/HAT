@@ -11,14 +11,10 @@ export { IndexAxisManager } from './IndexAxisManager.js';
 export { ZoomManager } from './ZoomManager.js';
 export { ScrollManager } from './ScrollManager.js';
 export { TooltipManager } from './TooltipManager.js';
+export { LayerManager } from './LayerManager.js';
 
-// Renderers
-export { LabelRenderer } from './LabelRenderer.js';
-export { BarRenderer } from './BarRenderer.js';
-export { GroupBarRenderer } from './GroupBarRenderer.js';
-
-// Data structures
-export { LaneNode } from './LaneNode.js';
+// Layers
+export { Layer, GridLayer, GroupBarLayer } from './layers';
 
 // Axis configurations - Western (Gregorian) calendar
 export * as westernAxises from './axises/westernAxises.js';

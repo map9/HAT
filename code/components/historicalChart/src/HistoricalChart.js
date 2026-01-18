@@ -4,16 +4,12 @@
  */
 import * as d3 from 'd3';
 import { LIGHT, DARK } from './style.js';
-import { LaneNode } from './LaneNode.js';
 import { AxisManager } from './AxisManager.js';
 import { IndexAxisManager } from './IndexAxisManager.js';
 import { ZoomManager } from './ZoomManager.js';
 import { ScrollManager } from './ScrollManager.js';
 import { TooltipManager } from './TooltipManager.js';
-import { LabelRenderer } from './LabelRenderer.js';
-import { BarRenderer } from './BarRenderer.js';
-import { GroupBarRenderer } from './GroupBarRenderer.js';
-import { assignRowsLanes, getMaxRow } from './utils/layout.js';
+import { LayerManager } from './LayerManager.js';
 import * as westernAxises from './axises/westernAxises.js';
 
 export class HistoricalChart {
@@ -51,27 +47,6 @@ export class HistoricalChart {
       indexAxisHeight: 28,
       zoomLimited: [-1, -1],
 
-      // Rows
-      rowHeight: 30,
-      minRowHeight: 12,
-
-      // Spacing
-      xPadding: 2,
-      yPadding: 2,
-      roundRadius: 4,
-
-      // Groups
-      groups: null,
-      groupBarMode: 'separate', // 'separate' | 'background'
-      groupBarOpacity: 0.3,
-      groupYPadding: 5,
-
-      // Color callback
-      // colorFn(type, context) => string | null
-      // type: 'bar' | 'groupBar' | 'groupBackground'
-      // context: { data, accessors } for 'bar', { node, mode } for group types
-      colorFn: null,
-
       // Scrolling
       scrollable: true,
 
@@ -87,11 +62,7 @@ export class HistoricalChart {
     };
 
     // State
-    this.laneTree = null;
-    this.currentData = null;
-    this.currentAccessors = null;
     this.xScale = null;
-    this.enrichedData = [];
 
     // Managers
     this.axisManager = null;
@@ -99,19 +70,17 @@ export class HistoricalChart {
     this.zoomManager = null;
     this.scrollManager = null;
     this.tooltipManager = null;
-    this.labelRenderer = null;
-    this.barRenderer = null;
-    this.groupBarRenderer = null;
+    this.layerManager = null;
 
     // Event dispatch
     this.dispatch = d3.dispatch(
       'initial',
       'update',
       'resize',
-      'barClick',
-      'barHover',
+      'domainChange',
+      'itemClick',
+      'itemHover',
       'groupToggle',
-      'domainChange'
     );
 
     // DOM references
@@ -121,6 +90,9 @@ export class HistoricalChart {
     this.labelsContainer = null;
     this.bodyContainer = null;
     this.indexContainer = null;
+
+    // height
+    this.contentHeight = null;
 
     this._init();
   }
@@ -200,7 +172,8 @@ export class HistoricalChart {
     this.axisManager = new AxisManager({
       axises: this.options.axises,
       locale: this.options.locale,
-      gap: 1
+      gap: 1,
+      type: 'mark'
     });
     const axisHeight = this.axisManager.calculateHeight();
 
@@ -348,38 +321,8 @@ export class HistoricalChart {
       this.indexAxisManager.create(this.indexGroup);
     }
 
-    // Label renderer
-    this.labelRenderer = new LabelRenderer({
-      position: this.options.labelPosition,
-      width: this.options.labelWidth,
-      padding: 6,
-      onToggle: (node, expanded) => this._onGroupToggle(node, expanded)
-    });
-    if (this.labelsGroup) {
-      this.labelRenderer.create(this.labelsGroup);
-    }
-
-    // Bar renderer
-    this.barRenderer = new BarRenderer({
-      roundRadius: this.options.roundRadius,
-      yPadding: this.options.yPadding,
-      textPosition: 'center',
-      colorFn: this.options.colorFn,
-      onClick: (d, event) => this.dispatch.call('barClick', this, d, event),
-      onHover: (d, event) => this._onBarHover(d, event),
-      onLeave: (d, event) => this._onBarLeave(d, event)
-    });
-    this.barRenderer.create(this.bodyGroup);
-
-    // Group bar renderer
-    this.groupBarRenderer = new GroupBarRenderer({
-      mode: this.options.groupBarMode,
-      opacity: this.options.groupBarOpacity,
-      roundRadius: this.options.roundRadius,
-      yPadding: this.options.yPadding,
-      colorFn: this.options.colorFn
-    });
-    this.groupBarRenderer.create(this.bodyGroup);
+    // Layer manager and layers
+    this.layerManager = new LayerManager(this);
 
     // Scroll manager
     this.scrollManager = new ScrollManager({
@@ -472,16 +415,11 @@ export class HistoricalChart {
   _onZoom(xScale, transform, sourceEvent) {
     // Update axis
     const indexHeight = this.options.hasIndexAxis ? this.options.indexAxisHeight : 0;
-    const contentHeight = this.options.height - this.axisManager.getHeight() - indexHeight;
-    this.axisManager.update(xScale, contentHeight);
+    const bodyHeight = this.options.height - this.axisManager.getHeight() - indexHeight;
+    this.axisManager.update(xScale, this.axisManager.getHeight());
 
-    // Update bars
-    this.barRenderer.update(xScale);
-
-    // Update group bars (need full redraw for proper positioning)
-    if (this.laneTree && this.currentAccessors) {
-      this.groupBarRenderer.render(this.laneTree, xScale, this.options.rowHeight, this.currentAccessors);
-    }
+    // Update layers
+    this.layerManager.update(xScale, bodyHeight, this.contentHeight);
 
     // Update index axis if user-initiated
     if (sourceEvent && this.indexAxisManager) {
@@ -502,45 +440,6 @@ export class HistoricalChart {
   }
 
   /**
-   * Handle group toggle
-   */
-  _onGroupToggle(node, expanded) {
-    // Re-render with current data
-    if (this.currentData && this.currentAccessors) {
-      this._renderData();
-    }
-
-    this.dispatch.call('groupToggle', this, node, expanded);
-  }
-
-  /**
-   * Handle bar hover
-   */
-  _onBarHover(data, event) {
-    if (this.tooltipManager && this.currentAccessors) {
-      const title = this.currentAccessors.title
-        ? this.currentAccessors.title(data)
-        : `${data.label || data.name || ''}`;
-
-      if (title) {
-        const [x, y] = d3.pointer(event, this.wrapper.node());
-        this.tooltipManager.showEventTooltip(title, x, y);
-      }
-    }
-
-    this.dispatch.call('barHover', this, data, event);
-  }
-
-  /**
-   * Handle bar leave
-   */
-  _onBarLeave(data, event) {
-    if (this.tooltipManager) {
-      this.tooltipManager.hideEventTooltip();
-    }
-  }
-
-  /**
    * Handle scroll
    */
   _onScroll(top, left) {
@@ -548,260 +447,40 @@ export class HistoricalChart {
   }
 
   /**
-   * Render chart with data
-   * @param {Array} data - Array of data items
-   * @param {Object} accessors - Data accessors
+   * Render chart
    */
-  render(data, accessors = {}) {
-    this.currentData = data;
-    this.currentAccessors = {
-      key: d => d.id,
-      start: d => d.start,
-      end: d => d.end,
-      lane: d => d.lane || '',
-      color: d => d.color,
-      label: d => d.label || '',
-      title: d => d.title || '',
-      ...accessors
-    };
-
-    this._renderData();
-
-    // Initial axis update
+  render() {
     const xScale = this.zoomManager.getScale();
+
     const indexHeight = this.options.hasIndexAxis ? this.options.indexAxisHeight : 0;
-    const contentHeight = this.options.height - this.axisManager.getHeight() - indexHeight;
-    this.axisManager.update(xScale, contentHeight);
-
-    // Dispatch initial event
-    const bodyWidth = this._calculateBodyWidth();
-    this.dispatch.call('initial', this, { left: 0, top: 0, width: bodyWidth, height: contentHeight }, xScale);
-
-    return this;
-  }
-
-  /**
-   * Internal render data
-   */
-  _renderData() {
-    const { start, end } = this.currentAccessors;
-
-    // Build lane tree if groups are configured
-    if (this.options.groups && this.options.groups.length > 0) {
-      this.laneTree = this._buildLaneTree(this.currentData, this.options.groups);
-      this._assignRowsToTree(this.laneTree);
-      this.enrichedData = this._flattenTreeToRenderData(this.laneTree);
-    } else {
-      // Flat mode - use lanes algorithm
-      this.enrichedData = assignRowsLanes(this.currentData, {
-        start,
-        end,
-        xScale: this.xScale,
-        xPadding: this.options.xPadding
-      });
-    }
-
-    // Calculate content height
-    const maxRow = getMaxRow(this.enrichedData);
-    const contentHeight = (maxRow + 1) * this.options.rowHeight;
+    const bodyHeight = this.options.height - this.axisManager.getHeight() - indexHeight;
+    if (!this.contentHeight)
+      this.contentHeight = this.layerManager.calculateContentHeight(xScale)
 
     // Update SVG heights
-    this.bodySvg.attr('height', contentHeight);
+    this.bodySvg.attr('height', this.contentHeight);
     if (this.labelsSvg) {
-      this.labelsSvg.attr('height', contentHeight);
+      this.labelsSvg.attr('height', this.contentHeight);
     }
 
     // Update clip path height (critical for scrolling to work)
     this.bodySvg.select('#hc-body-clip rect')
-      .attr('height', contentHeight);
+      .attr('height', this.contentHeight);
 
     // Update board height for mouse events
-    this.board.attr('height', contentHeight);
+    this.board.attr('height', this.contentHeight);
 
-    // Render bars
-    const xScale = this.zoomManager.getScale();
-    this.barRenderer.render(this.enrichedData, xScale, this.options.rowHeight, this.currentAccessors);
+    // Render all layers
+    this.layerManager.render(xScale, bodyHeight, this.contentHeight);
 
-    // Render group bars
-    if (this.laneTree) {
-      this.groupBarRenderer.render(this.laneTree, xScale, this.options.rowHeight, this.currentAccessors);
-    }
+    // Initial axis update
+    this.axisManager.update(xScale, this.axisManager.getHeight());
 
-    // Render labels
-    if (this.laneTree && this.labelRenderer) {
-      this.labelRenderer.render(this.laneTree, this.options.rowHeight, {
-        groupBarMode: this.options.groupBarMode
-      });
-    }
-  }
+    // Dispatch initial event
+    const bodyWidth = this._calculateBodyWidth();
+    this.dispatch.call('initial', this, { left: 0, top: 0, width: bodyWidth, height: bodyHeight }, xScale);
 
-  /**
-   * Build hierarchical lane tree
-   */
-  _buildLaneTree(data, groups) {
-    const root = new LaneNode('root', -1, null);
-    const oldTree = this.laneTree;
-
-    // Helper to find existing node in old tree by complete path
-    const findExistingNode = (parentNode, level, key) => {
-      if (!oldTree) return null;
-
-      // Build path from current parent node
-      const currentPath = [];
-      let node = parentNode;
-      while (node && node.level >= 0) {
-        currentPath.unshift(node.key);
-        node = node.parent;
-      }
-
-      // Find node in old tree with matching path
-      const findNode = (oldNode, pathIndex) => {
-        // If we've matched the full path and reached target level
-        if (pathIndex === currentPath.length && oldNode.level === level && oldNode.key === key) {
-          return oldNode;
-        }
-
-        // If still building path, continue matching
-        if (pathIndex < currentPath.length) {
-          for (const child of oldNode.children) {
-            if (child.key === currentPath[pathIndex]) {
-              const found = findNode(child, pathIndex + 1);
-              if (found) return found;
-            }
-          }
-        } else {
-          // Path matched, now look for target at next level
-          for (const child of oldNode.children) {
-            if (child.level === level && child.key === key) {
-              return child;
-            }
-          }
-        }
-
-        return null;
-      };
-
-      return findNode(oldTree, 0);
-    };
-
-    const buildLevel = (parentNode, items, levelIndex) => {
-      if (levelIndex >= groups.length) {
-        // Leaf level - store items
-        parentNode.items = items;
-        return;
-      }
-
-      const group = groups[levelIndex];
-      const grouped = d3.group(items, d => d[group.field]);
-
-      grouped.forEach((groupItems, key) => {
-        const childNode = new LaneNode(key, levelIndex, group.field, parentNode);
-
-        // Preserve expanded state from existing tree if available
-        const existingNode = findExistingNode(parentNode, levelIndex, key);
-        childNode.expanded = existingNode ? existingNode.expanded : (group.expanded !== false);
-
-        parentNode.children.push(childNode);
-
-        // Always build child tree to preserve structure
-        // This allows collapsed nodes to be re-expanded
-        buildLevel(childNode, groupItems, levelIndex + 1);
-
-        // If collapsed, also store items at this node for rendering
-        if (!childNode.expanded) {
-          childNode.items = groupItems;
-        }
-      });
-    };
-
-    buildLevel(root, data, 0);
-    return root;
-  }
-
-  /**
-   * Assign row numbers to tree nodes
-   */
-  _assignRowsToTree(root) {
-    const { start, end } = this.currentAccessors;
-    const useSeparateRow = this.options.groupBarMode === 'separate';
-    const useBackground = this.options.groupBarMode === 'background';
-    const groupYPadding = this.options.groupYPadding || 0;
-    const rowHeight = this.options.rowHeight;
-
-    // Calculate how many padding rows needed for groupYPadding
-    //const paddingRows = useBackground ? Math.ceil(groupYPadding / rowHeight) : 0;
-    const paddingRows = useBackground ? groupYPadding / rowHeight : 0;
-
-    let currentRow = 0;
-
-    const traverse = (node) => {
-      // Add padding rows at group start (for all groups in background mode)
-      if (useBackground && node.level >= 0) {
-        currentRow += paddingRows;
-      }
-
-      node.rowStart = currentRow;
-
-      if (node.isCollapsed() || node.isLeaf()) {
-        // Collapsed or leaf: assign group bar row + item rows
-        if (useSeparateRow && node.shouldRenderGroupBar()) {
-          node.groupBarRow = currentRow++;
-        }
-
-        // Assign rows to items
-        const assigned = assignRowsLanes(node.getAllItems(), {
-          start,
-          end,
-          xScale: this.xScale,
-          xPadding: this.options.xPadding
-        });
-
-        const maxItemRow = getMaxRow(assigned);
-        node.items = assigned;
-        currentRow += maxItemRow + 1;
-      } else {
-        // Expanded parent: group bar + children
-        if (useSeparateRow && node.shouldRenderGroupBar()) {
-          node.groupBarRow = currentRow++;
-        }
-
-        node.children.forEach(child => traverse(child));
-      }
-
-      node.rowEnd = currentRow - 1;
-
-      // Add padding rows at group end (for all groups in background mode)
-      if (useBackground && node.level >= 0) {
-        currentRow += paddingRows;
-      }
-    };
-
-    root.children.forEach(child => traverse(child));
-  }
-
-  /**
-   * Flatten tree to render data
-   */
-  _flattenTreeToRenderData(root) {
-    const result = [];
-
-    const traverse = (node) => {
-      if (node.isCollapsed() || node.isLeaf()) {
-        // Add items with adjusted row numbers
-        node.items.forEach(item => {
-          const baseRow = node.groupBarRow >= 0 ? node.groupBarRow + 1 : node.rowStart;
-          result.push({
-            ...item,
-            rowNo: baseRow + item.rowNo
-          });
-        });
-      } else {
-        node.children.forEach(child => traverse(child));
-      }
-    };
-
-    root.children.forEach(child => traverse(child));
-    return result;
+    return this;
   }
 
   /**
@@ -845,10 +524,8 @@ export class HistoricalChart {
       this.indexAxisManager.resize(bodyWidth);
     }
 
-    // Re-render if data exists
-    if (this.currentData) {
-      this._renderData();
-    }
+    // Update layers
+    this.layerManager.resize(bodyWidth, contentHeight);
 
     this.dispatch.call('resize', this, width, height);
   }
@@ -938,6 +615,8 @@ export class HistoricalChart {
    */
   destroy() {
     this.scrollManager.destroy();
+    this.layerManager.destroy();
+
     this.container.innerHTML = '';
   }
 }
