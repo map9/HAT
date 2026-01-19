@@ -1,5 +1,3 @@
-import { TooltipManager } from "./TooltipManager";
-
 /**
  * LayerManager - Manages visual layers and their z-order
  * Controls layer lifecycle, rendering order, and updates

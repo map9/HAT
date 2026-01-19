@@ -11,20 +11,30 @@ export class AxisManager {
    * @param {Array} options.axises - Array of axis configurations
    * @param {string} options.locale - Locale for date formatting
    * @param {number} options.gap - Gap between elements
+   * @param {string} options.type - Filter type: 'mark' | 'grid' | 'both'
    */
   constructor(options = {}) {
-    this.axises = options.axises || [];
     this.locale = options.locale || 'en-us';
     this.gap = options.gap ?? 1;
-    this.type = options.type ?? 'both';  // 'mark' | 'grid' | 'both'
+    this.type = options.type ?? 'both';
 
-    this.axises = this.axises.filter(
-      axis => (this.type == 'both' || (this.type == 'mark' && !axis.isGrid) || (this.type == 'grid' && axis.isGrid))
-    );
-
+    this.axises = this._filterAxises(options.axises || []);
     this.axisObjects = {};
     this.axisNodes = {};
     this.totalHeight = 0;
+  }
+
+  /**
+   * Filter axes based on type setting
+   * @param {Array} axises - Array of axis configurations
+   * @returns {Array} Filtered axes
+   * @private
+   */
+  _filterAxises(axises) {
+    if (this.type === 'both') return axises;
+
+    const wantGrid = this.type === 'grid';
+    return axises.filter(axis => axis.isGrid === wantGrid);
   }
 
   /**
@@ -174,15 +184,16 @@ export class AxisManager {
    * @param {Array} newAxises - New axis configurations to add
    */
   addAxises(newAxises) {
-    for (const axis of newAxises) {
-      if (this.type == 'both' || (this.type == 'mark' && !axis.isGrid) || (this.type == 'grid' && axis.isGrid)) {
-        if (!this.axisObjects[axis.name]) {
-          this.axises.push(axis);
-          this.axisObjects[axis.name] = this.createAxisObject(axis);
-          this.axisNodes[axis.name] = this.axisContainer.append('g').classed(axis.class, true);
-        }
+    const filteredAxises = this._filterAxises(newAxises);
+
+    for (const axis of filteredAxises) {
+      if (!this.axisObjects[axis.name]) {
+        this.axises.push(axis);
+        this.axisObjects[axis.name] = this.createAxisObject(axis);
+        this.axisNodes[axis.name] = this.axisContainer.append('g').classed(axis.class, true);
       }
     }
+
     this.sortAxises();
     this.calculateHeight();
   }

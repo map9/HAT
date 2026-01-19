@@ -8,6 +8,7 @@ import { LaneNode } from './LaneNode.js';
 import { BarRenderer } from './BarRenderer.js';
 import { GroupBarRenderer } from './GroupBarRenderer.js';
 import { LabelRenderer } from './LabelRenderer.js';
+import { PointRenderer } from './PointRenderer.js';
 import { assignRowsLanes, getMaxRow } from '../../utils/layout.js';
 
 export class GroupBarLayer extends Layer {
@@ -47,9 +48,19 @@ export class GroupBarLayer extends Layer {
 
       // Color callback
       // colorFn(type, context) => string | null
-      // type: 'bar' | 'groupBar' | 'groupBackground'
-      // context: { data, accessors } for 'bar', { node, mode } for group types
+      // type: 'bar' | 'point' | 'groupBar' | 'groupBackground'
+      // context: { data, accessors } for 'bar'/'point', { node, mode } for group types
       colorFn: null,
+
+      // Shape callback for points
+      // shapeFn(type, context) => 'circle' | 'diamond' | 'triangle' | 'square' | 'star' | 'cross' | 'wye'
+      // type: 'point'
+      // context: { data, accessors }
+      shapeFn: null,
+
+      // Point options
+      pointSizeRatio: 0.6,        // Point size relative to rowHeight (0-1)
+      pointLabelPosition: 'none', // 'none' | 'right' | 'top'
 
       visible: true,
       ...options
@@ -63,6 +74,7 @@ export class GroupBarLayer extends Layer {
 
     // Managers
     this.barRenderer = null;
+    this.pointRenderer = null;
     this.groupBarRenderer = null;
     this.labelRenderer = null;
   }
@@ -74,7 +86,7 @@ export class GroupBarLayer extends Layer {
   create(chart) {
     const group = super.create(chart);
 
-    // Bar renderer
+    // Bar renderer (for time range items)
     this.barRenderer = new BarRenderer({
       roundRadius: this.options.roundRadius,
       yPadding: this.options.yPadding,
@@ -85,6 +97,18 @@ export class GroupBarLayer extends Layer {
       onLeave: (d, event) => this._onBarLeave(d, event)
     });
     this.barRenderer.create(this.group);
+
+    // Point renderer (for single time point items) - rendered above bars
+    this.pointRenderer = new PointRenderer({
+      sizeRatio: this.options.pointSizeRatio,
+      labelPosition: this.options.pointLabelPosition,
+      colorFn: this.options.colorFn,
+      shapeFn: this.options.shapeFn,
+      onClick: (d, event) => this.chart.dispatch.call('itemClick', this, d, event),
+      onHover: (d, event) => this._onBarHover(d, event),
+      onLeave: (d, event) => this._onBarLeave(d, event)
+    });
+    this.pointRenderer.create(this.group);
 
     // Group bar renderer
     this.groupBarRenderer = new GroupBarRenderer({
@@ -114,6 +138,7 @@ export class GroupBarLayer extends Layer {
    * set layer data
    * @param {Array} data - Array of data items
    * @param {Object} accessors - Data accessors
+   * @param {Function} accessors.isPoint - Optional accessor to determine if item is a point (returns true/false)
    */
   setLayerData(data, accessors = {}) {
     this.currentData = data;
@@ -125,6 +150,7 @@ export class GroupBarLayer extends Layer {
       color: d => d.color,
       label: d => d.label || '',
       title: d => d.title || '',
+      isPoint: d => false, // Default: all items are bars
       ...accessors
     };
   }
@@ -154,7 +180,7 @@ export class GroupBarLayer extends Layer {
 
       if (title) {
         const [x, y] = d3.pointer(event, this.chart.wrapper.node());
-        this.chart.tooltipManager.showEventTooltip(title, x, y);
+        this.chart.tooltipManager.showItemTooltip(title, x, y);
       }
     }
 
@@ -164,9 +190,9 @@ export class GroupBarLayer extends Layer {
   /**
    * Handle bar leave
    */
-  _onBarLeave(data, event) {
+  _onBarLeave() {
     if (this.chart.tooltipManager) {
-      this.chart.tooltipManager.hideEventTooltip();
+      this.chart.tooltipManager.hideItemTooltip();
     }
   }
 
@@ -208,57 +234,41 @@ export class GroupBarLayer extends Layer {
   }
 
   /**
+   * Find existing node in old tree by matching the path from root
+   * @private
+   */
+  _findExistingNode(oldTree, parentNode, level, key) {
+    if (!oldTree) return null;
+
+    // Build path from current parent node to root
+    const pathToRoot = [];
+    let node = parentNode;
+    while (node && node.level >= 0) {
+      pathToRoot.unshift(node.key);
+      node = node.parent;
+    }
+
+    // Traverse old tree following the same path
+    let currentNode = oldTree;
+    for (const pathKey of pathToRoot) {
+      const child = currentNode.children.find(c => c.key === pathKey);
+      if (!child) return null;
+      currentNode = child;
+    }
+
+    // Find the target node among children
+    return currentNode.children.find(c => c.level === level && c.key === key) || null;
+  }
+
+  /**
    * Build hierarchical lane tree
    */
   _buildLaneTree(data, groups) {
     const root = new LaneNode('root', -1, null);
     const oldTree = this.laneTree;
 
-    // Helper to find existing node in old tree by complete path
-    const findExistingNode = (parentNode, level, key) => {
-      if (!oldTree) return null;
-
-      // Build path from current parent node
-      const currentPath = [];
-      let node = parentNode;
-      while (node && node.level >= 0) {
-        currentPath.unshift(node.key);
-        node = node.parent;
-      }
-
-      // Find node in old tree with matching path
-      const findNode = (oldNode, pathIndex) => {
-        // If we've matched the full path and reached target level
-        if (pathIndex === currentPath.length && oldNode.level === level && oldNode.key === key) {
-          return oldNode;
-        }
-
-        // If still building path, continue matching
-        if (pathIndex < currentPath.length) {
-          for (const child of oldNode.children) {
-            if (child.key === currentPath[pathIndex]) {
-              const found = findNode(child, pathIndex + 1);
-              if (found) return found;
-            }
-          }
-        } else {
-          // Path matched, now look for target at next level
-          for (const child of oldNode.children) {
-            if (child.level === level && child.key === key) {
-              return child;
-            }
-          }
-        }
-
-        return null;
-      };
-
-      return findNode(oldTree, 0);
-    };
-
     const buildLevel = (parentNode, items, levelIndex) => {
       if (levelIndex >= groups.length) {
-        // Leaf level - store items
         parentNode.items = items;
         return;
       }
@@ -270,16 +280,15 @@ export class GroupBarLayer extends Layer {
         const childNode = new LaneNode(key, levelIndex, group.field, parentNode);
 
         // Preserve expanded state from existing tree if available
-        const existingNode = findExistingNode(parentNode, levelIndex, key);
+        const existingNode = this._findExistingNode(oldTree, parentNode, levelIndex, key);
         childNode.expanded = existingNode ? existingNode.expanded : (group.expanded !== false);
 
         parentNode.children.push(childNode);
 
-        // Always build child tree to preserve structure
-        // This allows collapsed nodes to be re-expanded
+        // Build child tree to preserve structure for re-expansion
         buildLevel(childNode, groupItems, levelIndex + 1);
 
-        // If collapsed, also store items at this node for rendering
+        // Store items at collapsed nodes for rendering
         if (!childNode.expanded) {
           childNode.items = groupItems;
         }
@@ -379,10 +388,8 @@ export class GroupBarLayer extends Layer {
   /**
    * Render group bars from lane tree
    * @param {d3.ScaleTime} xScale - Time scale
-   * @param {number} bodyHeight - Height of body area
-   * @param {number} contentHeight - Height of content
    */
-  render(xScale, bodyHeight, contentHeight) {
+  render(xScale) {
     if (!this.currentData || !this.currentAccessors)
       return;
 
@@ -390,9 +397,23 @@ export class GroupBarLayer extends Layer {
       this._prepareData(xScale);
     }
 
-    // Render bars
-    if (this.enrichedData) {
-      this.barRenderer.render(this.enrichedData, xScale, this.options.rowHeight, this.currentAccessors);
+    // Separate bars and points
+    const { isPoint } = this.currentAccessors;
+    const barData = this.enrichedData.filter(d => !isPoint(d));
+    const pointData = this.enrichedData.filter(d => isPoint(d));
+
+    // Render bars (time range items)
+    if (barData.length > 0) {
+      this.barRenderer.render(barData, xScale, this.options.rowHeight, this.currentAccessors);
+    } else {
+      this.barRenderer.clear();
+    }
+
+    // Render points (single time point items) - rendered after bars so they appear on top
+    if (pointData.length > 0) {
+      this.pointRenderer.render(pointData, xScale, this.options.rowHeight, this.currentAccessors);
+    } else {
+      this.pointRenderer.clear();
     }
 
     // Render group bars
@@ -410,15 +431,14 @@ export class GroupBarLayer extends Layer {
 
   /**
    * Update group bar positions on zoom/pan
-   * Note: Group bars need full re-render due to their dependency on tree structure
-   * This is called from the update cycle but currently does nothing
    * @param {d3.ScaleTime} xScale - New time scale
-   * @param {number} bodyHeight - Height of body area
-   * @param {number} contentHeight - Height of content
    */
-  update(xScale, bodyHeight, contentHeight) {
+  update(xScale) {
     // Update bars
     this.barRenderer.update(xScale);
+
+    // Update points
+    this.pointRenderer.update(xScale);
 
     // Update group bars (need full redraw for proper positioning)
     if (this.laneTree && this.currentAccessors) {
@@ -427,16 +447,10 @@ export class GroupBarLayer extends Layer {
   }
 
   /**
-   * Resize layer ???
-   * @param {number} width - New width
-   * @param {number} height - New height
+   * Resize layer (placeholder for future implementation)
    */
-  resize(width, height) {
-    // Re-render if data exists
-    //if (this.currentData) {
-    //  this._renderData();
-    //}
-
+  resize() {
+    // Currently no resize logic needed for GroupBarLayer
   }
 
   /**

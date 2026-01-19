@@ -31,7 +31,7 @@ export class GroupBarRenderer {
    * @param {d3.Selection} container - SVG group to append to
    */
   create(container) {
-    this.container = container.append('g').classed('group-bars', true);
+    this.container = container.append('g').classed('group-items', true);
     return this.container;
   }
 
@@ -103,7 +103,7 @@ export class GroupBarRenderer {
       const color = this._getColor(node, 'groupBar');
 
       const g = this.container.append('g')
-        .classed('group-bar', true)
+        .classed('group-item', true)
         .attr('data-level', node.level)
         .attr('data-key', node.key);
 
@@ -137,7 +137,7 @@ export class GroupBarRenderer {
       const color = this._getColor(node, 'groupBackground');
 
       const g = this.container.append('g')
-        .classed('group-bar', true)
+        .classed('group-item', true)
         .classed('background', true)
         .attr('data-level', node.level)
         .attr('data-key', node.key);
@@ -177,7 +177,7 @@ export class GroupBarRenderer {
   update(xScale) {
     if (!this.container) return;
 
-    this.container.selectAll('.group-bar rect')
+    this.container.selectAll('.group-item rect')
       .attr('x', function() {
         const g = d3.select(this.parentNode);
         const key = g.attr('data-key');

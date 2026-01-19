@@ -47,9 +47,6 @@ export class HistoricalChart {
       indexAxisHeight: 28,
       zoomLimited: [-1, -1],
 
-      // Scrolling
-      scrollable: true,
-
       // Style
       style: LIGHT,
       locale: 'en-us',
@@ -57,6 +54,10 @@ export class HistoricalChart {
       // Features
       activeAxis: true,
       tooltip: true,
+
+      // Tooltip delay (ms)
+      tooltipShowDelay: 150,
+      tooltipHideDelay: 100,
 
       ...options
     };
@@ -232,7 +233,7 @@ export class HistoricalChart {
       .classed('hc-body-container', true)
       .style('width', `${bodyWidth}px`)
       .style('height', `${contentHeight}px`)
-      .style('overflow-y', this.options.scrollable ? 'auto' : 'hidden')
+      .style('overflow-y', 'auto')
       .style('overflow-x', 'hidden');
 
     this.bodySvg = this.bodyContainer.append('svg')
@@ -285,14 +286,16 @@ export class HistoricalChart {
     this.tooltipManager = new TooltipManager({
       locale: this.options.locale,
       gap: 1,
-      roundRadius: this.options.roundRadius
+      roundRadius: this.options.roundRadius,
+      showDelay: this.options.tooltipShowDelay,
+      hideDelay: this.options.tooltipHideDelay
     });
 
     // Create axis tooltip in axis SVG
     this.tooltipManager.createAxisTooltip(this.axisGroup);
 
     // Create event tooltip in wrapper
-    this.tooltipManager.createEventTooltip(this.wrapper.node());
+    this.tooltipManager.createItemTooltip(this.wrapper.node());
 
     // Set bound box
     this.tooltipManager.setBoundBox({

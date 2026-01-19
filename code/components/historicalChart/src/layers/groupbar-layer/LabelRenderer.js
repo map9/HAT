@@ -6,15 +6,9 @@ import * as d3 from 'd3';
 
 // Style constants
 const LABEL_STYLE = {
-  BASE_FONT_SIZE: 13,
-  MIN_FONT_SIZE: 8,
   LINE_HEIGHT: 16,
   DY_OFFSET: '0.35em',
-  OPACITY_DECAY: 0.15,
-  MIN_OPACITY: 0.4,
-  BG_MIN_OPACITY: 0.6,
   ICON_SIZE: 10,
-  ICON_HOVER_SIZE: 11
 };
 
 export class LabelRenderer {
@@ -66,36 +60,46 @@ export class LabelRenderer {
   }
 
   /**
+   * Traverse lane tree and call visitor for each node
+   * @param {LaneNode} root - Root node
+   * @param {Function} visitor - Callback (node) => shouldTraverseChildren
+   * @private
+   */
+  _traverseTree(root, visitor) {
+    const traverse = (node) => {
+      if (node.level < 0) {
+        node.children.forEach(child => traverse(child));
+        return;
+      }
+
+      const shouldTraverseChildren = visitor(node);
+      if (shouldTraverseChildren && node.expanded) {
+        node.children.forEach(child => traverse(child));
+      }
+    };
+
+    root.children.forEach(child => traverse(child));
+  }
+
+  /**
    * Render labels for 'separate' mode
    * - Group bar labels with toggle icons on their own rows
    * - Leaf labels on item rows
    */
   _renderSeparateModeLabels(root, rowHeight) {
-    const renderNode = (node) => {
-      if (node.level < 0) {
-        node.children.forEach(child => renderNode(child));
-        return;
-      }
-
+    this._traverseTree(root, (node) => {
       const hasChildren = node.children.length > 0;
 
-      // Render group bar label (for nodes with children that have groupBarRow)
       if (hasChildren && node.groupBarRow >= 0) {
         this._renderGroupBarLabel(node, rowHeight);
       }
 
-      // Render leaf label
       if (node.isLeaf()) {
         this._renderLeafLabel(node, rowHeight);
       }
 
-      // Traverse children if expanded
-      if (node.expanded && hasChildren) {
-        node.children.forEach(child => renderNode(child));
-      }
-    };
-
-    root.children.forEach(child => renderNode(child));
+      return hasChildren;
+    });
   }
 
   /**
@@ -104,35 +108,22 @@ export class LabelRenderer {
    * - Leaf labels on item rows
    */
   _renderBackgroundModeLabels(root, rowHeight) {
-    const renderNode = (node) => {
-      if (node.level < 0) {
-        node.children.forEach(child => renderNode(child));
-        return;
-      }
-
+    this._traverseTree(root, (node) => {
       const hasChildren = node.children.length > 0;
 
-      // In background mode, render parent group labels as vertically stacked path
       if (hasChildren) {
-        // Check if this node or any ancestor has leaf children
         const hasLeafChildren = node.children.some(child => child.isLeaf());
         const shouldRenderLabel = (node.level === 0 && node.isCollapsed()) || hasLeafChildren;
 
         if (shouldRenderLabel) {
           this._renderBackgroundGroupLabels(node, rowHeight);
         }
-
-        if (node.expanded) {
-          node.children.forEach(child => renderNode(child));
-        }
-        return;
+        return true;
       }
 
-      // Render leaf labels
       this._renderLeafLabel(node, rowHeight);
-    };
-
-    root.children.forEach(child => renderNode(child));
+      return false;
+    });
   }
 
   /**
@@ -142,7 +133,6 @@ export class LabelRenderer {
     const y = node.groupBarRow * rowHeight + rowHeight / 2;
     const isLeft = this.position === 'left';
     const anchor = isLeft ? 'end' : 'start';
-    const style = this._getLabelStyle(node.level);
     const labelText = `${node.key} (${node.getAllItems().length})`;
 
     // Position icon near the edge, text further in
@@ -154,24 +144,20 @@ export class LabelRenderer {
       : iconX + LABEL_STYLE.ICON_SIZE + this.padding;
 
     const g = this.container.append('g')
-      .classed('group-bar-label-group', true)
+      .classed('group-item-labels', true)
       .attr('data-level', node.level)
       .attr('data-key', node.key);
 
     // Toggle icon
-    this._createToggleIcon(g, node, iconX, y, LABEL_STYLE.BASE_FONT_SIZE);
+    this._createToggleIcon(g, node, iconX, y);
 
     // Group name
     g.append('text')
-      .classed('group-bar-name', true)
+      .classed(`group-item-label level-${node.level > 3 ? 3 : node.level}`, true)
       .attr('x', textX)
       .attr('y', y)
       .attr('dy', LABEL_STYLE.DY_OFFSET)
       .attr('text-anchor', anchor)
-      .style('font-size', `${style.fontSize}px`)
-      .style('font-weight', style.fontWeight)
-      .style('fill', '#333')
-      .style('opacity', style.opacity)
       .text(labelText);
   }
 
@@ -182,14 +168,13 @@ export class LabelRenderer {
     const y = (node.rowStart + node.rowEnd) / 2 * rowHeight + rowHeight / 2;
     const isLeft = this.position === 'left';
     const anchor = isLeft ? 'end' : 'start';
-    const style = this._getLabelStyle(node.level);
 
     const x = isLeft
       ? this.width - this.padding
       : this.padding;
 
     const g = this.container.append('g')
-      .classed('lane-label', true)
+      .classed(`item-label level-${node.level > 3 ? 3 : node.level}`, true)
       .attr('data-level', node.level)
       .attr('data-key', node.key);
 
@@ -198,10 +183,6 @@ export class LabelRenderer {
       .attr('y', y)
       .attr('dy', LABEL_STYLE.DY_OFFSET)
       .attr('text-anchor', anchor)
-      .style('font-size', `${style.fontSize}px`)
-      .style('font-weight', style.fontWeight)
-      .style('fill', '#333')
-      .style('opacity', style.opacity)
       .text(node.key);
   }
 
@@ -232,21 +213,20 @@ export class LabelRenderer {
 
     path.forEach((pathNode, index) => {
       const y = startY + index * LABEL_STYLE.LINE_HEIGHT;
-      const style = this._getLabelStyle(pathNode.level, true);
       const labelText = `${pathNode.key} (${pathNode.getAllItems().length})`;
 
       const labelGroup = this.container.append('g')
-        .classed('lane-label-group outer-group', true)
+        .classed('group-item-labels outer-group', true)
         .attr('data-level', pathNode.level)
         .attr('data-key', pathNode.key);
 
       // Toggle icon for non-leaf nodes
       if (!pathNode.isLeaf()) {
-        this._createToggleIcon(labelGroup, pathNode, iconX, y, style.fontSize);
+        this._createToggleIcon(labelGroup, pathNode, iconX, y);
       }
 
       labelGroup.append('text')
-        .classed('lane-label', true)
+        .classed(`group-item-label level-${node.level > 3 ? 3 : node.level}`, true)
         .attr('x', textX)
         .attr('y', y)
         .attr('dy', LABEL_STYLE.DY_OFFSET)
@@ -275,46 +255,25 @@ export class LabelRenderer {
   /**
    * Create toggle icon with hover effects
    */
-  _createToggleIcon(g, node, x, y, fontSize) {
-    const iconFontSize = Math.max(LABEL_STYLE.MIN_FONT_SIZE - 1, fontSize - 2);
-    const hoverFontSize = Math.max(LABEL_STYLE.MIN_FONT_SIZE, fontSize - 1);
+  _createToggleIcon(g, node, x, y) {
     const anchor = this.position === 'left' ? 'end' : 'start';
     const self = this;
 
     return g.append('text')
-      .classed('lane-toggle-icon', true)
+      .classed(`group-item-toggle-icon level-${node.level > 3 ? 3 : node.level}`, true)
       .attr('x', x)
       .attr('y', y)
       .attr('dy', LABEL_STYLE.DY_OFFSET)
       .attr('text-anchor', anchor)
       .text(node.expanded ? '\u25BC' : '\u25B6') // ▼ or ▶
-      .style('font-size', `${iconFontSize}px`)
       .style('cursor', 'pointer')
       .style('user-select', 'none')
       .style('pointer-events', 'all')
-      .on('mouseenter', function() {
-        d3.select(this).style('font-size', `${hoverFontSize}px`);
-      })
-      .on('mouseleave', function() {
-        d3.select(this).style('font-size', `${iconFontSize}px`);
-      })
       .on('click', function(event) {
         event.stopPropagation();
         node.toggle();
         self.onToggle(node, node.expanded);
       });
-  }
-
-  /**
-   * Calculate label style based on level
-   */
-  _getLabelStyle(level, useBackgroundOpacity = false) {
-    const minOpacity = useBackgroundOpacity ? LABEL_STYLE.BG_MIN_OPACITY : LABEL_STYLE.MIN_OPACITY;
-    return {
-      fontSize: Math.max(LABEL_STYLE.MIN_FONT_SIZE, LABEL_STYLE.BASE_FONT_SIZE - level),
-      fontWeight: level === 0 ? 'bold' : 'normal',
-      opacity: Math.max(minOpacity, 1 - level * LABEL_STYLE.OPACITY_DECAY)
-    };
   }
 
   /**

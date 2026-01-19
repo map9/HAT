@@ -4,6 +4,10 @@
  */
 import * as d3 from 'd3';
 
+// Hysteresis margins for text visibility to prevent flickering
+const TEXT_HIDE_MARGIN = 6;
+const TEXT_SHOW_MARGIN = 14;
+
 export class BarRenderer {
   /**
    * @param {Object} options
@@ -35,7 +39,7 @@ export class BarRenderer {
    * @param {d3.Selection} container - SVG group to append bars to
    */
   create(container) {
-    this.container = container.append('g').classed('bars', true);
+    this.container = container.append('g').classed('items', true);
     return this.container;
   }
 
@@ -69,14 +73,14 @@ export class BarRenderer {
     const barHeight = rowHeight - 2 * this.yPadding;
 
     const bars = this.container
-      .selectAll('.bar')
+      .selectAll('.item')
       .data(data, key);
 
     bars.exit().remove();
 
     const enter = bars.enter()
       .append('g')
-      .classed('bar', true);
+      .classed('item', true);
 
     enter.append('rect');
     enter.append('text');
@@ -125,7 +129,7 @@ export class BarRenderer {
     const { start, end } = this.accessors;
 
     // ===== Rect：仅更新几何 =====
-    this.container.selectAll('.bar rect')
+    this.container.selectAll('.item rect')
       .attr('x', d => xScale(start(d)))
       .attr('width', d => Math.max(1, xScale(end(d)) - xScale(start(d))));
 
@@ -134,7 +138,7 @@ export class BarRenderer {
     const self = this;
 
     // ===== Text：只做位置判断，不再测量 =====
-    this.container.selectAll('.bar text')
+    this.container.selectAll('.item text')
       .each(function (d) {
         const barX = xScale(start(d));
         const barWidth = xScale(end(d)) - xScale(start(d));
@@ -163,20 +167,14 @@ export class BarRenderer {
               .attr('x', barX + barWidth / 2)
               .attr('text-anchor', 'middle');
 
-            // 滞回逻辑，防止抖动
-            const HIDE_MARGIN = 6;
-            const SHOW_MARGIN = 14;
-
-            if (!d.__textHidden && barWidth < textWidth + HIDE_MARGIN) {
+            // Hysteresis logic to prevent flickering during zoom
+            if (!d.__textHidden && barWidth < textWidth + TEXT_HIDE_MARGIN) {
               d.__textHidden = true;
-            } else if (d.__textHidden && barWidth > textWidth + SHOW_MARGIN) {
+            } else if (d.__textHidden && barWidth > textWidth + TEXT_SHOW_MARGIN) {
               d.__textHidden = false;
             }
 
-            text.style(
-              'visibility',
-              d.__textHidden ? 'hidden' : 'visible'
-            );
+            text.style('visibility', d.__textHidden ? 'hidden' : 'visible');
             break;
           }
         }

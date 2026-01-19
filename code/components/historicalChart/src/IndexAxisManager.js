@@ -65,46 +65,69 @@ export class IndexAxisManager {
   }
 
   /**
+   * Determine which side of the brush changed
+   * @returns {number} -1: left changed, 1: right changed, 0: both changed
+   * @private
+   */
+  _detectChangedSide(selection) {
+    if (!this.initialSelection) return 0;
+
+    const leftChanged = selection[0] !== this.initialSelection[0];
+    const rightChanged = selection[1] !== this.initialSelection[1];
+
+    if (leftChanged && !rightChanged) return -1;
+    if (rightChanged && !leftChanged) return 1;
+    return 0;
+  }
+
+  /**
+   * Adjust domain to match desired hours, anchoring based on which side changed
+   * @private
+   */
+  _adjustDomain(domain, desiredHours, changedSide) {
+    const halfDuration = (desiredHours * MS_PER_HOUR) / 2;
+
+    if (changedSide === -1) {
+      // Left side changed - anchor right side
+      return [new Date(domain[1].getTime() - desiredHours * MS_PER_HOUR), domain[1]];
+    }
+
+    if (changedSide === 1) {
+      // Right side changed - anchor left side
+      return [domain[0], new Date(domain[0].getTime() + desiredHours * MS_PER_HOUR)];
+    }
+
+    // Both sides changed - adjust from center
+    const centerTime = (domain[0].getTime() + domain[1].getTime()) / 2;
+    return [new Date(centerTime - halfDuration), new Date(centerTime + halfDuration)];
+  }
+
+  /**
    * Handle brush end event with zoom limit enforcement
    */
   _onBrushEnd(event) {
     const { selection, sourceEvent } = event;
     if (!selection) return;
 
-    // Determine which side changed
-    let status = 0; // -1: left changed, 1: right changed, 0: both changed
-    if (this.initialSelection) {
-      if (selection[0] !== this.initialSelection[0] && selection[1] === this.initialSelection[1]) {
-        status = -1;
-      } else if (selection[1] !== this.initialSelection[1] && selection[0] === this.initialSelection[0]) {
-        status = 1;
-      }
-    }
+    const changedSide = this._detectChangedSide(selection);
     this.initialSelection = selection.slice();
 
     // Convert to time domain
     let newDomain = selection.map(this.indexScale.invert);
 
-    // Calculate axis density
+    // Calculate and enforce zoom limits
     const totalHours = (newDomain[1] - newDomain[0]) / MS_PER_HOUR;
-    let axisDensity = this.width / totalHours; // pixels per hour
+    const axisDensity = this.width / totalHours;
 
-    const minAllowed = this.zoomLimited[0];
-    const maxAllowed = this.zoomLimited[1];
+    const [minAllowed, maxAllowed] = this.zoomLimited;
 
-    // Enforce minimum zoom (too zoomed out)
     if (minAllowed !== -1 && axisDensity < minAllowed) {
-      const desiredHours = this.width / minAllowed;
-      newDomain = this._adjustDomain(newDomain, desiredHours, status);
+      newDomain = this._adjustDomain(newDomain, this.width / minAllowed, changedSide);
+    } else if (maxAllowed !== -1 && axisDensity > maxAllowed) {
+      newDomain = this._adjustDomain(newDomain, this.width / maxAllowed, changedSide);
     }
 
-    // Enforce maximum zoom (too zoomed in)
-    if (maxAllowed !== -1 && axisDensity > maxAllowed) {
-      const desiredHours = this.width / maxAllowed;
-      newDomain = this._adjustDomain(newDomain, desiredHours, status);
-    }
-
-    // Update brush selection if needed
+    // Update brush selection if domain was adjusted
     const newSelection = newDomain.map(this.indexScale);
     if (newSelection[0] !== selection[0] || newSelection[1] !== selection[1]) {
       this.brushGroup.call(this.brush.move, newSelection);
@@ -113,32 +136,6 @@ export class IndexAxisManager {
     // Notify callback if user initiated
     if (sourceEvent) {
       this.onBrush(newDomain);
-    }
-  }
-
-  /**
-   * Adjust domain to match desired hours
-   */
-  _adjustDomain(domain, desiredHours, status) {
-    if (status === 0) {
-      // Both sides changed - adjust from center
-      const centerTime = (domain[0].getTime() + domain[1].getTime()) / 2;
-      return [
-        new Date(centerTime - (desiredHours * MS_PER_HOUR) / 2),
-        new Date(centerTime + (desiredHours * MS_PER_HOUR) / 2)
-      ];
-    } else if (status === -1) {
-      // Left side changed - fix right side
-      return [
-        new Date(domain[1].getTime() - desiredHours * MS_PER_HOUR),
-        domain[1]
-      ];
-    } else {
-      // Right side changed - fix left side
-      return [
-        domain[0],
-        new Date(domain[0].getTime() + desiredHours * MS_PER_HOUR)
-      ];
     }
   }
 

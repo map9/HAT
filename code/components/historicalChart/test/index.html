@@ -547,9 +547,6 @@
           <button class="toggle-btn active" id="toggleTooltip" onclick="toggleFeature('tooltip')">
             <span>Tooltip</span>
           </button>
-          <button class="toggle-btn active" id="toggleScrollable" onclick="toggleFeature('scrollable')">
-            <span>Scrollable</span>
-          </button>
         </div>
       </div>
 
@@ -651,7 +648,6 @@
     let featureFlags = {
       activeAxis: true,
       tooltip: true,
-      scrollable: true
     };
     let laneGroupCounter = 0;
 
@@ -873,6 +869,15 @@
           });
         }
 
+        // 为测试目的，将部分数据转换为点（例如任期少于1年的领导人）
+        data.forEach(d => {
+          const durationDays = (d.end - d.start) / (1000 * 60 * 60 * 24);
+          // 任期少于30天的转换为点事件
+          if (durationDays < 30) {
+            d.end = d.start; // 将 end 设为与 start 相同，使其成为点
+          }
+        });
+
         return data;
       } catch (e) {
         console.error('Failed to load archigos.csv:', e);
@@ -955,6 +960,14 @@
           return getFieldColor(barColorField, ctx.data[barColorField]);
         }
 
+        if (type === 'point') {
+          // Point 颜色 - 使用与 bar 相同的逻辑
+          if (barColorField === 'default') {
+            return null;
+          }
+          return getFieldColor(barColorField, ctx.data[barColorField]);
+        }
+
         if (type === 'groupBar' || type === 'groupBackground') {
           // Group 颜色
           if (groupColorMode === 'level') {
@@ -964,6 +977,29 @@
           return getFieldColor(ctx.node.field, ctx.node.key);
         }
 
+        return null;
+      };
+    }
+
+    // 形状回调函数 - 根据 exit 字段决定形状
+    function createShapeFn() {
+      return function(type, ctx) {
+        if (type === 'point') {
+          const exit = ctx.data.exit;
+          // 根据 exit 类型返回不同形状
+          switch (exit) {
+            case 'Regular':
+              return 'square';
+            case 'Irregular':
+              return 'diamond';
+            case 'Natural Death':
+              return 'triangle';
+            case 'Still in Office':
+              return 'square';
+            default:
+              return 'circle';
+          }
+        }
         return null;
       };
     }
@@ -1104,7 +1140,6 @@
         locale: document.getElementById('locale').value,
         activeAxis: featureFlags.activeAxis,
         tooltip: featureFlags.tooltip,
-        scrollable: featureFlags.scrollable,
         colorFn: createColorFn()
       };
     }
@@ -1169,6 +1204,9 @@
         roundRadius: config.roundRadius,
         groupYPadding: config.groupYPadding,
         colorFn: config.colorFn,
+        shapeFn: createShapeFn(),
+        pointSizeRatio: 0.3,
+        pointLabelPosition: 'none',
         visible: true
       })
       chart.layerManager.addLayer(groupbarLayer, 1);
@@ -1178,7 +1216,14 @@
         end: d => d.end,
         label: d => d.label,
         color: d => d.color,
-        title: d => d.title
+        title: d => d.title,
+        // 判断是否为时间点：当 start === end 时为点
+        // 注意：经过 layout.js 处理后，start/end 可能已转换为时间戳数字
+        isPoint: d => {
+          const start = typeof d.start === 'number' ? d.start : d.start.getTime();
+          const end = typeof d.end === 'number' ? d.end : d.end.getTime();
+          return start === end;
+        }
       });
 
       chart.render()
@@ -1279,7 +1324,7 @@
       document.getElementById('theme').value = 'light';
       document.getElementById('locale').value = 'zh-cn';
 
-      featureFlags = { activeAxis: true, tooltip: true, scrollable: true };
+      featureFlags = { activeAxis: true, tooltip: true };
       document.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.add('active'));
 
       // Reset color config

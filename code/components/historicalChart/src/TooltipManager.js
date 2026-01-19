@@ -6,20 +6,34 @@
 import * as d3 from 'd3';
 import { isBCE } from './utils/scales.js';
 
+const TOOLTIP_OFFSET = 10;
+
 export class TooltipManager {
   /**
    * @param {Object} options
    * @param {string} options.locale - Locale for date formatting
    * @param {number} options.gap - Gap between elements
+   * @param {number} options.showDelay - Delay before showing tooltip (ms)
+   * @param {number} options.hideDelay - Delay before hiding tooltip (ms)
    */
   constructor(options = {}) {
     this.locale = options.locale || 'en-us';
     this.gap = options.gap ?? 1;
     this.roundRadius = options.roundRadius ?? 4;
 
+    // Delay configuration
+    this.showDelay = options.showDelay ?? 150;
+    this.hideDelay = options.hideDelay ?? 100;
+
     this.axisTooltip = null;
-    this.eventTooltip = null;
+    this.itemTooltip = null;
     this.boundBox = null;
+
+    // Timers for delayed show/hide
+    this._axisShowTimer = null;
+    this._axisHideTimer = null;
+    this._eventShowTimer = null;
+    this._eventHideTimer = null;
   }
 
   /**
@@ -44,15 +58,15 @@ export class TooltipManager {
   }
 
   /**
-   * Create event tooltip (HTML)
+   * Create item tooltip (HTML)
    * @param {HTMLElement} container - DOM element to append to
    */
-  createEventTooltip(container) {
-    this.eventTooltip = d3.select(container)
+  createItemTooltip(container) {
+    this.itemTooltip = d3.select(container)
       .append('div')
       .classed('hc-tooltip', true);
 
-    return this.eventTooltip;
+    return this.itemTooltip;
   }
 
   /**
@@ -64,11 +78,37 @@ export class TooltipManager {
   }
 
   /**
-   * Show/hide axis tooltip
+   * Show/hide axis tooltip with delay
    * @param {boolean} visible
    */
   showAxisTooltip(visible) {
-    this.axisTooltip.attr('visibility', visible ? 'visible' : 'hidden');
+    if (!this.axisTooltip) return;
+
+    if (visible) {
+      // Clear any pending hide timer
+      clearTimeout(this._axisHideTimer);
+      this._axisHideTimer = null;
+
+      // Delay show
+      if (!this._axisShowTimer) {
+        this._axisShowTimer = setTimeout(() => {
+          this.axisTooltip.attr('visibility', 'visible');
+          this._axisShowTimer = null;
+        }, this.showDelay);
+      }
+    } else {
+      // Clear any pending show timer
+      clearTimeout(this._axisShowTimer);
+      this._axisShowTimer = null;
+
+      // Delay hide
+      if (!this._axisHideTimer) {
+        this._axisHideTimer = setTimeout(() => {
+          this.axisTooltip.attr('visibility', 'hidden');
+          this._axisHideTimer = null;
+        }, this.hideDelay);
+      }
+    }
   }
 
   /**
@@ -164,53 +204,85 @@ export class TooltipManager {
   }
 
   /**
-   * Show event tooltip
+   * Position item tooltip based on cursor position
+   * Uses smart positioning to keep tooltip within bounds
+   * @param {number} x - X position (relative to container)
+   * @param {number} y - Y position (relative to container)
+   * @private
+   */
+  _positionItemTooltip(x, y) {
+    if (!this.itemTooltip || !this.boundBox) return;
+
+    const box = this.boundBox;
+    const boxWidth = box.right - box.left;
+    const boxHeight = box.bottom - box.top;
+
+    // Horizontal positioning: place tooltip on opposite side of cursor
+    if (x > boxWidth / 2) {
+      this.itemTooltip
+        .style('left', 'auto')
+        .style('right', `${box.right - x + TOOLTIP_OFFSET}px`);
+    } else {
+      this.itemTooltip
+        .style('right', 'auto')
+        .style('left', `${x + box.left + TOOLTIP_OFFSET}px`);
+    }
+
+    // Vertical positioning: place tooltip on opposite side of cursor
+    if (y > boxHeight / 2) {
+      this.itemTooltip
+        .style('top', 'auto')
+        .style('bottom', `${box.bottom - y + TOOLTIP_OFFSET}px`);
+    } else {
+      this.itemTooltip
+        .style('bottom', 'auto')
+        .style('top', `${y + box.top + TOOLTIP_OFFSET}px`);
+    }
+  }
+
+  /**
+   * Show item tooltip with delay
    * @param {string} html - HTML content
    * @param {number} x - X position (relative to container)
    * @param {number} y - Y position (relative to container)
    */
-  showEventTooltip(html, x, y) {
-    if (!this.eventTooltip || !this.boundBox) return;
+  showItemTooltip(html, x, y) {
+    if (!this.itemTooltip || !this.boundBox) return;
 
-    this.eventTooltip.html(html);
+    // Clear any pending hide timer
+    clearTimeout(this._eventHideTimer);
+    this._eventHideTimer = null;
 
-    // Smart positioning to avoid going off-screen
-    const box = this.boundBox;
-    const offset = 10;
+    // Update content and position immediately (so it's ready when shown)
+    this.itemTooltip.html(html);
+    this._positionItemTooltip(x, y);
 
-    if (x > (box.right - box.left) / 2) {
-      // Right half - position to left of cursor
-      this.eventTooltip
-        .style('left', 'auto')
-        .style('right', `${box.right - x + offset}px`);
-    } else {
-      // Left half - position to right of cursor
-      this.eventTooltip
-        .style('right', 'auto')
-        .style('left', `${x + box.left + offset}px`);
+    // Delay show
+    if (!this._eventShowTimer) {
+      this._eventShowTimer = setTimeout(() => {
+        this.itemTooltip.style('visibility', 'visible');
+        this._eventShowTimer = null;
+      }, this.showDelay);
     }
-
-    if (y > (box.bottom - box.top) / 2) {
-      // Bottom half - position above cursor
-      this.eventTooltip
-        .style('top', 'auto')
-        .style('bottom', `${box.bottom - y + offset}px`);
-    } else {
-      // Top half - position below cursor
-      this.eventTooltip
-        .style('bottom', 'auto')
-        .style('top', `${y + box.top + offset}px`);
-    }
-
-    this.eventTooltip.style('visibility', 'visible');
   }
 
   /**
-   * Hide event tooltip
+   * Hide event tooltip with delay
    */
-  hideEventTooltip() {
-    if (!this.eventTooltip) return;
-    this.eventTooltip.style('visibility', 'hidden');
+  hideItemTooltip() {
+    if (!this.itemTooltip) return;
+
+    // Clear any pending show timer
+    clearTimeout(this._eventShowTimer);
+    this._eventShowTimer = null;
+
+    // Delay hide
+    if (!this._eventHideTimer) {
+      this._eventHideTimer = setTimeout(() => {
+        this.itemTooltip.style('visibility', 'hidden');
+        this._eventHideTimer = null;
+      }, this.hideDelay);
+    }
   }
 
   /**
@@ -218,31 +290,8 @@ export class TooltipManager {
    * @param {number} x - X position
    * @param {number} y - Y position
    */
-  updateEventTooltipPosition(x, y) {
-    if (!this.eventTooltip || !this.boundBox) return;
-
-    const box = this.boundBox;
-    const offset = 10;
-
-    if (x > (box.right - box.left) / 2) {
-      this.eventTooltip
-        .style('left', 'auto')
-        .style('right', `${box.right - x + offset}px`);
-    } else {
-      this.eventTooltip
-        .style('right', 'auto')
-        .style('left', `${x + box.left + offset}px`);
-    }
-
-    if (y > (box.bottom - box.top) / 2) {
-      this.eventTooltip
-        .style('top', 'auto')
-        .style('bottom', `${box.bottom - y + offset}px`);
-    } else {
-      this.eventTooltip
-        .style('bottom', 'auto')
-        .style('top', `${y + box.top + offset}px`);
-    }
+  updateItemTooltipPosition(x, y) {
+    this._positionItemTooltip(x, y);
   }
 
   /**

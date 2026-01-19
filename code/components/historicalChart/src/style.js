@@ -14,13 +14,13 @@ const light_colors = `
     --daily-label-color: rgb(161, 173, 173);
     --active-axis-color: rgb(255, 0, 0);
     --tooltip-color: rgb(255, 0, 0);
-    --event-rect-color: #4682b4;
-    --event-text-color: #333;
+    --item-rect-color: #4682b4;
+    --item-text-color: #333;
     --index-brushline-color: #444;
     --index-brushfill-color: #777;
     --label-text-color: #333;
-    --label-toggle-color: #666;
-    --label-toggle-hover-color: #333;
+    --label-toggle-color: #333;
+    --label-toggle-hover-color: #000;
     --lane-boundary-color: #e0e0e0;
     --group-bar-color-0: #7c4dff;
     --group-bar-color-1: #0288d1;
@@ -41,12 +41,12 @@ const dark_colors = `
     --daily-label-color: ghostwhite;
     --active-axis-color: pink;
     --tooltip-color: pink;
-    --event-rect-color: #FF1791;
-    --event-text-color: white;
+    --item-rect-color: #FF1791;
+    --item-text-color: white;
     --index-brushline-color: #444;
     --index-brushfill-color: #777;
     --label-text-color: #e0e0e0;
-    --label-toggle-color: #aaa;
+    --label-toggle-color: #e0e0e0;
     --label-toggle-hover-color: #fff;
     --lane-boundary-color: #444;
     --group-bar-color-0: #9c7cff;
@@ -158,7 +158,7 @@ const base_styles = `
 
   .historical-chart .axises .daily text {
     fill: var(--daily-label-color);
-    font-size: 11px;
+    font-size: 10px;
     pointer-events: none;
   }
 
@@ -219,43 +219,94 @@ const base_styles = `
     max-width: 300px;
     z-index: 100;
     pointer-events: none;
+    transition: opacity 0.15s ease-in-out;
   }
 
-  /* Bars */
-  .historical-chart .bars rect {
-    fill: var(--event-rect-color);
+  .hc-tooltip.visible {
+    opacity: 1;
+  }
+    
+  /* Items */
+  .historical-chart .item rect {
+    fill: var(--item-rect-color);
     fill-opacity: 0.8;
     cursor: pointer;
   }
 
-  .historical-chart .bars rect:hover {
+  .historical-chart .item rect:hover {
     fill-opacity: 1;
   }
 
-  .historical-chart .bars text {
-    fill: var(--event-text-color);
-    font-size: 11px;
+  .historical-chart .item text {
+    fill: var(--item-text-color);
+    font-size: 10px;
     pointer-events: none;
   }
 
-  /* Group bars */
-  .historical-chart .group-bars rect {
+  /* Group Items */
+  .historical-chart .group-item rect {
+    pointer-events: none;
+  }
+
+  /* Point Items */
+  .historical-chart .point-item path {
+    fill: var(--item-rect-color);
+    fill-opacity: 0.9;
+    stroke: var(--background-color);
+    stroke-width: 1;
+    cursor: pointer;
+  }
+
+  .historical-chart .point-item path:hover {
+    fill-opacity: 1;
+    stroke-width: 2;
+  }
+
+  .historical-chart .point-item text {
+    fill: var(--item-text-color);
+    font-size: 10px;
     pointer-events: none;
   }
 
   /* Labels */
   .historical-chart .labels text {
     fill: var(--label-text-color);
+    font-weight: normal;
+    font-size: 12px;
+  }
+
+  .historical-chart .labels .level-0 {
+    fill: var(--label-text-color);
+    font-weight: bold;
+    opacity: 1;
     font-size: 13px;
   }
 
-  .historical-chart .labels .lane-toggle-icon {
+  .historical-chart .labels .level-1 {
+    fill: var(--label-text-color);
+    opacity: 0.85;
+    font-size: 12px;
+  }
+
+  .historical-chart .labels .level-2 {
+    fill: var(--label-text-color);
+    opacity: 0.70;
+    font-size: 11px;
+  }
+
+  .historical-chart .labels .level-3 {
+    fill: var(--label-text-color);
+    opacity: 0.55;
+    font-size: 10px;
+  }
+
+  .historical-chart .labels .group-item-toggle-icon {
     fill: var(--label-toggle-color);
     cursor: pointer;
     user-select: none;
   }
 
-  .historical-chart .labels .lane-toggle-icon:hover {
+  .historical-chart .labels .group-item-toggle-icon:hover {
     fill: var(--label-toggle-hover-color);
   }
 
