@@ -84,7 +84,7 @@ export class LinkRenderer {
       case 'square':
         marker
           .attr('viewBox', '0 0 10 10')
-          .attr('refX', 10)
+          .attr('refX', 5)
           .attr('refY', 5)
           .append('rect')
           .attr('x', 2)
@@ -97,7 +97,7 @@ export class LinkRenderer {
       case 'circle':
         marker
           .attr('viewBox', '0 0 10 10')
-          .attr('refX', 8)
+          .attr('refX', 5)
           .attr('refY', 5)
           .append('circle')
           .attr('cx', 5)
@@ -109,7 +109,7 @@ export class LinkRenderer {
       case 'diamond':
         marker
           .attr('viewBox', '0 0 10 10')
-          .attr('refX', 10)
+          .attr('refX', 5)
           .attr('refY', 5)
           .append('path')
           .attr('d', 'M 5 0 L 10 5 L 5 10 L 0 5 z')
