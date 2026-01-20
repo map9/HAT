@@ -9,6 +9,8 @@ import { BarRenderer } from './BarRenderer.js';
 import { GroupBarRenderer } from './GroupBarRenderer.js';
 import { LabelRenderer } from './LabelRenderer.js';
 import { PointRenderer } from './PointRenderer.js';
+import { LinkRenderer } from './LinkRenderer.js';
+import { ItemHighlighter } from './ItemHighlighter.js';
 import { assignRowsLanes, getMaxRow } from '../../utils/layout.js';
 
 export class GroupBarLayer extends Layer {
@@ -62,6 +64,9 @@ export class GroupBarLayer extends Layer {
       pointSizeRatio: 0.6,        // Point size relative to rowHeight (0-1)
       pointLabelPosition: 'none', // 'none' | 'right' | 'top'
 
+      curve: 'curveBumpX',
+      minLinkLength: 20,
+
       visible: true,
       ...options
     };
@@ -72,11 +77,17 @@ export class GroupBarLayer extends Layer {
     this.currentAccessors = null;
     this.enrichedData = null;
 
+    this.currentLinks = null;
+    this.currentLinksAccessors = null;
+    this.enrichedLinks = null;    
+
     // Managers
     this.barRenderer = null;
     this.pointRenderer = null;
+    this.linkRenderer = null;
     this.groupBarRenderer = null;
     this.labelRenderer = null;
+    this.itemHighlighter = null;
   }
 
   /**
@@ -110,6 +121,14 @@ export class GroupBarLayer extends Layer {
     });
     this.pointRenderer.create(this.group);
 
+    // Link renderer (for single time link items) - rendered below bars
+    this.linkRenderer = new LinkRenderer({
+      curve: this.options.curve,
+      onHover: (link, event) => this._onLinkHover(link, event),
+      onLeave: (link, event) => this._onLinkLeave(link, event)
+    });
+    this.linkRenderer.create(this.group);
+
     // Group bar renderer
     this.groupBarRenderer = new GroupBarRenderer({
       mode: this.options.mode,
@@ -130,6 +149,9 @@ export class GroupBarLayer extends Layer {
     if (this.chart.labelsGroup) {
       this.labelRenderer.create(this.chart.labelsGroup);
     }
+
+    // Item highlighter for link hover
+    this.itemHighlighter = new ItemHighlighter(this.group);
 
     return group;
   }
@@ -153,6 +175,25 @@ export class GroupBarLayer extends Layer {
       isPoint: d => false, // Default: all items are bars
       ...accessors
     };
+  }
+
+  /**
+   * Set link data
+   * @param {Array} links - Array of link definitions
+   * @param {Object} accessors - Optional accessors for link properties
+   */
+  setLinkData(links, accessors = {}) {
+    this.currentLinks = links;
+    this.currentLinksAccessors = {
+      startId: d => d.startId,
+      endId: d => d.endId,
+      start: d => d.start,
+      end: d => d.end,
+      label: d => d.label || '',
+      type: d => d.type || 'succession',
+      ...accessors
+    };
+    this.enrichedLinks = null;
   }
 
   /**
@@ -191,6 +232,43 @@ export class GroupBarLayer extends Layer {
    * Handle bar leave
    */
   _onBarLeave() {
+    if (this.chart.tooltipManager) {
+      this.chart.tooltipManager.hideItemTooltip();
+    }
+  }
+
+  /**
+   * Handle link hover - highlight related items
+   */
+  _onLinkHover(link, event) {
+    // Highlight related items using ItemHighlighter
+    if (this.itemHighlighter) {
+      this.itemHighlighter.highlight([link.startId, link.endId]);
+    }
+
+    // Show tooltip with link info
+    if (this.chart.tooltipManager && link.label) {
+      const [x, y] = d3.pointer(event, this.chart.wrapper.node());
+      const tooltipContent = link.type
+        ? `<strong>${link.label}</strong><br/><small>${link.type}</small>`
+        : link.label;
+      this.chart.tooltipManager.showItemTooltip(tooltipContent, x, y);
+    }
+
+    // Emit linkHover event
+    this.chart.dispatch.call('linkHover', this, link, event);
+  }
+
+  /**
+   * Handle link leave - clear highlights
+   */
+  _onLinkLeave() {
+    // Clear item highlights
+    if (this.itemHighlighter) {
+      this.itemHighlighter.clear();
+    }
+
+    // Hide tooltip
     if (this.chart.tooltipManager) {
       this.chart.tooltipManager.hideItemTooltip();
     }
@@ -385,6 +463,72 @@ export class GroupBarLayer extends Layer {
     return result;
   }
 
+  _prepareLinks(xScale) {
+    if (!this.currentLinks || !this.enrichedData || !this.currentAccessors)
+      this.enrichedLinks = [];
+
+    const rowHeight = this.options.rowHeight;
+    const { startId, endId, start, end, label, type } = this.currentLinksAccessors;
+
+    this.enrichedLinks = this.currentLinks
+      .map(link => {
+        const startIdVal = startId(link);
+        const endIdVal = endId(link);
+
+        const startItem = this.enrichedData.find(d => this.currentAccessors.key(d) === startIdVal)
+        const endItem = this.enrichedData.find(d => this.currentAccessors.key(d) === endIdVal)
+
+        if (!startItem || !endItem) {
+          // Silently skip missing references
+          return null;
+        }
+
+        // Calculate X positions
+        let startX, endX;
+
+        const linkStartDate = start(link);
+        const linkEndDate = end(link);
+
+        if (linkStartDate) {
+          startX = xScale(linkStartDate);
+        } else {
+          startX = xScale(this.currentAccessors.end(startItem));
+        }
+
+        if (linkEndDate) {
+          endX = xScale(linkEndDate);
+        } else {
+          endX = xScale(this.currentAccessors.start(endItem));
+        }
+        
+        const startY = startItem.rowNo * rowHeight + rowHeight / 2;
+        const endY = endItem.rowNo * rowHeight + rowHeight / 2;
+
+        // Check minimum display length
+        if (
+          Math.abs(endX - startX) < this.options.minLinkLength &&
+          Math.abs(endY - startY) < this.options.minLinkLength
+        ) {
+          return null;
+        }
+
+        return {
+          startId: startIdVal,
+          endId: endIdVal,
+          startX,
+          endX,
+          startY: startY,
+          endY: endY,
+          label: label(link),
+          type: type(link),
+          //startPos,
+          //endPos,
+          //_original: link
+        };
+      })
+      .filter(link => link !== null);
+  }
+
   /**
    * Render group bars from lane tree
    * @param {d3.ScaleTime} xScale - Time scale
@@ -427,6 +571,9 @@ export class GroupBarLayer extends Layer {
         mode: this.options.mode
       });
     }
+
+    this._prepareLinks(xScale);
+    this.linkRenderer.render(this.enrichedLinks)
   }
 
   /**
@@ -444,6 +591,9 @@ export class GroupBarLayer extends Layer {
     if (this.laneTree && this.currentAccessors) {
       this.groupBarRenderer.render(this.laneTree, xScale, this.options.rowHeight, this.currentAccessors);
     }
+
+    this._prepareLinks(xScale);
+    this.linkRenderer.render(this.enrichedLinks)
   }
 
   /**
@@ -467,5 +617,22 @@ export class GroupBarLayer extends Layer {
    */
   getMode() {
     return this.options.mode;
+  }
+
+  /**
+   * Cleanup resources
+   */
+  destroy() {
+    // Clear data references
+    this.laneTree = null;
+    this.currentData = null;
+    this.currentAccessors = null;
+    this.enrichedData = null;
+
+    this.currentLinks = null;
+    this.currentLinksAccessors = null;
+    this.enrichedLinks = null;    
+
+    super.destroy();
   }
 }

@@ -110,6 +110,10 @@ export class LayerManager {
    * @param {number} contentHeight - Height of content
    */
   render(xScale, bodyHeight, contentHeight) {
+    if (!xScale) {
+      console.warn('LayerManager.render: xScale is required');
+      return;
+    }
     this.layerOrder.forEach(id => {
       const { layer } = this.layers.get(id);
       if (layer.visible) {
@@ -125,6 +129,10 @@ export class LayerManager {
    * @param {number} contentHeight - Height of content
    */
   update(xScale, bodyHeight, contentHeight) {
+    if (!xScale) {
+      console.warn('LayerManager.update: xScale is required');
+      return;
+    }
     this.layerOrder.forEach(id => {
       const { layer } = this.layers.get(id);
       if (layer.visible) {

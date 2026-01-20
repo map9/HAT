@@ -231,10 +231,6 @@ export class LabelRenderer {
         .attr('y', y)
         .attr('dy', LABEL_STYLE.DY_OFFSET)
         .attr('text-anchor', anchor)
-        .style('font-size', `${style.fontSize}px`)
-        .style('font-weight', style.fontWeight)
-        .style('fill', '#333')
-        .style('opacity', style.opacity)
         .text(labelText);
     });
   }

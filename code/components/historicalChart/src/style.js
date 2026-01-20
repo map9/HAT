@@ -16,17 +16,13 @@ const light_colors = `
     --tooltip-color: rgb(255, 0, 0);
     --item-rect-color: #4682b4;
     --item-text-color: #333;
+    --item-path-color: #15151b;
     --index-brushline-color: #444;
     --index-brushfill-color: #777;
     --label-text-color: #333;
     --label-toggle-color: #333;
     --label-toggle-hover-color: #000;
     --lane-boundary-color: #e0e0e0;
-    --group-bar-color-0: #7c4dff;
-    --group-bar-color-1: #0288d1;
-    --group-bar-color-2: #00897b;
-    --group-bar-color-3: #f57c00;
-    --group-bar-color-4: #c62828;
   }
 `;
 
@@ -43,17 +39,13 @@ const dark_colors = `
     --tooltip-color: pink;
     --item-rect-color: #FF1791;
     --item-text-color: white;
+    --item-path-color: white;
     --index-brushline-color: #444;
     --index-brushfill-color: #777;
     --label-text-color: #e0e0e0;
     --label-toggle-color: #e0e0e0;
     --label-toggle-hover-color: #fff;
     --lane-boundary-color: #444;
-    --group-bar-color-0: #9c7cff;
-    --group-bar-color-1: #42a5f5;
-    --group-bar-color-2: #26a69a;
-    --group-bar-color-3: #ffa726;
-    --group-bar-color-4: #ef5350;
   }
 `;
 
@@ -266,6 +258,18 @@ const base_styles = `
     fill: var(--item-text-color);
     font-size: 10px;
     pointer-events: none;
+  }
+
+  /* Link Items */
+  .historical-chart .link-path {
+    fill: none;
+    stroke: var(--item-path-color);
+    stroke-width: 1.5;
+    cursor: pointer;
+  }
+
+  .historical-chart .link-path:hover {
+    stroke-width: 2;
   }
 
   /* Labels */

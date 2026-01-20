@@ -673,7 +673,7 @@
           // 统计唯一值数量
           const uniqueValues = new Set(data.map(d => d[key]).filter(v => v != null));
           // 唯一值数量在合理范围内才作为分类字段
-          // 上限设为数据量的一半，避免每条记录都不同的字段（如 leader）
+          // 上限设为数据量的一半，避免���条记录都不同的字段（如 leader）
           const maxUnique = Math.min(500, Math.floor(data.length / 2));
           if (uniqueValues.size >= 2 && uniqueValues.size <= maxUnique) {
             fields.push({
@@ -1031,6 +1031,44 @@
       return data;
     }
 
+    // Generate demo links: connect consecutive leaders in the same country
+    function generateDemoLinks(data) {
+      const links = [];
+
+      // Group data by country
+      const byCountry = {};
+      data.forEach(d => {
+        const country = d.country;
+        if (!byCountry[country]) {
+          byCountry[country] = [];
+        }
+        byCountry[country].push(d);
+      });
+
+      // For each country, sort by start date and create links between consecutive leaders
+      Object.values(byCountry).forEach(countryData => {
+        // Sort by start date
+        countryData.sort((a, b) => a.start - b.start);
+
+        // Create links between consecutive leaders (limit to first 3 per country to avoid clutter)
+        const maxLinks = 3;
+        for (let i = 0; i < Math.min(countryData.length - 1, maxLinks); i++) {
+          const current = countryData[i];
+          const next = countryData[i + 1];
+
+          links.push({
+            startId: current.id,
+            endId: next.id,
+            // Use default dates (end of current -> start of next)
+            label: 'Succession',
+            type: 'succession'
+          });
+        }
+      });
+
+      return links;
+    }
+
     // 避免公元前后，new Date 的错误
     function getDate(year, month, day) {
       const date = new Date(2000, 0, 1, 0, 0, 0, 0, 0);
@@ -1226,6 +1264,11 @@
         }
       });
 
+      // Generate demo links: connect consecutive leaders in same country
+      const demoLinks = generateDemoLinks(filteredData);
+      groupbarLayer.setLinkData(demoLinks);
+      console.log(`Generated ${demoLinks.length} demo links`);
+
       chart.render()
 
       // Event listeners
@@ -1235,11 +1278,15 @@
       });
 
       chart.on('itemClick', (data) => {
-        console.log('Clicked:', data);
+        //console.log('Clicked:', data);
       });
 
       chart.on('groupToggle', (node, expanded) => {
-        console.log('Toggle:', node.key, expanded);
+        //console.log('Toggle:', node.key, expanded);
+      });
+
+      chart.on('linkHover', (link, event) => {
+        //console.log('Link hover:', link);
       });
 
       // Update info

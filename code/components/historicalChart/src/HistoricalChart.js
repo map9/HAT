@@ -82,6 +82,7 @@ export class HistoricalChart {
       'itemClick',
       'itemHover',
       'groupToggle',
+      'linkHover',
     );
 
     // DOM references
