@@ -64,8 +64,12 @@ export class GroupBarLayer extends Layer {
       pointSizeRatio: 0.6,        // Point size relative to rowHeight (0-1)
       pointLabelPosition: 'none', // 'none' | 'right' | 'top'
 
+      // Link options
       curve: 'curveBumpX',
       minLinkLength: 20,
+      // linkStyleFn(link) => { stroke, strokeWidth, strokeDasharray, headStyle }
+      // headStyle: 'arrow' | 'square' | 'circle' | 'diamond'
+      linkStyleFn: null,
 
       visible: true,
       ...options
@@ -124,6 +128,7 @@ export class GroupBarLayer extends Layer {
     // Link renderer (for single time link items) - rendered below bars
     this.linkRenderer = new LinkRenderer({
       curve: this.options.curve,
+      styleFn: this.options.linkStyleFn,
       onHover: (link, event) => this._onLinkHover(link, event),
       onLeave: (link, event) => this._onLinkLeave(link, event)
     });
@@ -172,7 +177,7 @@ export class GroupBarLayer extends Layer {
       color: d => d.color,
       label: d => d.label || '',
       title: d => d.title || '',
-      isPoint: d => false, // Default: all items are bars
+      isPoint: () => false, // Default: all items are bars
       ...accessors
     };
   }
@@ -280,15 +285,12 @@ export class GroupBarLayer extends Layer {
    * @returns {number} content height
    */
   calculateContentHeight(xScale) {
-    // Calculate content height
     if (!this.enrichedData) {
       this._prepareData(xScale);
     }
 
     const maxRow = getMaxRow(this.enrichedData);
-    const contentHeight = (maxRow + 1) * this.options.rowHeight;
-
-    return contentHeight;
+    return (maxRow + 1) * this.options.rowHeight;
   }
 
   _prepareData(xScale) {
@@ -464,8 +466,10 @@ export class GroupBarLayer extends Layer {
   }
 
   _prepareLinks(xScale) {
-    if (!this.currentLinks || !this.enrichedData || !this.currentAccessors)
+    if (!this.currentLinks || !this.enrichedData || !this.currentAccessors) {
       this.enrichedLinks = [];
+      return;
+    }
 
     const rowHeight = this.options.rowHeight;
     const { startId, endId, start, end, label, type } = this.currentLinksAccessors;
@@ -573,7 +577,7 @@ export class GroupBarLayer extends Layer {
     }
 
     this._prepareLinks(xScale);
-    this.linkRenderer.render(this.enrichedLinks)
+    this.linkRenderer.render(this.enrichedLinks);
   }
 
   /**
@@ -593,7 +597,7 @@ export class GroupBarLayer extends Layer {
     }
 
     this._prepareLinks(xScale);
-    this.linkRenderer.render(this.enrichedLinks)
+    this.linkRenderer.render(this.enrichedLinks);
   }
 
   /**

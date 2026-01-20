@@ -3,7 +3,7 @@
  * Combines TimelineChart's axis system with GanttChart's hierarchical lanes
  */
 import * as d3 from 'd3';
-import { LIGHT, DARK } from './style.js';
+import { LIGHT } from './style.js';
 import { AxisManager } from './AxisManager.js';
 import { IndexAxisManager } from './IndexAxisManager.js';
 import { ZoomManager } from './ZoomManager.js';
@@ -157,8 +157,22 @@ export class HistoricalChart {
    * Body width = total width - label width
    */
   _calculateBodyWidth() {
-    const labelWidth = this.options.labelPosition === 'none' ? 0 : this.options.labelWidth;
+    const labelWidth = this._getLabelWidth();
     return this.options.width - labelWidth;
+  }
+
+  /**
+   * Get effective label width based on position setting
+   */
+  _getLabelWidth() {
+    return this.options.labelPosition === 'none' ? 0 : this.options.labelWidth;
+  }
+
+  /**
+   * Get index axis height (0 if disabled)
+   */
+  _getIndexHeight() {
+    return this.options.hasIndexAxis ? this.options.indexAxisHeight : 0;
   }
 
   /**
@@ -168,7 +182,7 @@ export class HistoricalChart {
     this.axisContainer = this.chartDiv.append('div')
       .classed('hc-axis-container', true);
 
-    const labelWidth = this.options.labelPosition === 'none' ? 0 : this.options.labelWidth;
+    const labelWidth = this._getLabelWidth();
 
     // Calculate axis height
     this.axisManager = new AxisManager({
@@ -202,14 +216,13 @@ export class HistoricalChart {
    */
   _createContentArea() {
     const axisHeight = this.axisManager.getHeight();
-    const indexHeight = this.options.hasIndexAxis ? this.options.indexAxisHeight : 0;
-    const contentHeight = this.options.height - axisHeight - indexHeight;
+    const contentHeight = this.options.height - axisHeight - this._getIndexHeight();
 
     this.contentContainer = this.chartDiv.append('div')
       .classed('hc-content', true)
       .style('height', `${contentHeight}px`);
 
-    const labelWidth = this.options.labelPosition === 'none' ? 0 : this.options.labelWidth;
+    const labelWidth = this._getLabelWidth();
     const bodyWidth = this._calculateBodyWidth();
     const isLabelLeft = this.options.labelPosition === 'left';
 
@@ -263,7 +276,7 @@ export class HistoricalChart {
    * Create index axis area (bottom)
    */
   _createIndexArea() {
-    const labelWidth = this.options.labelPosition === 'none' ? 0 : this.options.labelWidth;
+    const labelWidth = this._getLabelWidth();
 
     this.indexContainer = this.chartDiv.append('div')
       .classed('hc-indexaxis-container', true);
@@ -343,8 +356,7 @@ export class HistoricalChart {
   _setupZoom() {
     const bodyWidth = this._calculateBodyWidth();
     const axisHeight = this.axisManager.getHeight();
-    const indexHeight = this.options.hasIndexAxis ? this.options.indexAxisHeight : 0;
-    const contentHeight = this.options.height - axisHeight - indexHeight;
+    const contentHeight = this.options.height - axisHeight - this._getIndexHeight();
 
     this.zoomManager = new ZoomManager({
       timeDomain: this.options.timeDomain,
@@ -380,7 +392,7 @@ export class HistoricalChart {
     this.board
       .on('mousemove', function(event) {
         const [x] = d3.pointer(event);
-        self._onMouseMove(x, event);
+        self._onMouseMove(x);
       })
       .on('mouseenter', function() {
         self.activeAxis.attr('visibility', 'visible');
@@ -399,7 +411,7 @@ export class HistoricalChart {
   /**
    * Handle mouse move
    */
-  _onMouseMove(x, event) {
+  _onMouseMove(x) {
     // Update active axis position
     this.activeAxis.attr('transform', `translate(${x}, 0)`);
 
@@ -416,10 +428,9 @@ export class HistoricalChart {
   /**
    * Handle zoom event
    */
-  _onZoom(xScale, transform, sourceEvent) {
+  _onZoom(xScale, _transform, sourceEvent) {
     // Update axis
-    const indexHeight = this.options.hasIndexAxis ? this.options.indexAxisHeight : 0;
-    const bodyHeight = this.options.height - this.axisManager.getHeight() - indexHeight;
+    const bodyHeight = this.options.height - this.axisManager.getHeight() - this._getIndexHeight();
     this.axisManager.update(xScale, this.axisManager.getHeight());
 
     // Update layers
@@ -444,10 +455,10 @@ export class HistoricalChart {
   }
 
   /**
-   * Handle scroll
+   * Handle scroll (sync is handled by ScrollManager)
    */
-  _onScroll(top, left) {
-    // Sync is handled by ScrollManager
+  _onScroll() {
+    // Reserved for future scroll event handling
   }
 
   /**
@@ -455,9 +466,7 @@ export class HistoricalChart {
    */
   render() {
     const xScale = this.zoomManager.getScale();
-
-    const indexHeight = this.options.hasIndexAxis ? this.options.indexAxisHeight : 0;
-    const bodyHeight = this.options.height - this.axisManager.getHeight() - indexHeight;
+    const bodyHeight = this.options.height - this.axisManager.getHeight() - this._getIndexHeight();
     if (!this.contentHeight)
       this.contentHeight = this.layerManager.calculateContentHeight(xScale)
 
@@ -504,8 +513,7 @@ export class HistoricalChart {
     // Recalculate dimensions
     const bodyWidth = this._calculateBodyWidth();
     const axisHeight = this.axisManager.getHeight();
-    const indexHeight = this.options.hasIndexAxis ? this.options.indexAxisHeight : 0;
-    const contentHeight = height - axisHeight - indexHeight;
+    const contentHeight = height - axisHeight - this._getIndexHeight();
 
     // Update scale
     this.xScale.range([0, bodyWidth]);
@@ -513,8 +521,27 @@ export class HistoricalChart {
     // Update containers
     this.axisSvg.attr('width', width);
     this.contentContainer.style('height', `${contentHeight}px`);
-    this.bodyContainer.style('width', `${bodyWidth}px`);
+
+    // Update body container dimensions
+    this.bodyContainer
+      .style('width', `${bodyWidth}px`)
+      .style('height', `${contentHeight}px`);
     this.bodySvg.attr('width', bodyWidth);
+
+    // Update labels container height
+    if (this.labelsContainer) {
+      this.labelsContainer.style('height', `${contentHeight}px`);
+    }
+
+    // Update clip path
+    this.bodySvg.select('#hc-body-clip rect')
+      .attr('width', bodyWidth)
+      .attr('height', this.contentHeight || contentHeight);
+
+    // Update board for mouse events
+    this.board
+      .attr('width', bodyWidth)
+      .attr('height', this.contentHeight || contentHeight);
 
     if (this.indexSvg) {
       this.indexSvg.attr('width', width);
@@ -530,6 +557,11 @@ export class HistoricalChart {
 
     // Update layers
     this.layerManager.resize(bodyWidth, contentHeight);
+
+    // Re-render with current scale
+    const xScale = this.zoomManager.getScale();
+    this.axisManager.update(xScale, axisHeight);
+    this.layerManager.update(xScale, contentHeight, this.contentHeight);
 
     this.dispatch.call('resize', this, width, height);
   }

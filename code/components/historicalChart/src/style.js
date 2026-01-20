@@ -6,6 +6,7 @@
 const light_colors = `
   .historical-chart {
     --background-color: white;
+    --panel-shadow: 0 4px 16px rgba(0,0,0,0.3);
     --primary-gridline-color: rgb(81, 93, 93);
     --second-gridline-color: rgb(194, 199, 200);
     --yearly-tick-color: rgb(81, 93, 93);
@@ -29,6 +30,7 @@ const light_colors = `
 const dark_colors = `
   .historical-chart {
     --background-color: #15151b;
+    --panel-shadow: 0 4px 16px rgba(255,255,255,0.3);
     --primary-gridline-color: white;
     --second-gridline-color: lightyellow;
     --yearly-tick-color: white;
@@ -72,7 +74,6 @@ const base_styles = `
     top: 0;
     z-index: 20;
     background-color: var(--background-color);
-    padding-bottom: 2px;
   }
 
   .hc-axis-svg {
@@ -93,7 +94,7 @@ const base_styles = `
     left: 0;
     z-index: 10;
     background-color: var(--background-color);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    box-shadow: var(--panel-shadow);
     overflow: hidden;
   }
 
@@ -183,7 +184,7 @@ const base_styles = `
     stroke-width: 1.0;
     fill: var(--index-brushfill-color);
     fill-opacity: 0.3;
-  }
+}
 
   /* Tooltip */
   .historical-chart .axis-tooltip rect {

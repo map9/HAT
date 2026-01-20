@@ -218,17 +218,21 @@
       background: #f5f5f5;
     }
 
-    .chart-container {
-      flex: 1;
-      background: white;
-      overflow: auto;
-      padding: 20px;
-    }
+    /* .chart-container styles moved below #chart */
 
     #chart {
       background: white;
       border-radius: 8px;
-      min-height: 500px;
+      height: 100%;
+    }
+
+    .chart-container {
+      flex: 1;
+      background: white;
+      overflow: hidden;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
     }
 
     .loading {
@@ -1004,6 +1008,62 @@
       };
     }
 
+    // Link 样式回调函数 - 根据 link 的 type 字段决定样式
+    function createLinkStyleFn() {
+      // 颜色映射
+      const typeColors = {
+        'succession': '#2196F3',    // 蓝色 - 正常继任
+        'coup': '#F44336',          // 红色 - 政变
+        'election': '#4CAF50',      // 绿色 - 选举
+        'death': '#9E9E9E',         // 灰色 - 自然死亡
+        'resignation': '#FF9800'    // 橙色 - 辞职
+      };
+
+      return function(link) {
+        const type = link.type || 'succession';
+
+        // 根据不同类型返回不同样式
+        switch (type) {
+          case 'coup':
+            return {
+              stroke: typeColors.coup,
+              strokeWidth: 2.5,
+              strokeDasharray: '5,3',
+              headStyle: 'diamond'
+            };
+          case 'election':
+            return {
+              stroke: typeColors.election,
+              strokeWidth: 2,
+              strokeDasharray: null,
+              headStyle: 'circle'
+            };
+          case 'death':
+            return {
+              stroke: typeColors.death,
+              strokeWidth: 1.5,
+              strokeDasharray: '2,2',
+              headStyle: 'square'
+            };
+          case 'resignation':
+            return {
+              stroke: typeColors.resignation,
+              strokeWidth: 2,
+              strokeDasharray: '8,4',
+              headStyle: 'arrow'
+            };
+          case 'succession':
+          default:
+            return {
+              stroke: typeColors.succession,
+              strokeWidth: 1.5,
+              strokeDasharray: null,
+              headStyle: 'arrow'
+            };
+        }
+      };
+    }
+
     // Fallback data if CSV load fails
     function generateFallbackData() {
       const data = [];
@@ -1035,6 +1095,16 @@
     function generateDemoLinks(data) {
       const links = [];
 
+      // Link types based on exit reason
+      const exitToLinkType = {
+        'Regular': 'succession',
+        'Irregular': 'coup',
+        'Natural Death': 'death',
+        'Still in Office': 'succession',
+        'Resignation': 'resignation',
+        'Lost Election': 'election'
+      };
+
       // Group data by country
       const byCountry = {};
       data.forEach(d => {
@@ -1056,12 +1126,15 @@
           const current = countryData[i];
           const next = countryData[i + 1];
 
+          // Determine link type based on current leader's exit reason
+          const linkType = exitToLinkType[current.exit] || 'succession';
+
           links.push({
             startId: current.id,
             endId: next.id,
             // Use default dates (end of current -> start of next)
-            label: 'Succession',
-            type: 'succession'
+            label: `${current.leader} → ${next.leader}`,
+            type: linkType
           });
         }
       });
@@ -1151,9 +1224,10 @@
       // Build groups array from dynamic lane groups
       const groups = getLaneGroupsConfig();
 
+      const chartEl = document.getElementById('chart');
       return {
-        width: document.getElementById('chart').offsetWidth || 1000,
-        height: 600,
+        width: chartEl.offsetWidth || 1000,
+        height: chartEl.offsetHeight || 600,
         timeDomain: [
           getDate(startYear, 1, 1),
           getDate(endYear, 12, 31)
@@ -1243,6 +1317,7 @@
         groupYPadding: config.groupYPadding,
         colorFn: config.colorFn,
         shapeFn: createShapeFn(),
+        linkStyleFn: createLinkStyleFn(),
         pointSizeRatio: 0.3,
         pointLabelPosition: 'none',
         visible: true
@@ -1477,8 +1552,8 @@
     // Handle resize
     window.addEventListener('resize', () => {
       if (chart) {
-        const newWidth = document.getElementById('chart').offsetWidth;
-        chart.resize(newWidth, 600);
+        const chartEl = document.getElementById('chart');
+        chart.resize(chartEl.offsetWidth, chartEl.offsetHeight);
       }
     });
   </script>
