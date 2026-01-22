@@ -19,21 +19,28 @@ export class GridLayer extends Layer {
 
     // Set defaults
     this.options = {
-      visible: true,
+      axises: [],
+      locale: 'en-us',
+      gap: 1,
       ...options
     };
 
-    this.axises = options.axises || [];
-    this.locale = options.locale || 'en-us';
-    this.gap = options.gap ?? 1;
-
     // Calculate axis height
     this.axisManager = new AxisManager({
-      axises: this.axises,
-      locale: this.locale,
-      gap: this.gap,
+      axises: this.options.axises,
+      locale: this.options.locale,
+      gap: this.options.gap,
       type: 'grid'
     });
+  }
+
+  /**
+   * Create layer's SVG group
+   * @param {HistoricalChart} chart - historical chart
+   */
+  create(chart) {
+    const group = super.create(chart);
+    this.axisManager.create(group);
   }
 
   /**
@@ -45,7 +52,6 @@ export class GridLayer extends Layer {
   render(xScale, bodyHeight, contentHeight) {
     if (!this.group) return;
 
-    this.axisManager.create(this.group);
     this.axisManager.update(xScale, contentHeight);
   }
 
@@ -57,6 +63,22 @@ export class GridLayer extends Layer {
    */
   update(xScale, bodyHeight, contentHeight) {
     this.axisManager.update(xScale, contentHeight);
+  }
+
+  destroy() {
+    this.axisManager.destroy();
+    super.destroy();
+  }
+
+  /**
+   * Update layer options with smart cache invalidation
+   * Override from Layer base class
+   * @param {Object} options - New options to merge
+   * @param {boolean} [skipRender=false] - Skip re-render
+   */
+  setOptions(options, skipRender = false) {
+    this.axisManager.setOptions(options);
+    super.setOptions(options, skipRender);
   }
 
 }

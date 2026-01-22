@@ -17,12 +17,33 @@ export class GroupBarLayer extends Layer {
   /**
    * @param {string} id - Layer ID
    * @param {Object} options - Layer options
+   * @param {number} options.rowHeight - Height of each row
+   * @param {number} options.minRowHeight - Minimum row height
+   * @param {number} options.labelWidth - Label area width
+   * @param {string} options.labelPosition - 'left' | 'right' | 'none'
+   * @param {number} options.labelXPadding - Padding between label and left or right edge
+   * @param {number} options.xPadding - Horizontal padding between bars
+   * @param {number} options.yPadding - Vertical padding for bars, include row height
+   * @param {number} options.roundRadius - Corner radius for bars and group bars and tooltips
    * @param {string} options.mode - 'separate' | 'background'
-   * @param {number} options.opacity - Group bar opacity (0-1)
-   * @param {number} options.roundRadius - Corner radius
-   * @param {number} options.yPadding - Vertical padding (same as bars)
-   * @param {Function} options.colorFn - Color callback function
-   * @param {boolean} options.visible - Initial visibility
+   * @param {number} options.roundRadius - Corner radius for bars and group bars
+   * @param {number} options.groupYPadding - Vertical padding for groups in background mode
+   * @param {string} options.barTextPosition - 'none' | 'left' | 'center' | 'right'
+   * @param {Function} options.barStyleFn - Style callback for bars
+   * - barStyleFn(type, context) => { stroke, strokeWidth, strokeDasharray, fill, fillOpacity }
+   * - type: 'bar' | 'separate' | 'background'
+   * - context: { data, accessors } for 'bar', node for 'separate' | 'background'
+   * @param {number} options.pointSizeRatio - Point size relative to rowHeight (0-1)
+   * @param {string} options.pointTextPosition - 'none' | 'right' | 'top'
+   * @param {Function} options.pointStyleFn - Style callback for points
+   * - pointStyleFn(context) => { stroke, strokeWidth, fill, fillOpacity, marker }
+   * - context: { data, accessors }
+   * @param {string} options.curve - d3 curve type for links
+   * @param {number} options.minLinkLength - Minimum link length to display
+   * @param {number} options.headSize - Size of link head markers
+   * @param {Function} options.linkStyleFn - Style callback for links
+   * - linkStyleFn(link) => { stroke, strokeWidth, strokeDasharray, headMarker }
+   * - headMarker: 'none' | 'circle' | 'arrow' | 'square' | 'diamond', defaults to 'none'
    */
   constructor(id = 'groupBars', options = {}) {
     super(id, options);
@@ -30,55 +51,47 @@ export class GroupBarLayer extends Layer {
     // Set defaults
     this.options = {
       // Rows
-      rowHeight: 30,
-      minRowHeight: 12,
+      rowHeight: 30,            // Height of each row
+      minRowHeight: 12,         // Minimum row height
 
       // Labels
-      labelWidth: 160,
-      labelPosition: 'left', // 'left' | 'right' | 'none'
+      labelWidth: 160,          // Label area width
+      labelPosition: 'left',    // 'left' | 'right' | 'none'
+      labelXPadding: 6,         // Padding between label and left or right edge
 
       // Spacing
-      xPadding: 2,
-      yPadding: 2,
-      roundRadius: 4,
+      xPadding: 2,              // Horizontal padding between bars
+      yPadding: 2,              // Vertical padding for bars, include row height
+      roundRadius: 4,           // Corner radius for bars and group bars and tooltips
 
       // Groups
-      groups: null,
-      mode: 'separate', // 'separate' | 'background'
-      opacity: 0.3,
-      groupYPadding: 5,
+      mode: 'separate',         // 'separate' | 'background'
+      groupYPadding: 5,         // Vertical padding for groups in background mode
 
-      // Color callback
-      // colorFn(type, context) => string | null
-      // type: 'bar' | 'point' | 'groupBar' | 'groupBackground'
-      // context: { data, accessors } for 'bar'/'point', { node, mode } for group types
-      colorFn: null,
+      // Bars
+      barTextPosition: 'none',  // 'none' | 'left' | 'center' | 'right'
+      barStyleFn: null,
 
-      // Shape callback for points
-      // shapeFn(type, context) => 'circle' | 'diamond' | 'triangle' | 'square' | 'star' | 'cross' | 'wye'
-      // type: 'point'
-      // context: { data, accessors }
-      shapeFn: null,
+      // Points
+      pointSizeRatio: 0.6,      // Point size relative to rowHeight (0-1)
+      pointTextPosition: 'none',// 'none' | 'right' | 'top'
+      pointStyleFn: null,
 
-      // Point options
-      pointSizeRatio: 0.6,        // Point size relative to rowHeight (0-1)
-      pointLabelPosition: 'none', // 'none' | 'right' | 'top'
-
-      // Link options
-      curve: 'curveBumpX',
-      minLinkLength: 20,
-      // linkStyleFn(link) => { stroke, strokeWidth, strokeDasharray, headStyle }
-      // headStyle: 'arrow' | 'square' | 'circle' | 'diamond'
+      // Links
+      curve: 'curveBumpX',      // d3 curve type for links
+      minLinkLength: 20,        // Minimum link length to display
+      headSize: 5,
       linkStyleFn: null,
 
-      visible: true,
       ...options
     };
 
     // State
-    this.laneTree = null;
     this.currentData = null;
     this.currentAccessors = null;
+    this.groups = null,
+
+    this.laneTree = null;
     this.enrichedData = null;
 
     this.currentLinks = null;
@@ -105,42 +118,45 @@ export class GroupBarLayer extends Layer {
     this.barRenderer = new BarRenderer({
       roundRadius: this.options.roundRadius,
       yPadding: this.options.yPadding,
-      textPosition: 'center',
-      colorFn: this.options.colorFn,
-      onClick: (d, event) => this.chart.dispatch.call('itemClick', this, d, event),
-      onHover: (d, event) => this._onBarHover(d, event),
-      onLeave: (d, event) => this._onBarLeave(d, event)
+      textPosition: this.options.barTextPosition,
+      styleFn: this.options.barStyleFn,
+      onClick: (d, event) => this.chart.dispatch.call('itemClick', this, { type: 'bar', data: d }, event),
+      onHover: (d, event) => this._onItemHover({ type: 'bar', data: d }, event),
+      onLeave: (d, event) => this._onItemLeave({ type: 'bar', data: d }, event)
     });
     this.barRenderer.create(this.group);
 
     // Point renderer (for single time point items) - rendered above bars
     this.pointRenderer = new PointRenderer({
       sizeRatio: this.options.pointSizeRatio,
-      labelPosition: this.options.pointLabelPosition,
-      colorFn: this.options.colorFn,
-      shapeFn: this.options.shapeFn,
-      onClick: (d, event) => this.chart.dispatch.call('itemClick', this, d, event),
-      onHover: (d, event) => this._onBarHover(d, event),
-      onLeave: (d, event) => this._onBarLeave(d, event)
+      textPosition: this.options.pointTextPosition,
+      styleFn: this.options.pointStyleFn,
+      onClick: (d, event) => this.chart.dispatch.call('itemClick', this, { type: 'point', data: d }, event),
+      onHover: (d, event) => this._onItemHover({ type: 'point', data: d }, event),
+      onLeave: (d, event) => this._onItemLeave({ type: 'point', data: d }, event)
     });
     this.pointRenderer.create(this.group);
 
     // Link renderer (for single time link items) - rendered below bars
     this.linkRenderer = new LinkRenderer({
       curve: this.options.curve,
+      headSize: this.options.headSize,
       styleFn: this.options.linkStyleFn,
-      onHover: (link, event) => this._onLinkHover(link, event),
-      onLeave: (link, event) => this._onLinkLeave(link, event)
+      onClick: (d, event) => this.chart.dispatch.call('itemClick', this, { type: 'link', data: d }, event),
+      onHover: (d, event) => this._onItemHover({ type: 'link', data: d }, event),
+      onLeave: (d, event) => this._onItemLeave({ type: 'link', data: d }, event)
     });
     this.linkRenderer.create(this.group);
 
     // Group bar renderer
     this.groupBarRenderer = new GroupBarRenderer({
       mode: this.options.mode,
-      opacity: this.options.opacity,
       roundRadius: this.options.roundRadius,
       yPadding: this.options.yPadding,
-      colorFn: this.options.colorFn
+      styleFn: this.options.barStyleFn,
+      onClick: (d, event) => this.chart.dispatch.call('itemClick', this, { type: 'group', data: d }, event),
+      onHover: (d, event) => this._onItemHover({ type: 'group', data: d }, event),
+      onLeave: (d, event) => this._onItemLeave({ type: 'group', data: d }, event)
     });
     this.groupBarRenderer.create(this.group);
 
@@ -148,7 +164,7 @@ export class GroupBarLayer extends Layer {
     this.labelRenderer = new LabelRenderer({
       position: this.options.labelPosition,
       width: this.options.labelWidth,
-      padding: 6,
+      padding: this.options.labelXPadding,
       onToggle: (node, expanded) => this._onGroupToggle(node, expanded)
     });
     if (this.chart.labelsGroup) {
@@ -166,20 +182,25 @@ export class GroupBarLayer extends Layer {
    * @param {Array} data - Array of data items
    * @param {Object} accessors - Data accessors
    * @param {Function} accessors.isPoint - Optional accessor to determine if item is a point (returns true/false)
+   * @param {Array} groups - Group definitions for hierarchical lanes
    */
-  setLayerData(data, accessors = {}) {
+  setLayerData(data, accessors = {}, groups = null) {
     this.currentData = data;
     this.currentAccessors = {
       key: d => d.id,
       start: d => d.start,
       end: d => d.end,
       lane: d => d.lane || '',
-      color: d => d.color,
       label: d => d.label || '',
       title: d => d.title || '',
       isPoint: () => false, // Default: all items are bars
       ...accessors
     };
+    this.laneTree = null;
+    this.enrichedData = null;
+    this.groups = groups;
+
+    this._triggerRender();
   }
 
   /**
@@ -195,10 +216,12 @@ export class GroupBarLayer extends Layer {
       start: d => d.start,
       end: d => d.end,
       label: d => d.label || '',
-      type: d => d.type || 'succession',
+      type: d => d.type || 'unknown',
       ...accessors
     };
     this.enrichedLinks = null;
+
+    this._triggerRender();
   }
 
   /**
@@ -216,67 +239,56 @@ export class GroupBarLayer extends Layer {
   }
 
   /**
-   * Handle bar hover
+   * Handle item hover
    */
-  _onBarHover(data, event) {
-    if (this.chart.tooltipManager && this.currentAccessors) {
-      const title = this.currentAccessors.title
-        ? this.currentAccessors.title(data)
-        : `${data.label || data.name || ''}`;
+  _onItemHover(context, event) {
+    const { type, data } = context;
 
-      if (title) {
-        const [x, y] = d3.pointer(event, this.chart.wrapper.node());
-        this.chart.tooltipManager.showItemTooltip(title, x, y);
+    let title = null;
+    if (type === 'bar' || type === 'point') {
+      if (this.chart.tooltipManager && this.currentAccessors) {
+        title = this.currentAccessors.title
+          ? this.currentAccessors.title(data)
+          : `${data.label || data.name || ''}`;
       }
+    } else if (type === 'link') {
+      // Highlight related items using ItemHighlighter
+      if (this.itemHighlighter) {
+        this.itemHighlighter.highlight([data.startId, data.endId]);
+      }
+      title = data.type
+        ? `<strong>${data.label}</strong><br/><small>${data.type}</small>`
+        : data.label;
+    }
+
+    if (title) {
+      const [x, y] = d3.pointer(event, this.chart.wrapper.node());
+      this.chart.tooltipManager.showItemTooltip(title, x, y);
     }
 
     this.chart.dispatch.call('itemHover', this, data, event);
   }
 
   /**
-   * Handle bar leave
+   * Handle item leave
    */
-  _onBarLeave() {
-    if (this.chart.tooltipManager) {
-      this.chart.tooltipManager.hideItemTooltip();
-    }
-  }
+  _onItemLeave(context, event) {
+    const { type, data } = context;
 
-  /**
-   * Handle link hover - highlight related items
-   */
-  _onLinkHover(link, event) {
-    // Highlight related items using ItemHighlighter
-    if (this.itemHighlighter) {
-      this.itemHighlighter.highlight([link.startId, link.endId]);
+    if (type === 'bar' || type === 'point' || type === 'link') {
+      if (this.chart.tooltipManager) {
+        this.chart.tooltipManager.hideItemTooltip();
+      }
     }
-
-    // Show tooltip with link info
-    if (this.chart.tooltipManager && link.label) {
-      const [x, y] = d3.pointer(event, this.chart.wrapper.node());
-      const tooltipContent = link.type
-        ? `<strong>${link.label}</strong><br/><small>${link.type}</small>`
-        : link.label;
-      this.chart.tooltipManager.showItemTooltip(tooltipContent, x, y);
+    
+    if (type === 'link') {
+      // Clear item highlights
+      if (this.itemHighlighter) {
+        this.itemHighlighter.clear();
+      }
     }
 
-    // Emit linkHover event
-    this.chart.dispatch.call('linkHover', this, link, event);
-  }
-
-  /**
-   * Handle link leave - clear highlights
-   */
-  _onLinkLeave() {
-    // Clear item highlights
-    if (this.itemHighlighter) {
-      this.itemHighlighter.clear();
-    }
-
-    // Hide tooltip
-    if (this.chart.tooltipManager) {
-      this.chart.tooltipManager.hideItemTooltip();
-    }
+    this.chart.dispatch.call('itemLeave', this, data, event);
   }
 
   /**
@@ -298,8 +310,8 @@ export class GroupBarLayer extends Layer {
     const { start, end } = this.currentAccessors;
 
     // Build lane tree if groups are configured
-    if (this.options.groups && this.options.groups.length > 0) {
-      this.laneTree = this._buildLaneTree(this.currentData, this.options.groups);
+    if (this.groups && this.groups.length > 0) {
+      this.laneTree = this._buildLaneTree(this.currentData, this.groups);
       this._assignRowsToTree(this.laneTree, xScale);
       this.enrichedData = this._flattenTreeToRenderData(this.laneTree);
     } else {
@@ -525,9 +537,6 @@ export class GroupBarLayer extends Layer {
           endY: endY,
           label: label(link),
           type: type(link),
-          //startPos,
-          //endPos,
-          //_original: link
         };
       })
       .filter(link => link !== null);
@@ -541,8 +550,10 @@ export class GroupBarLayer extends Layer {
     if (!this.currentData || !this.currentAccessors)
       return;
 
+    let needUpdateContentHeight = false;
     if (!this.enrichedData) {
       this._prepareData(xScale);
+      needUpdateContentHeight = true;
     }
 
     // Separate bars and points
@@ -578,6 +589,8 @@ export class GroupBarLayer extends Layer {
 
     this._prepareLinks(xScale);
     this.linkRenderer.render(this.enrichedLinks);
+
+    if (needUpdateContentHeight) this.chart.updateContentHeight(true);
   }
 
   /**
@@ -589,7 +602,7 @@ export class GroupBarLayer extends Layer {
     this.barRenderer.update(xScale);
 
     // Update points
-    this.pointRenderer.update(xScale);
+    this.pointRenderer.update(xScale, this.options.rowHeight);
 
     // Update group bars (need full redraw for proper positioning)
     if (this.laneTree && this.currentAccessors) {
@@ -608,19 +621,126 @@ export class GroupBarLayer extends Layer {
   }
 
   /**
-   * Set rendering mode
-   * @param {string} mode - 'separate' | 'background'
+   * Update layer options with smart cache invalidation
+   * Override from Layer base class
+   * @param {Object} options - New options to merge
+   * @param {boolean} [skipRender=false] - Skip re-render
    */
-  setMode(mode) {
-    this.options.mode = mode;
-  }
+  setOptions(options, skipRender = false) {
+    // Detect if structural changes require cache invalidation
+    const needsFullRebuild =
+      options.mode !== undefined ||
+      options.rowHeight !== undefined ||
+      options.xPadding !== undefined ||
+      options.groupYPadding !== undefined;
 
-  /**
-   * Get current mode
-   * @returns {string} Current mode
-   */
-  getMode() {
-    return this.options.mode;
+    // Update sub-renderer options if needed
+    const barOptions = {};
+    const groupBarOptions = {};
+    const linkOptions = {};
+    const pointOptions = {};
+    const labelOptions = {};
+    
+    // groupBarRenderer and barRenderer options
+    if (options.mode !== undefined) {
+      groupBarOptions.mode = options.mode;
+    }
+    if (options.roundRadius !== undefined) {
+      groupBarOptions.roundRadius = options.roundRadius;
+      barOptions.roundRadius = options.roundRadius;
+    }
+    if (options.yPadding !== undefined) {
+      groupBarOptions.yPadding = options.yPadding;
+      barOptions.yPadding = options.yPadding;
+    }
+    if (options.barTextPosition !== undefined) {
+      barOptions.textPosition = options.barTextPosition;
+    }
+    if (options.barStyleFn !== undefined) {
+      groupBarOptions.styleFn = options.barStyleFn;
+      barOptions.styleFn = options.barStyleFn;
+    }
+
+    // linkRenderer options
+    if (options.curve !== undefined) {
+      linkOptions.curve = options.curve;
+    }
+    if (options.headSize !== undefined) {
+      linkOptions.headSize = options.headSize;
+    }
+    if (options.linkStyleFn !== undefined) {
+      linkOptions.styleFn = options.linkStyleFn;
+    }
+    
+    // pointRenderer options
+    if (options.pointSizeRatio !== undefined) {
+      pointOptions.sizeRatio = options.pointSizeRatio;
+    }
+    if (options.pointTextPosition !== undefined) {
+      pointOptions.textPosition = options.pointTextPosition;
+    }
+    if (options.pointStyleFn !== undefined) {
+      pointOptions.styleFn = options.pointStyleFn;
+    }
+    
+    // labelRenderer options
+    if (options.labelPosition !== undefined) {
+      labelOptions.position = options.labelPosition;
+    }
+    if (options.labelWidth !== undefined) {
+      labelOptions.width = options.labelWidth;
+    }
+    if (options.labelXPadding !== undefined) {
+      labelOptions.padding = options.labelXPadding;
+    }
+
+    // all sub-renderer message options
+    if (options.onClick !== undefined) {
+      linkOptions.onClick = options.onClick;
+      pointOptions.onClick = options.onClick;
+    }
+    if (options.onHover !== undefined) {
+      linkOptions.onHover = options.onHover;
+      pointOptions.onHover = options.onHover;
+    }
+    if (options.onLeave !== undefined) {
+      linkOptions.onLeave = options.onLeave;
+      pointOptions.onLeave = options.onLeave;
+    }
+    if (options.onLabelToggle !== undefined) {
+      labelOptions.onToggle = options.onLabelToggle;
+    }
+
+    let isLinkNeedsRender = false;
+    let isPointNeedsRender = false;
+    let isLabelNeedsRender = false;
+    let isBarNeedsRender = false;
+    let isGroupBarNeedsRender = false;
+    if (Object.keys(groupBarOptions).length > 0 && this.groupBarRenderer) {
+      isGroupBarNeedsRender = this.groupBarRenderer.setOptions(groupBarOptions);
+    }
+    if (Object.keys(barOptions).length > 0 && this.barRenderer) {
+      isBarNeedsRender = this.barRenderer.setOptions(barOptions);
+    }
+    if (Object.keys(linkOptions).length > 0 && this.linkRenderer) {
+      isLinkNeedsRender = this.linkRenderer.setOptions(linkOptions);
+    }
+    if (Object.keys(pointOptions).length > 0 && this.pointRenderer) {
+      isPointNeedsRender = this.pointRenderer.setOptions(pointOptions);
+    }
+    if (Object.keys(labelOptions).length > 0 && this.labelRenderer) {
+      isLabelNeedsRender = this.labelRenderer.setOptions(labelOptions);
+    }
+
+    // Clear cached data if structural changes
+    if (needsFullRebuild) {
+      this.laneTree = null;
+      this.enrichedData = null;
+      this.enrichedLinks = null;
+    }
+
+    // Call parent setOptions (will trigger render if not skipped)
+    super.setOptions(options, skipRender);
   }
 
   /**
@@ -629,13 +749,21 @@ export class GroupBarLayer extends Layer {
   destroy() {
     // Clear data references
     this.laneTree = null;
-    this.currentData = null;
-    this.currentAccessors = null;
     this.enrichedData = null;
+    this.enrichedLinks = null;
 
-    this.currentLinks = null;
-    this.currentLinksAccessors = null;
-    this.enrichedLinks = null;    
+    if (this.barRenderer) this.barRenderer.destroy();
+    if (this.pointRenderer) this.pointRenderer.destroy();
+    if (this.linkRenderer) this.linkRenderer.destroy();
+    if (this.groupBarRenderer) this.groupBarRenderer.destroy();
+    if (this.labelRenderer) this.labelRenderer.destroy();
+    
+    this.barRenderer = null;
+    this.pointRenderer = null;
+    this.linkRenderer = null;
+    this.groupBarRenderer = null;
+    this.labelRenderer = null;
+    this.itemHighlighter = null;
 
     super.destroy();
   }

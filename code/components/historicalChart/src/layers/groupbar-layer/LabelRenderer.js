@@ -16,14 +16,17 @@ export class LabelRenderer {
    * @param {Object} options
    * @param {string} options.position - 'left' | 'right' | 'none'
    * @param {number} options.width - Label area width
-   * @param {number} options.padding - Padding between label and icon
+   * @param {number} options.padding - Padding between label and left or right edge
    * @param {Function} options.onToggle - Callback when group is toggled
    */
   constructor(options = {}) {
-    this.position = options.position ?? 'left';
-    this.width = options.width ?? 160;
-    this.padding = options.padding ?? 6;
-    this.onToggle = options.onToggle || (() => {});
+    this.options = {
+      position: 'left',
+      width: 160,
+      padding: 6,
+      onToggle: (() => {}),
+      ...options,
+    };
 
     this.container = null;
   }
@@ -33,6 +36,8 @@ export class LabelRenderer {
    * @param {d3.Selection} container - SVG to append labels to
    */
   create(container) {
+    this.destroy();
+    
     this.container = container.append('g').classed('labels', true);
     return this.container;
   }
@@ -41,15 +46,13 @@ export class LabelRenderer {
    * Render labels from lane tree
    * @param {LaneNode} laneTree - Root of lane tree
    * @param {number} rowHeight - Height of each row
-   * @param {Object} options - Additional options
+   * @param {string} mode - 'separate' | 'background'
    */
-  render(laneTree, rowHeight, options = {}) {
-    if (!this.container || this.position === 'none') return;
-
-    const { mode = 'separate' } = options;
+  render(laneTree, rowHeight, mode = 'separate') {
+    if (!this.container || this.options.position === 'none') return;
 
     // Clear existing labels
-    this.container.selectAll('*').remove();
+    this.clear();
 
     // Use different render strategies based on mode
     if (mode === 'background') {
@@ -79,6 +82,10 @@ export class LabelRenderer {
     };
 
     root.children.forEach(child => traverse(child));
+  }
+
+  _getNodeLabelClass(node) {
+    return `level-${node.level > 3 ? 3 : node.level}`;
   }
 
   /**
@@ -131,17 +138,17 @@ export class LabelRenderer {
    */
   _renderGroupBarLabel(node, rowHeight) {
     const y = node.groupBarRow * rowHeight + rowHeight / 2;
-    const isLeft = this.position === 'left';
+    const isLeft = this.options.position === 'left';
     const anchor = isLeft ? 'end' : 'start';
     const labelText = `${node.key} (${node.getAllItems().length})`;
 
     // Position icon near the edge, text further in
     const iconX = isLeft
-      ? this.width - this.padding
-      : this.padding;
+      ? this.options.width - this.options.padding
+      : this.options.padding;
     const textX = isLeft
-      ? iconX - LABEL_STYLE.ICON_SIZE - this.padding
-      : iconX + LABEL_STYLE.ICON_SIZE + this.padding;
+      ? iconX - LABEL_STYLE.ICON_SIZE - this.options.padding
+      : iconX + LABEL_STYLE.ICON_SIZE + this.options.padding;
 
     const g = this.container.append('g')
       .classed('group-item-labels', true)
@@ -153,7 +160,7 @@ export class LabelRenderer {
 
     // Group name
     g.append('text')
-      .classed(`group-item-label level-${node.level > 3 ? 3 : node.level}`, true)
+      .classed(`group-item-label ${this._getNodeLabelClass(node)}`, true)
       .attr('x', textX)
       .attr('y', y)
       .attr('dy', LABEL_STYLE.DY_OFFSET)
@@ -166,15 +173,15 @@ export class LabelRenderer {
    */
   _renderLeafLabel(node, rowHeight) {
     const y = (node.rowStart + node.rowEnd) / 2 * rowHeight + rowHeight / 2;
-    const isLeft = this.position === 'left';
+    const isLeft = this.options.position === 'left';
     const anchor = isLeft ? 'end' : 'start';
 
     const x = isLeft
-      ? this.width - this.padding
-      : this.padding;
+      ? this.options.width - this.options.padding
+      : this.options.padding;
 
     const g = this.container.append('g')
-      .classed(`item-label level-${node.level > 3 ? 3 : node.level}`, true)
+      .classed(`item-label ${this._getNodeLabelClass(node)}`, true)
       .attr('data-level', node.level)
       .attr('data-key', node.key);
 
@@ -198,18 +205,18 @@ export class LabelRenderer {
     const totalHeight = path.length * LABEL_STYLE.LINE_HEIGHT;
     const startY = centerY - totalHeight / 2 + LABEL_STYLE.LINE_HEIGHT / 2;
 
-    const isLeft = this.position === 'left';
+    const isLeft = this.options.position === 'left';
     const anchor = isLeft ? 'end' : 'start';
 
     // In background mode, split label area into two halves:
     // - Icon near the center (half width)
     // - Text on the outer side
     const iconX = isLeft
-      ? this.width / 2 + this.padding
-      : this.width / 2 - this.padding;
+      ? this.options.width / 2 + this.options.padding
+      : this.options.width / 2 - this.options.padding;
     const textX = isLeft
-      ? iconX - LABEL_STYLE.ICON_SIZE - this.padding
-      : iconX + LABEL_STYLE.ICON_SIZE + this.padding;
+      ? iconX - LABEL_STYLE.ICON_SIZE - this.options.padding
+      : iconX + LABEL_STYLE.ICON_SIZE + this.options.padding;
 
     path.forEach((pathNode, index) => {
       const y = startY + index * LABEL_STYLE.LINE_HEIGHT;
@@ -226,7 +233,7 @@ export class LabelRenderer {
       }
 
       labelGroup.append('text')
-        .classed(`group-item-label level-${node.level > 3 ? 3 : node.level}`, true)
+        .classed(`group-item-label ${this._getNodeLabelClass(node)}`, true)
         .attr('x', textX)
         .attr('y', y)
         .attr('dy', LABEL_STYLE.DY_OFFSET)
@@ -252,11 +259,11 @@ export class LabelRenderer {
    * Create toggle icon with hover effects
    */
   _createToggleIcon(g, node, x, y) {
-    const anchor = this.position === 'left' ? 'end' : 'start';
+    const anchor = this.options.position === 'left' ? 'end' : 'start';
     const self = this;
 
     return g.append('text')
-      .classed(`group-item-toggle-icon level-${node.level > 3 ? 3 : node.level}`, true)
+      .classed(`group-item-toggle-icon ${this._getNodeLabelClass(node)}`, true)
       .attr('x', x)
       .attr('y', y)
       .attr('dy', LABEL_STYLE.DY_OFFSET)
@@ -268,21 +275,35 @@ export class LabelRenderer {
       .on('click', function(event) {
         event.stopPropagation();
         node.toggle();
-        self.onToggle(node, node.expanded);
+        self.options.onToggle(node, node.expanded);
       });
   }
 
   /**
-   * Get width
+   * Clear all labels
    */
-  getWidth() {
-    return this.position === 'none' ? 0 : this.width;
+  clear() {
+    if (this.container) {
+      this.container.selectAll('*').remove();
+    }
+  }
+  
+  destroy() {
+    if (this.container) {
+      this.container.remove();
+      this.container = null;
+    }
   }
 
   /**
-   * Update position setting
+   * Update render options by GroupbarLayer and need to re-render by caller
+   * @param {Object} options - New options to merge
    */
-  setPosition(position) {
-    this.position = position;
+  setOptions(options) {
+    this.options = {
+      ...this.options,
+      ...options,
+    };
   }
+
 }

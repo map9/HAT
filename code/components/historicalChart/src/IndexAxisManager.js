@@ -15,16 +15,18 @@ export class IndexAxisManager {
    * @param {Function} options.onBrush - Callback when brush selection changes
    */
   constructor(options = {}) {
-    this.timeDomain = options.timeDomain;
-    this.width = options.width || 800;
-    this.height = options.height || 28;
-    this.zoomLimited = options.zoomLimited || [-1, -1];
-    this.onBrush = options.onBrush || (() => {});
+    this.options = {
+      timeDomain: [new Date(), new Date()],
+      width: 800,
+      height: 28,
+      zoomLimited: [-1, -1],
+      onBrush: () => {},
+      ...options,
+    }
 
-    this.indexScale = d3.scaleUtc()
-      .domain(this.timeDomain)
-      .range([0, this.width]);
-
+    this.container = null;
+    this.indexScale = null;
+    this.axisObject = null;
     this.brush = null;
     this.brushGroup = null;
     this.initialSelection = null;
@@ -35,22 +37,27 @@ export class IndexAxisManager {
    * @param {d3.Selection} container - Container to append index axis to
    */
   create(container) {
+    this.destroy();
+
     this.container = container.append('g').classed('indexAxis', true);
 
     // Create axis
+    this.indexScale = d3.scaleUtc()
+      .domain(this.options.timeDomain)
+      .range([0, this.options.width]);
     this.axisObject = d3.axisBottom(this.indexScale);
     this.container.append('g').classed('index', true).call(this.axisObject);
 
     // Create brush
     this.brush = d3.brushX()
-      .extent([[0, 1], [this.width, this.height - 1]])
+      .extent([[0, 1], [this.options.width, this.options.height - 1]])
       .on('start', this._onBrushStart.bind(this))
       .on('brush end', this._onBrushEnd.bind(this));
 
     this.brushGroup = this.container.append('g').classed('brush', true);
     this.brushGroup
       .call(this.brush)
-      .call(this.brush.move, this.timeDomain.map(this.indexScale));
+      .call(this.brush.move, this.options.timeDomain.map(this.indexScale));
 
     return this.container;
   }
@@ -117,14 +124,14 @@ export class IndexAxisManager {
 
     // Calculate and enforce zoom limits
     const totalHours = (newDomain[1] - newDomain[0]) / MS_PER_HOUR;
-    const axisDensity = this.width / totalHours;
+    const axisDensity = this.options.width / totalHours;
 
-    const [minAllowed, maxAllowed] = this.zoomLimited;
+    const [minAllowed, maxAllowed] = this.options.zoomLimited;
 
     if (minAllowed !== -1 && axisDensity < minAllowed) {
-      newDomain = this._adjustDomain(newDomain, this.width / minAllowed, changedSide);
+      newDomain = this._adjustDomain(newDomain, this.options.width / minAllowed, changedSide);
     } else if (maxAllowed !== -1 && axisDensity > maxAllowed) {
-      newDomain = this._adjustDomain(newDomain, this.width / maxAllowed, changedSide);
+      newDomain = this._adjustDomain(newDomain, this.options.width / maxAllowed, changedSide);
     }
 
     // Update brush selection if domain was adjusted
@@ -135,7 +142,7 @@ export class IndexAxisManager {
 
     // Notify callback if user initiated
     if (sourceEvent) {
-      this.onBrush(newDomain);
+      this.options.onBrush(newDomain);
     }
   }
 
@@ -147,7 +154,7 @@ export class IndexAxisManager {
     if (!domain) return;
 
     const selection = domain.map(this.indexScale);
-    if (selection[0] === 0 && selection[1] === this.width) {
+    if (selection[0] === 0 && selection[1] === this.options.width) {
       this.brushGroup.call(this.brush.clear);
     } else {
       this.brushGroup.call(this.brush.move, selection);
@@ -157,13 +164,15 @@ export class IndexAxisManager {
   /**
    * Resize the index axis
    * @param {number} width - New width
+   * @param {number} height - New height
    */
-  resize(width) {
-    this.width = width;
-    this.indexScale.range([0, width]);
+  resize(width, height) {
+    this.options.width = width;
+    this.options.height = height;
+    this.indexScale.range([0, this.options.width]);
 
     // Update brush extent
-    this.brush.extent([[0, 1], [width, this.height - 1]]);
+    this.brush.extent([[0, 1], [this.options.width, this.options.height - 1]]);
     this.brushGroup.call(this.brush);
 
     // Update axis
@@ -175,7 +184,7 @@ export class IndexAxisManager {
    */
   getDomain() {
     const selection = d3.brushSelection(this.brushGroup.node());
-    if (!selection) return this.timeDomain;
+    if (!selection) return this.options.timeDomain;
     return selection.map(this.indexScale.invert);
   }
 
@@ -183,6 +192,28 @@ export class IndexAxisManager {
    * Get height
    */
   getHeight() {
-    return this.height;
+    return this.options.height;
   }
+
+  destroy() {
+    if (this.container) {
+      this.container.remove();
+      this.container = null;
+    }
+
+    this.indexScale = null;
+    this.axisObject = null;
+
+    this.brush = null;
+    this.brushGroup = null;
+  }
+
+  setOptions(options) {
+    this.options = { ...this.options, ...options };
+    if ((options.timeDomain || options.timeDomain) && this.container) {
+      this.indexScale.domain(this.options.timeDomain);
+      this.container.select('.index').call(this.axisObject);
+    }
+  }
+
 }

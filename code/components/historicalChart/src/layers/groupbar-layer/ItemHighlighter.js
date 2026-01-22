@@ -53,7 +53,7 @@ export class ItemHighlighter {
     const activeIds = this.activeIds;
 
     // Update bar items
-    this.container.selectAll('.item')
+    this.container.selectAll('.bar-item')
       .style('opacity', function(d) {
         if (!hasActive) return null;
         const id = d?.id ?? d?.key;
@@ -76,7 +76,7 @@ export class ItemHighlighter {
       });
 
     // Update link items - highlight links that connect to activeIds
-    this.container.selectAll('.link-group')
+    this.container.selectAll('.link-item')
       .style('opacity', function(d) {
         if (!hasActive) return null;
         // Link is highlighted if both startId and endId are in activeIds

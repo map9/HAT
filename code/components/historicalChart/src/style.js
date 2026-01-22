@@ -6,7 +6,8 @@
 const light_colors = `
   .historical-chart {
     --background-color: white;
-    --panel-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    --shadow-color: rgba(0,0,0,0.3);
+    --link-shadow-color: 0 2 2px rgba(0,0,0,0.3);
     --primary-gridline-color: rgb(81, 93, 93);
     --second-gridline-color: rgb(194, 199, 200);
     --yearly-tick-color: rgb(81, 93, 93);
@@ -31,6 +32,8 @@ const dark_colors = `
   .historical-chart {
     --background-color: #15151b;
     --panel-shadow: 0 4px 16px rgba(255,255,255,0.3);
+    --tooltip-shadow: 0 2 2px rgba(255,255,255,0.3);
+    --link-shadow: 0 2 2px rgba(255,255,255,0.3);
     --primary-gridline-color: white;
     --second-gridline-color: lightyellow;
     --yearly-tick-color: white;
@@ -94,7 +97,7 @@ const base_styles = `
     left: 0;
     z-index: 10;
     background-color: var(--background-color);
-    box-shadow: var(--panel-shadow);
+    box-shadow: 0 4px 16px var(--shadow-color);
     overflow: hidden;
   }
 
@@ -107,8 +110,15 @@ const base_styles = `
     flex: 1;
     border-top: 1px solid var(--second-gridline-color);
     border-bottom: 1px solid var(--second-gridline-color);
-    border-right: 1px solid var(--second-gridline-color);
     overflow: auto;
+  }
+
+  .hc-body-container.left {
+    border-right: 1px solid var(--second-gridline-color);
+  }
+
+  .hc-body-container.right {
+    border-left: 1px solid var(--second-gridline-color);
   }
 
   .hc-body-svg {
@@ -201,36 +211,36 @@ const base_styles = `
   }
 
   /* Event tooltip (HTML) */
-  .hc-tooltip {
+  .historical-chart  .hc-tooltip {
     position: absolute;
     font-size: 12px;
     visibility: hidden;
     background: white;
     border-radius: 5px;
     padding: 10px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 0 10px var(--shadow-color);
     max-width: 300px;
     z-index: 100;
     pointer-events: none;
     transition: opacity 0.15s ease-in-out;
   }
 
-  .hc-tooltip.visible {
+  .historical-chart  .hc-tooltip.visible {
     opacity: 1;
   }
     
   /* Items */
-  .historical-chart .item rect {
+  .historical-chart .bar-item rect {
     fill: var(--item-rect-color);
     fill-opacity: 0.8;
     cursor: pointer;
   }
 
-  .historical-chart .item rect:hover {
+  .historical-chart .bar-item rect:hover {
     fill-opacity: 1;
   }
 
-  .historical-chart .item text {
+  .historical-chart .bar-item text {
     fill: var(--item-text-color);
     font-size: 10px;
     pointer-events: none;
@@ -262,15 +272,16 @@ const base_styles = `
   }
 
   /* Link Items */
-  .historical-chart .link-path {
+  .historical-chart .link-item path {
     fill: none;
     stroke: var(--item-path-color);
     stroke-width: 1.5;
     cursor: pointer;
   }
 
-  .historical-chart .link-path:hover {
+  .historical-chart .link-item path:hover {
     stroke-width: 2;
+    filter: drop-shadow(0 0 2px var(--shadow-color));
   }
 
   /* Labels */

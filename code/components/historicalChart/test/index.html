@@ -469,13 +469,20 @@
           </div>
         </div>
 
-        <div class="control-group">
-          <label>标签位置</label>
-          <select id="labelPosition">
-            <option value="left" selected>左侧</option>
-            <option value="right">右侧</option>
-            <option value="none">不显示</option>
-          </select>
+        <div class="control-row">
+          <div class="control-group">
+            <label>标签位置</label>
+            <select id="labelPosition">
+              <option value="left" selected>左侧</option>
+              <option value="right">右侧</option>
+              <option value="none">不显示</option>
+            </select>
+          </div>
+        
+          <div class="control-group">
+            <label>标签距边框间距: <span class="range-value" id="labelXPaddingValue">6</span></label>
+            <input type="range" id="labelXPadding" min="0" max="20" value="6" step="1">
+          </div>
         </div>
 
         <div class="control-row">
@@ -492,33 +499,6 @@
         <div class="control-group">
           <label>圆角半径: <span class="range-value" id="roundRadiusValue">4</span>px</label>
           <input type="range" id="roundRadius" min="0" max="15" value="4" step="1">
-        </div>
-      </div>
-
-      <!-- 分组配置 -->
-      <div class="config-section">
-        <h2>📊 泳道层级配置</h2>
-        <div id="laneGroupsContainer"></div>
-        <button class="btn-add-lane" onclick="addLaneGroup()">+ 添加层级</button>
-
-        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e0e0e0;">
-          <div class="control-group">
-            <label>分组条模式</label>
-            <select id="groupBarMode">
-              <option value="separate" selected>独立行 (separate)</option>
-              <option value="background">背景 (background)</option>
-            </select>
-          </div>
-
-          <div class="control-group">
-            <label>分组条透明度: <span class="range-value" id="groupBarOpacityValue">0.3</span></label>
-            <input type="range" id="groupBarOpacity" min="0.1" max="0.8" value="0.3" step="0.05">
-          </div>
-
-          <div class="control-group">
-            <label>分组间距: <span class="range-value" id="groupYPaddingValue">5</span>px</label>
-            <input type="range" id="groupYPadding" min="0" max="20" value="5" step="1">
-          </div>
         </div>
       </div>
 
@@ -545,12 +525,34 @@
 
         <div class="control-group">
           <label>功能开关</label>
-          <button class="toggle-btn active" id="toggleActiveAxis" onclick="toggleFeature('activeAxis')">
+          <button class="toggle-btn active" id="toggleActiveAxis" onclick="toggleFeature('hasActiveAxis')">
             <span>ActiveAxis</span>
           </button>
-          <button class="toggle-btn active" id="toggleTooltip" onclick="toggleFeature('tooltip')">
+          <button class="toggle-btn active" id="toggleTooltip" onclick="toggleFeature('hasTooltip')">
             <span>Tooltip</span>
           </button>
+        </div>
+      </div>
+
+      <!-- 分组配置 -->
+      <div class="config-section">
+        <h2>📊 泳道层级配置</h2>
+        <div id="laneGroupsContainer"></div>
+        <button class="btn-add-lane" onclick="addLaneGroup()">+ 添加层级</button>
+
+        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e0e0e0;">
+          <div class="control-group">
+            <label>分组条模式</label>
+            <select id="groupBarMode">
+              <option value="separate" selected>独立行 (separate)</option>
+              <option value="background">背景 (background)</option>
+            </select>
+          </div>
+
+          <div class="control-group">
+            <label>分组间距: <span class="range-value" id="groupYPaddingValue">5</span>px</label>
+            <input type="range" id="groupYPadding" min="0" max="20" value="5" step="1">
+          </div>
         </div>
       </div>
 
@@ -561,7 +563,7 @@
         <div class="control-group">
           <label>Bar 颜色依据</label>
           <select id="barColorField">
-            <option value="default" selected>默认 (d.color)</option>
+            <option value="default" selected>默认 (css define)</option>
             <!-- 动态生成 -->
           </select>
         </div>
@@ -576,10 +578,10 @@
 
         <div class="control-group">
           <div class="checkbox-group">
-            <input type="checkbox" id="enableColorFn" checked>
-            <label for="enableColorFn">启用 colorFn 回调</label>
+            <input type="checkbox" id="enableStyleFn" checked>
+            <label for="enableStyleFn">启用 styleFn 回调</label>
           </div>
-          <div class="field-info">关闭后使用默认颜色逻辑</div>
+          <div class="field-info">关闭后使用默认样式逻辑</div>
         </div>
       </div>
 
@@ -648,10 +650,12 @@
 
     // Global state
     let chart = null;
+    let gridLayer = null;
+    let groupBarLayer = null;
     let currentData = [];
     let featureFlags = {
-      activeAxis: true,
-      tooltip: true,
+      hasActiveAxis: true,
+      hasTooltip: true,
     };
     let laneGroupCounter = 0;
 
@@ -762,13 +766,13 @@
       // 初始化值选择器
       updateFieldValues(id, field);
 
-      // 绑定事件：值选择器变化时更新图表
+      // 绑定事件：值选择器变化时更新图表（数据筛选变化需要重建）
       const valuesSelect = groupDiv.querySelector('.lane-values-select');
-      valuesSelect.addEventListener('change', updateChart);
+      valuesSelect.addEventListener('change', setGroupBarLayerData);
 
       // 绑定事件：展开复选框变化时更新图表
       const expandedCheckbox = groupDiv.querySelector('.lane-expanded-checkbox');
-      expandedCheckbox.addEventListener('change', updateChart);
+      expandedCheckbox.addEventListener('change', setGroupBarLayerData);
     };
 
     // 移除泳道层级
@@ -776,7 +780,7 @@
       const group = document.querySelector(`.lane-group[data-id="${id}"]`);
       if (group) {
         group.remove();
-        updateChart();
+        setGroupBarLayerData();
       }
     };
 
@@ -785,7 +789,7 @@
       const select = document.querySelector(`.lane-field-select[data-id="${id}"]`);
       const field = select.value;
       updateFieldValues(id, field);
-      updateChart();
+      setGroupBarLayerData();
     };
 
     // 更新字段值列表
@@ -869,7 +873,6 @@
             end: parseDate(enddate),
             label: leader,
             title: `<strong>${leader}</strong><br/>${countryname}<br/>${startdate} - ${enddate}<br/>Exit: ${exit}`,
-            //color: getColorByCountry(idacr)
           });
         }
 
@@ -939,19 +942,32 @@
       const scale = colorScales[field] || d3.scaleOrdinal(d3.schemeSet2);
       return scale(value);
     }
-
-    // Get color by country code (用于默认 d.color)
-    function getColorByCountry(countryCode) {
-      return colorScales.countryCode(countryCode);
+    
+    // 形状回调函数 - 根据 exit 字段决定形状
+    function getFieldShape(ctx) {
+      const exit = ctx.data.exit;
+      // 根据 exit 类型返回不同形状
+      switch (exit) {
+        case 'Regular':
+          return 'square';
+        case 'Irregular':
+          return 'diamond';
+        case 'Natural Death':
+          return 'triangle';
+        case 'Still in Office':
+          return 'square';
+        default:
+          return 'circle';
+      }
     }
 
     // 统一颜色回调函数
-    function createColorFn() {
+    function createStyleFn() {
       const barColorField = document.getElementById('barColorField').value;
       const groupColorMode = document.getElementById('groupColorMode').value;
-      const enableColorFn = document.getElementById('enableColorFn').checked;
+      const enableStyleFn = document.getElementById('enableStyleFn').checked;
 
-      if (!enableColorFn) {
+      if (!enableStyleFn) {
         return null;
       }
 
@@ -959,9 +975,15 @@
         if (type === 'bar') {
           // Bar 颜色
           if (barColorField === 'default') {
-            return null; // 使用默认 d.color
+            return null; // 使用默认 css
           }
-          return getFieldColor(barColorField, ctx.data[barColorField]);
+          return {
+            stroke: null,
+            strokeWidth: null,
+            strokeDasharray: null,
+            fill: getFieldColor(barColorField, ctx.data[barColorField]),
+            fillOpacity: null 
+          }
         }
 
         if (type === 'point') {
@@ -969,98 +991,89 @@
           if (barColorField === 'default') {
             return null;
           }
-          return getFieldColor(barColorField, ctx.data[barColorField]);
+          return {
+            stroke: getFieldColor(barColorField, ctx.data[barColorField]),
+            strokeWidth: null,
+            fill: null,
+            fillOpacity: null,
+            marker: getFieldShape(ctx)
+          };
         }
 
-        if (type === 'groupBar' || type === 'groupBackground') {
+        if (type === 'separate' || type === 'background') {
           // Group 颜色
           if (groupColorMode === 'level') {
-            return colorScales.level(ctx.node.level);
+            return {
+              stroke: colorScales.level(ctx.node.level),
+              strokeWidth: 1.5,
+              strokeDasharray: null,
+              fill: colorScales.level(ctx.node.level),
+              fillOpacity: 0.4
+            };
           }
           // 按分组字段值着色
-          return getFieldColor(ctx.node.field, ctx.node.key);
+          return {
+              stroke: getFieldColor(ctx.node.field, ctx.node.key),
+              strokeWidth: 1.5,
+              strokeDasharray: null,
+              fill: getFieldColor(ctx.node.field, ctx.node.key),
+              fillOpacity: 0.4
+            };
         }
 
-        return null;
-      };
-    }
+        if (type === 'link') {
+          // Link 颜色 - 根据 link type 字段
+          const typeColors = {
+            'succession': '#2196F3',
+            'coup': '#F44336',
+            'election': '#4CAF50',
+            'death': '#9E9E9E',
+            'resignation': '#FF9800'
+          };
+          const type = ctx.type || 'succession';
 
-    // 形状回调函数 - 根据 exit 字段决定形状
-    function createShapeFn() {
-      return function(type, ctx) {
-        if (type === 'point') {
-          const exit = ctx.data.exit;
-          // 根据 exit 类型返回不同形状
-          switch (exit) {
-            case 'Regular':
-              return 'square';
-            case 'Irregular':
-              return 'diamond';
-            case 'Natural Death':
-              return 'triangle';
-            case 'Still in Office':
-              return 'square';
+          // 根据不同类型返回不同样式
+          switch (type) {
+            case 'coup':
+              return {
+                stroke: typeColors.coup,
+                strokeWidth: 2.5,
+                strokeDasharray: '5,3',
+                headMarker: 'diamond'
+              };
+            case 'election':
+              return {
+                stroke: typeColors.election,
+                strokeWidth: 2,
+                strokeDasharray: null,
+                headMarker: 'circle'
+              };
+            case 'death':
+              return {
+                stroke: typeColors.death,
+                strokeWidth: 1.5,
+                strokeDasharray: '2,2',
+                headMarker: 'square'
+              };
+            case 'resignation':
+              return {
+                stroke: typeColors.resignation,
+                strokeWidth: 2,
+                strokeDasharray: '8,4',
+                headMarker: 'arrow'
+              };
+            case 'succession':
             default:
-              return 'circle';
+              return {
+                stroke: typeColors.succession,
+                strokeWidth: 1.5,
+                strokeDasharray: null,
+                headMarker: 'circle'
+              };
           }
         }
+
         return null;
-      };
-    }
-
-    // Link 样式回调函数 - 根据 link 的 type 字段决定样式
-    function createLinkStyleFn() {
-      // 颜色映射
-      const typeColors = {
-        'succession': '#2196F3',    // 蓝色 - 正常继任
-        'coup': '#F44336',          // 红色 - 政变
-        'election': '#4CAF50',      // 绿色 - 选举
-        'death': '#9E9E9E',         // 灰色 - 自然死亡
-        'resignation': '#FF9800'    // 橙色 - 辞职
-      };
-
-      return function(link) {
-        const type = link.type || 'succession';
-
-        // 根据不同类型返回不同样式
-        switch (type) {
-          case 'coup':
-            return {
-              stroke: typeColors.coup,
-              strokeWidth: 2.5,
-              strokeDasharray: '5,3',
-              headStyle: 'diamond'
-            };
-          case 'election':
-            return {
-              stroke: typeColors.election,
-              strokeWidth: 2,
-              strokeDasharray: null,
-              headStyle: 'circle'
-            };
-          case 'death':
-            return {
-              stroke: typeColors.death,
-              strokeWidth: 1.5,
-              strokeDasharray: '2,2',
-              headStyle: 'square'
-            };
-          case 'resignation':
-            return {
-              stroke: typeColors.resignation,
-              strokeWidth: 2,
-              strokeDasharray: '8,4',
-              headStyle: 'arrow'
-            };
-          case 'succession':
-          default:
-            return {
-              stroke: typeColors.succession,
-              strokeWidth: 1.5,
-              strokeDasharray: null,
-              headStyle: 'arrow'
-            };
-        }
       };
     }
 
@@ -1084,7 +1097,6 @@
           end: parseDate(l.end),
           label: l.leader,
           title: `<strong>${l.leader}</strong><br/>${l.country}<br/>${l.start} - ${l.end}`,
-          color: getColorByCountry(l.countryCode)
         });
       });
 
@@ -1215,19 +1227,18 @@
       }
     }
 
-    // Get current configuration
-    function getConfig() {
+    // Get current Chart configuration
+    function getChartConfig() {
       const startYear = parseInt(document.getElementById('startYear').value);
       const endYear = parseInt(document.getElementById('endYear').value);
       const axisType = document.getElementById('axisType').value;
-
-      // Build groups array from dynamic lane groups
-      const groups = getLaneGroupsConfig();
 
       const chartEl = document.getElementById('chart');
       return {
         width: chartEl.offsetWidth || 1000,
         height: chartEl.offsetHeight || 600,
+        labelWidth: parseInt(document.getElementById('labelWidth').value),
+        labelPosition: document.getElementById('labelPosition').value,
         timeDomain: [
           getDate(startYear, 1, 1),
           getDate(endYear, 12, 31)
@@ -1238,22 +1249,43 @@
           parseFloat(document.getElementById('zoomMin').value),
           parseFloat(document.getElementById('zoomMax').value)
         ],
+        style: document.getElementById('theme').value === 'dark' ? DARK : LIGHT,
+        locale: document.getElementById('locale').value,
+        hasActiveAxis: featureFlags.hasActiveAxis,
+        hasTooltip: featureFlags.hasTooltip,
+      };
+    }
+
+    // Get current GroupBarLayer configuration
+    function getGroupBarLayerConfig() {
+      return {
+        // Rows
         rowHeight: parseInt(document.getElementById('rowHeight').value),
+        minRowHeight: 12,         // Minimum row height
+        // Labels
         labelWidth: parseInt(document.getElementById('labelWidth').value),
         labelPosition: document.getElementById('labelPosition').value,
+        labelXPadding: parseFloat(document.getElementById('labelXPadding').value),
+        // Spacing
         xPadding: parseFloat(document.getElementById('xPadding').value),
         yPadding: parseFloat(document.getElementById('yPadding').value),
         roundRadius: parseInt(document.getElementById('roundRadius').value),
-        groups: groups.length > 0 ? groups : null,
-        groupBarMode: document.getElementById('groupBarMode').value,
-        groupBarOpacity: parseFloat(document.getElementById('groupBarOpacity').value),
+        // Groups
+        mode: document.getElementById('groupBarMode').value,
         groupYPadding: parseInt(document.getElementById('groupYPadding').value),
-        style: document.getElementById('theme').value === 'dark' ? DARK : LIGHT,
-        locale: document.getElementById('locale').value,
-        activeAxis: featureFlags.activeAxis,
-        tooltip: featureFlags.tooltip,
-        colorFn: createColorFn()
-      };
+        // Bars
+        barTextPosition: 'none',  // 'none' | 'left' | 'center' | 'right'
+        barStyleFn: createStyleFn(),
+        // Points
+        pointSizeRatio: 0.4,      // Point size relative to rowHeight (0-1)
+        pointTextPosition: 'none',// 'none' | 'right' | 'top'
+        pointStyleFn: createStyleFn(),
+        // Links
+        curve: 'curveBumpX',      // d3 curve type for links
+        minLinkLength: 20,        // Minimum link length to display
+        headSize: 5,
+        linkStyleFn: createStyleFn(),
+      }
     }
 
     // Filter data based on lane groups configuration
@@ -1282,48 +1314,82 @@
     }
 
     // Update chart
-    function updateChart() {
-      const config = getConfig();
+    // 永远都不强制重建，配置调整了用 setOptions 更新，数据变化了，通过layer的 setLayerData 更新
+    function updateChart(forceRecreate = false) {
+      const config = getChartConfig();
       const filteredData = getFilteredData();
 
-      // Destroy old chart
-      if (chart) {
-        chart.destroy();
+      if (!chart || forceRecreate) {
+        if (chart) {
+          chart.destroy();
+          chart = null;
+          groupBarLayer = null;
+          gridLayer = null;
+        }
+
+        // Create new chart
+        chart = new HistoricalChart('#chart', config);
+        updateGridLayer();
+        updateGroupBarLayer();
+
+        chart.render()
+
+        // Event listeners
+        chart.on('domainChange', (domain) => {
+          document.getElementById('infoDomain').textContent =
+            `${domain[0].getFullYear()} - ${domain[1].getFullYear()}`;
+        });
+
+        chart.on('itemClick', (data) => {
+          console.log('Clicked:', data);
+        });
+
+        chart.on('groupToggle', (node, expanded) => {
+          //console.log('Toggle:', node.key, expanded);
+        });
+
+        chart.on('itemHover', (data, event) => {
+          //console.log('Link hover:', link);
+        });
+
+        console.log('Chart created');
+      } else {
+        chart.setOptions({
+          ...config
+        });
+        console.log('Chart setOptions');
       }
 
-      // Create new chart
-      chart = new HistoricalChart('#chart', config);
+      // Update info
+      document.getElementById('infoDataCount').textContent = filteredData.length;
+    }
+
+    function updateGroupBarLayer() {
+      if (!chart) return;
+
+      const config = getGroupBarLayerConfig();
+
+      if (!groupBarLayer) {
+        groupBarLayer = new GroupBarLayer('groupBar', {
+          ...config
+        });
+        setGroupBarLayerData();
+        chart.layerManager.addLayer(groupBarLayer, 1);
+
+        console.log('Chart created');
+      } else {
+        groupBarLayer.setOptions({
+          ...config
+        });
+      }
+    }
+
+    function setGroupBarLayerData() {
+      if (!groupBarLayer) return;
       
-      const gridLayer = new GridLayer('grid', {
-        axises: getAxises(axisType),
-        locale: 'en-us',
-        gap: 1,
-        visible: true
-      })
-      chart.layerManager.addLayer(gridLayer, 0);
-      
-      const groupbarLayer = new GroupBarLayer('groupBars', {
-        rowHeight: config.rowHeight,
-        minRowHeight: config.minRowHeight,
-        labelWidth: config.labelWidth,
-        labelPosition: config.labelPosition,
-        xPadding: config.xPadding,
-        yPadding: config.yPadding,
-        roundRadius: config.roundRadius,
-        groups: config.groups,
-        mode: config.groupBarMode,
-        opacity: config.groupBarOpacity,
-        roundRadius: config.roundRadius,
-        groupYPadding: config.groupYPadding,
-        colorFn: config.colorFn,
-        shapeFn: createShapeFn(),
-        linkStyleFn: createLinkStyleFn(),
-        pointSizeRatio: 0.3,
-        pointLabelPosition: 'none',
-        visible: true
-      })
-      chart.layerManager.addLayer(groupbarLayer, 1);
-      groupbarLayer.setLayerData(filteredData, {
+      const filteredData = getFilteredData();
+      const groups = getLaneGroupsConfig();
+      groupBarLayer.setLayerData(filteredData, {
         key: d => d.id,
         start: d => d.start,
         end: d => d.end,
@@ -1337,35 +1403,32 @@
           const end = typeof d.end === 'number' ? d.end : d.end.getTime();
           return start === end;
         }
-      });
+      }, groups);
 
       // Generate demo links: connect consecutive leaders in same country
       const demoLinks = generateDemoLinks(filteredData);
-      groupbarLayer.setLinkData(demoLinks);
+      groupBarLayer.setLinkData(demoLinks);
       console.log(`Generated ${demoLinks.length} demo links`);
+    }
 
-      chart.render()
+    function updateGridLayer() {
+      if (!chart) return;
 
-      // Event listeners
-      chart.on('domainChange', (domain) => {
-        document.getElementById('infoDomain').textContent =
-          `${domain[0].getFullYear()} - ${domain[1].getFullYear()}`;
-      });
+      const config = getChartConfig();
 
-      chart.on('itemClick', (data) => {
-        //console.log('Clicked:', data);
-      });
-
-      chart.on('groupToggle', (node, expanded) => {
-        //console.log('Toggle:', node.key, expanded);
-      });
-
-      chart.on('linkHover', (link, event) => {
-        //console.log('Link hover:', link);
-      });
-
-      // Update info
-      document.getElementById('infoDataCount').textContent = filteredData.length;
+      if (!gridLayer) {
+        gridLayer = new GridLayer('grid', {
+          axises: config.axises,
+          locale: config.locale,
+          visible: true
+        });
+        chart.layerManager.addLayer(gridLayer, 0);
+      } else {
+        gridLayer.setOptions({
+          axises: config.axises,
+          locale: config.locale,
+        });
+      }
     }
 
     // Toggle feature
@@ -1439,32 +1502,32 @@
       document.getElementById('roundRadius').value = '4';
       document.getElementById('roundRadiusValue').textContent = '4';
       document.getElementById('groupBarMode').value = 'separate';
-      document.getElementById('groupBarOpacity').value = '0.3';
-      document.getElementById('groupBarOpacityValue').textContent = '0.3';
+      document.getElementById('labelXPadding').value = '6';
+      document.getElementById('labelXPaddingValue').textContent = '6';
       document.getElementById('groupYPadding').value = '5';
       document.getElementById('groupYPaddingValue').textContent = '5';
       document.getElementById('theme').value = 'light';
       document.getElementById('locale').value = 'zh-cn';
 
-      featureFlags = { activeAxis: true, tooltip: true };
+      featureFlags = { hasActiveAxis: true, hasTooltip: true };
       document.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.add('active'));
 
       // Reset color config
       document.getElementById('barColorField').value = availableFields.length > 0 ? availableFields[0].value : 'default';
       document.getElementById('groupColorMode').value = 'level';
-      document.getElementById('enableColorFn').checked = true;
+      document.getElementById('enableStyleFn').checked = true;
 
       // Reset lane groups
       document.getElementById('laneGroupsContainer').innerHTML = '';
       laneGroupCounter = 0;
       initDefaultLaneGroups();
 
-      updateChart();
+      updateChart(true);
     };
 
     // Export config
     window.exportConfig = function() {
-      const config = getConfig();
+      const config = getChartConfig();
       const json = JSON.stringify(config, (key, value) => {
         if (value instanceof Date) return value.toISOString();
         if (typeof value === 'function') return '[Function]';
@@ -1479,24 +1542,58 @@
     // Bind events
     function bindEvents() {
       // Range sliders
-      const rangeInputs = ['rowHeight', 'labelWidth', 'xPadding', 'yPadding', 'roundRadius', 'groupBarOpacity', 'groupYPadding'];
+      let rangeInputs = ['rowHeight', 'xPadding', 'yPadding', 'labelXPadding', 'groupYPadding', 'labelWidth', 'roundRadius'];
       rangeInputs.forEach(id => {
         const input = document.getElementById(id);
         const valueSpan = document.getElementById(id + 'Value');
-        input.addEventListener('input', function() {
-          valueSpan.textContent = this.value;
-          updateChart();
-        });
+        if (['rowHeight'].includes(id)) {
+          input.addEventListener('input', function() {
+            valueSpan.textContent = this.value;
+            updateChart();
+          });
+        } else if (['xPadding', 'yPadding', 'labelXPadding', 'groupYPadding'].includes(id)) {
+          input.addEventListener('input', function() {
+            valueSpan.textContent = this.value;
+            updateChart();
+          });
+        } else {
+          input.addEventListener('input', function() {
+            valueSpan.textContent = this.value;
+            updateChart();
+            updateGroupBarLayer();
+          });
+        }
       });
 
-      // Select inputs (removed group1/2/3Field - now using dynamic lane groups)
-      const selectInputs = ['axisType', 'hasIndexAxis', 'labelPosition', 'groupBarMode', 'theme', 'locale', 'barColorField', 'groupColorMode'];
+      // Select inputs
+      const selectInputs = ['axisType', 'locale', 'hasIndexAxis', 'labelPosition', 'theme', 'groupBarMode', 'barColorField', 'groupColorMode', 'labelPosition'];
       selectInputs.forEach(id => {
-        document.getElementById(id).addEventListener('change', updateChart);
+        const input = document.getElementById(id);
+        if (['hasIndexAxis', 'labelPosition', 'theme'].includes(id)) {
+          input.addEventListener('change', updateChart);
+        } else if (['groupBarMode', 'barColorField', 'groupColorMode'].includes(id)) {
+          input.addEventListener('change', updateChart);
+        } else if (['axisType', 'locale'].includes(id)) {
+          input.addEventListener(
+            'change',
+            ()=> {
+              updateChart();
+              updateGridLayer();
+            }
+          );
+        }  else {
+          input.addEventListener(
+            'change',
+            ()=> {
+              updateChart();
+              updateGroupBarLayer();
+            }
+          );
+        }
       });
 
       // Checkbox inputs
-      document.getElementById('enableColorFn').addEventListener('change', updateChart);
+      document.getElementById('enableStyleFn').addEventListener('change', updateGroupBarLayer);
 
       // Number inputs
       const numberInputs = ['startYear', 'endYear', 'zoomMin', 'zoomMax'];

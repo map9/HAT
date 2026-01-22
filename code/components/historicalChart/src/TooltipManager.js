@@ -7,23 +7,22 @@ import * as d3 from 'd3';
 import { isBCE } from './utils/scales.js';
 
 const TOOLTIP_OFFSET = 10;
+const TOOLTIP_SHOW_DELAY = 150;   // Delay before showing tooltip (ms)
+const TOOLTIP_HIDE_DELAY = 100;   // Delay before hiding tooltip (ms)
 
 export class TooltipManager {
   /**
    * @param {Object} options
    * @param {string} options.locale - Locale for date formatting
    * @param {number} options.gap - Gap between elements
-   * @param {number} options.showDelay - Delay before showing tooltip (ms)
-   * @param {number} options.hideDelay - Delay before hiding tooltip (ms)
    */
   constructor(options = {}) {
-    this.locale = options.locale || 'en-us';
-    this.gap = options.gap ?? 1;
-    this.roundRadius = options.roundRadius ?? 4;
-
-    // Delay configuration
-    this.showDelay = options.showDelay ?? 150;
-    this.hideDelay = options.hideDelay ?? 100;
+    this.options = {
+      locale: 'en-us',
+      gap: 1,
+      roundRadius: 4,
+      ...options
+    }
 
     this.axisTooltip = null;
     this.itemTooltip = null;
@@ -47,8 +46,8 @@ export class TooltipManager {
     this.axisTooltip.append('rect')
       .attr('width', 0)
       .attr('height', 0)
-      .attr('rx', this.roundRadius)
-      .attr('ry', this.roundRadius);
+      .attr('rx', this.options.roundRadius)
+      .attr('ry', this.options.roundRadius);
 
     this.axisTooltip.append('text')
       .attr('x', 0)
@@ -94,7 +93,7 @@ export class TooltipManager {
         this._axisShowTimer = setTimeout(() => {
           this.axisTooltip.attr('visibility', 'visible');
           this._axisShowTimer = null;
-        }, this.showDelay);
+        }, TOOLTIP_SHOW_DELAY);
       }
     } else {
       // Clear any pending show timer
@@ -106,7 +105,7 @@ export class TooltipManager {
         this._axisHideTimer = setTimeout(() => {
           this.axisTooltip.attr('visibility', 'hidden');
           this._axisHideTimer = null;
-        }, this.hideDelay);
+        }, TOOLTIP_HIDE_DELAY);
       }
     }
   }
@@ -121,7 +120,7 @@ export class TooltipManager {
   updateAxisTooltip(date, x, y, customContent = null) {
     if (!this.axisTooltip) return;
 
-    this.axisTooltip.attr('transform', `translate(${x + 2 * this.gap}, ${y})`);
+    this.axisTooltip.attr('transform', `translate(${x + 2 * this.options.gap}, ${y})`);
 
     // Format date
     let dateString;
@@ -140,7 +139,7 @@ export class TooltipManager {
     dateString.split('\n').forEach((line, i) => {
       const tspan = text.append('tspan');
       tspan
-        .attr('x', 2 * this.gap)
+        .attr('x', 2 * this.options.gap)
         .attr('dy', i === 0 ? 0 : 15)
         .text(line);
 
@@ -171,16 +170,16 @@ export class TooltipManager {
     }
 
     // Update background rect
-    const rectWidth = bbox.width + 6 * this.gap;
-    const rectHeight = bbox.height + 2 * this.gap;
-    const textY = -bbox.y + 3 * this.gap;
+    const rectWidth = bbox.width + 6 * this.options.gap;
+    const rectHeight = bbox.height + 2 * this.options.gap;
+    const textY = -bbox.y + 3 * this.options.gap;
 
     this.axisTooltip.select('rect')
       .attr('width', rectWidth)
       .attr('height', rectHeight)
-      .attr('y', 2 * this.gap);
+      .attr('y', 2 * this.options.gap);
 
-    text.attr('x', 3 * this.gap).attr('y', textY);
+    text.attr('x', 3 * this.options.gap).attr('y', textY);
   }
 
   /**
@@ -197,10 +196,10 @@ export class TooltipManager {
     };
 
     if (isBCE(date)) {
-      return date.toLocaleString(this.locale, { era: 'short', ...options });
+      return date.toLocaleString(this.options.locale, { era: 'short', ...options });
     }
 
-    return date.toLocaleString(this.locale, options);
+    return date.toLocaleString(this.options.locale, options);
   }
 
   /**
@@ -298,7 +297,16 @@ export class TooltipManager {
    * Set locale
    * @param {string} locale
    */
-  setLocale(locale) {
-    this.locale = locale;
+  setOptions(options) {
+    this.options.roundRadius = options.roundRadius ?? this.options.roundRadius;
+    this.options.locale = options.locale ?? this.options.locale;
+    this.options.gap = options.gap ?? this.options.gap;
+
+    // Update axis tooltip styling if exists
+    if (this.axisTooltip && options.roundRadius !== undefined) {
+      this.axisTooltip.select('rect')
+        .attr('rx', this.options.roundRadius)
+        .attr('ry', this.options.roundRadius);
+    }
   }
 }

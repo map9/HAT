@@ -18,54 +18,73 @@ export class LinkRenderer {
   /**
    * @param {Object} options
    * @param {string} options.curve - Curve type: 'curveBumpX', 'curveStep', etc.
-   * @param {Function} options.styleFn - Link style function(link) => { stroke, strokeWidth, strokeDasharray, headStyle }
-   *   - stroke: string - Line color
-   *   - strokeWidth: number - Line width
-   *   - strokeDasharray: string - Dash pattern (e.g., '5,5', '10,5,2,5')
-   *   - headStyle: 'arrow' | 'square' | 'circle' | 'diamond'
+   * @param {Function} options.styleFn - - Style callback for links
+   * - Link style function(type, link) => { stroke, strokeWidth, strokeDasharray, headMarker }
+   * - type: 'link'
+   * - link: link data
+   * - Returned style object properties:
+   * - stroke: string - Line color
+   * - strokeWidth: number - Line width
+   * - strokeDasharray: string - Dash pattern (e.g., '5,5', '10,5,2,5')
+   * - headMarker: 'none' | 'circle' | 'arrow' | 'square' | 'diamond', defaults to 'none'
    * @param {number} options.headSize - head size
+   * @param {Function} options.onClick - Click handler
    * @param {Function} options.onHover - Hover callback
    * @param {Function} options.onLeave - Leave callback
    */
   constructor(options = {}) {
-    this.curve = options.curve ?? 'curveBumpX';
-    this.headSize = options.headSize ?? 3;
-    this.styleFn = options.styleFn ?? null;
+    this.options = {
+      curve: 'curveBumpX',
+      headSize: 3,
+      styleFn: null,
 
-    this.onHover = options.onHover ?? (() => {});
-    this.onLeave = options.onLeave ?? (() => {});
+      onClick: null,
+      onHover: null,
+      onLeave: null,
+      ...options
+    };
 
     this.container = null;
-    this.rowHeight = 0;
+    this.defs = null;
     this.markerIdPrefix = `link-marker-${Math.random().toString(36).slice(2, 9)}`;
     this.markers = new Map(); // Cache for created markers
   }
 
   /**
-   * Create renderer container and markers
-   * @param {d3.Selection} parentGroup - Parent SVG group
+   * Create links container and markers
+   * @param {d3.Selection} container - SVG group to append links to
    */
-  create(parentGroup) {
-    // Get or create defs
-    const svg = parentGroup.node().ownerSVGElement;
-    let defs = d3.select(svg).select('defs');
-    if (defs.empty()) {
-      defs = d3.select(svg).insert('defs', ':first-child');
+  create(container) {
+    this.destroy();
+
+    this.defs = this._createDefs(container);
+    this.container = container.append('g').classed('links', true);
+    return this.container;
+  }
+
+  _createDefs(container) {
+    if (container) {
+      const svg = container.node().ownerSVGElement;
+      let defs = d3.select(svg).select('defs');
+      defs.selectAll('*').remove();
+      if (defs.empty()) {
+        defs = d3.select(svg).insert('defs', ':first-child');
+      }
+
+      return defs;
     }
 
-    this.defs = defs;
-    this.container = parentGroup.append('g').classed('links', true);
-    return this.container;
+    return null;
   }
 
   /**
    * Get or create a marker for the given style
-   * @param {string} headStyle - 'arrow' | 'square' | 'circle' | 'diamond'
+   * @param {string} headMarker - 'arrow' | 'square' | 'circle' | 'diamond'
    * @param {string} color - Marker color (optional)
    * @returns {string} Marker ID
    */
-  _getOrCreateMarker(headStyle = 'arrow', color = null) {
-    const markerKey = `${headStyle}-${color || 'default'}`;
+  _getOrCreateMarker(headMarker = 'arrow', color = null) {
+    const markerKey = `${headMarker}-${color || 'default'}`;
 
     if (this.markers.has(markerKey)) {
       return this.markers.get(markerKey);
@@ -76,11 +95,11 @@ export class LinkRenderer {
 
     const marker = this.defs.append('marker')
       .attr('id', markerId)
-      .attr('markerWidth', this.headSize)
-      .attr('markerHeight', this.headSize)
+      .attr('markerWidth', this.options.headSize)
+      .attr('markerHeight', this.options.headSize)
       .attr('orient', 'auto');
 
-    switch (headStyle) {
+    switch (headMarker) {
       case 'square':
         marker
           .attr('viewBox', '0 0 10 10')
@@ -135,41 +154,49 @@ export class LinkRenderer {
   /**
    * Get style for a link
    * @param {Object} link - Link data
-   * @returns {Object} Style object with stroke, strokeWidth, strokeDasharray, headStyle
+   * @returns {Object} Style object with stroke, strokeWidth, strokeDasharray, headMarker
    */
-  _getLinkStyle(link) {
+  _getStyle(link) {
     const defaultStyle = {
       stroke: null,
       strokeWidth: null,
       strokeDasharray: null,
-      headStyle: 'arrow'
+      headMarker: 'none'
     };
 
-    if (!this.styleFn) {
+    if (!this.options.styleFn) {
       return defaultStyle;
     }
 
-    const style = this.styleFn(link) || {};
-    return {
-      stroke: style.stroke ?? defaultStyle.stroke,
-      strokeWidth: style.strokeWidth ?? defaultStyle.strokeWidth,
-      strokeDasharray: style.strokeDasharray ?? defaultStyle.strokeDasharray,
-      headStyle: style.headStyle ?? defaultStyle.headStyle
-    };
+    const style = this.options.styleFn('link', link) || {};
+    if (!style || typeof style !== 'object') {
+      return defaultStyle;
+    } else {
+      return {
+        stroke: style.stroke ?? defaultStyle.stroke,
+        strokeWidth: style.strokeWidth ?? defaultStyle.strokeWidth,
+        strokeDasharray: style.strokeDasharray ?? defaultStyle.strokeDasharray,
+        headMarker: style.headMarker ?? defaultStyle.headMarker
+      };
+    }
   }
 
   /**
    * Apply style to a link path element
    * @param {d3.Selection} element - D3 selection of the path element
-   * @param {Object} style - Style object from _getLinkStyle
+   * @param {Object} style - Style object from _getStyle
    */
-  _applyLinkStyle(element, style) {
+  _applyStyle(element, style) {
     // Get or create marker for this style
-    const markerId = this._getOrCreateMarker(style.headStyle, style.stroke);
-    element.attr('marker-end', `url(#${markerId})`);
+    if (style.headMarker === 'none') {
+      element.attr('marker-end', null);
+    } else {
+      const markerId = this._getOrCreateMarker(style.headMarker, style.stroke);
+      element.attr('marker-end', `url(#${markerId})`);
+    }
 
     // Apply stroke style only if styleFn is provided
-    if (this.styleFn) {
+    if (this.options.styleFn) {
       if (style.stroke !== null) {
         element.style('stroke', style.stroke);
       }
@@ -190,35 +217,36 @@ export class LinkRenderer {
     if (!this.container) return;
 
     const links = this.container
-      .selectAll('.link-group')
+      .selectAll('.link-item')
       .data(enrichedLinks, d => `${d.startId}-${d.endId}`);
 
     links.exit().remove();
 
     const enter = links.enter()
       .append('g')
-      .classed('link-group', true);
+      .classed('link-item', true);
 
     enter.append('path')
-      .classed('link-path', true);
-
     const merged = enter.merge(links);
     const self = this;
 
     // Render paths with styles
-    merged.select('.link-path')
+    merged.select('path')
       .attr('d', d => this._getLinkPath(d))
       .each(function(d) {
-        const style = self._getLinkStyle(d);
-        self._applyLinkStyle(d3.select(this), style);
+        const style = self._getStyle(d);
+        self._applyStyle(d3.select(this), style);
       })
-      .on('mouseenter', function(event, d) {
-        self._highlightLink(this);
-        self.onHover(d, event);
-      })
-      .on('mouseleave', function(event, d) {
-        self._unhighlightLink(this);
-        self.onLeave(d, event);
+      .call(elem => {
+        if (self.options.onClick) {
+          elem.on('click', (e, d) => self.options.onClick(d, e));
+        }
+        if (self.options.onHover) {
+          elem.on('mouseenter', (e, d) => self.options.onHover(d, e));
+        }
+        if (self.options.onLeave) {
+          elem.on('mouseleave', (e, d) => self.options.onLeave(d, e));
+        }
       });
   }
 
@@ -230,12 +258,12 @@ export class LinkRenderer {
     if (!this.container) return;
     const self = this;
 
-    this.container.selectAll('.link-path')
+    this.container.selectAll('path')
       .data(enrichedLinks, d => `${d.startId}-${d.endId}`)
       .attr('d', d => this._getLinkPath(d))
       .each(function(d) {
-        const style = self._getLinkStyle(d);
-        self._applyLinkStyle(d3.select(this), style);
+        const style = self._getStyle(d);
+        self._applyStyle(d3.select(this), style);
       });
   }
 
@@ -245,7 +273,7 @@ export class LinkRenderer {
    * @returns {string} SVG path d attribute
    */
   _getLinkPath(link) {
-    const curveType = CURVE_TYPES[this.curve] || d3.curveBumpX;
+    const curveType = CURVE_TYPES[this.options.curve] || d3.curveBumpX;
 
     const linkGenerator = d3.link(curveType)
       .x(d => d.x)
@@ -257,38 +285,47 @@ export class LinkRenderer {
     });
   }
 
-  _highlightLink(element) {
-    d3.select(element)
-      .style('filter', 'drop-shadow(0 0 2px rgba(0,0,0,0.3))');
-  }
-
-  _unhighlightLink(element) {
-    d3.select(element)
-      .style('filter', null);
-  }
-
   /**
    * Clear all links
    */
   clear() {
+    if (this.defs) {
+      this.defs.selectAll('*').remove();
+    }
     if (this.container) {
       this.container.selectAll('*').remove();
     }
   }
+  
+  destroy() {
+    if (this.defs) {
+      this.defs.remove();
+      this.defs = null;
+    }
+    
+    this.markers.clear();
 
-  /**
-   * Set curve type
-   * @param {string} curve - Curve type name
-   */
-  setCurve(curve) {
-    this.curve = curve;
+    if (this.container) {
+      this.container.remove();
+      this.container = null;
+    }
   }
 
   /**
-   * Set style function
-   * @param {Function} styleFn - Style function(link) => { stroke, strokeWidth, strokeDasharray, headStyle }
+   * Update render options by GroupbarLayer and need to re-render by caller
+   * @param {Object} options - New options to merge
    */
-  setStyleFn(styleFn) {
-    this.styleFn = styleFn;
+  setOptions(options) {
+    const isHeadSizeChanged = options.headSize && (options.headSize !== this.options.headSize);
+
+    this.options = {
+      ...this.options,
+      ...options,
+    };
+
+    // re-create defs
+    if (isHeadSizeChanged) {
+      this.defs = this._createDefs(this.container);
+    }
   }
 }

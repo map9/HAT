@@ -209,4 +209,58 @@ export class ZoomManager {
     const currentTransform = this.getTransform();
     this.zoomTarget.call(this.zoom.translateBy, dx / currentTransform.k, 0);
   }
+
+  /**
+   * Update time domain dynamically
+   * @param {Array} timeDomain - [startDate, endDate]
+   * @param {Array} [zoomLimited] - Optional new zoom limits [minPixelsPerHour, maxPixelsPerHour]
+   */
+  setTimeDomain(timeDomain, zoomLimited) {
+    // Save current visible domain ratio (for restoration)
+    const oldDomain = this.timeDomain;
+    const currentVisibleDomain = this.getDomain();
+
+    // Clamp visible domain to old bounds before calculating ratios
+    const clampedVisibleDomain = [
+      new Date(Math.max(currentVisibleDomain[0].getTime(), oldDomain[0].getTime())),
+      new Date(Math.min(currentVisibleDomain[1].getTime(), oldDomain[1].getTime()))
+    ];
+
+    // Calculate relative position within old domain
+    const oldTotalMs = oldDomain[1] - oldDomain[0];
+    const relStart = (clampedVisibleDomain[0] - oldDomain[0]) / oldTotalMs;
+    const relEnd = (clampedVisibleDomain[1] - oldDomain[0]) / oldTotalMs;
+
+    // Update domain and limits
+    this.timeDomain = timeDomain;
+    if (zoomLimited) {
+      this.zoomLimited = zoomLimited;
+    }
+
+    // Update base scale domain
+    this.xScale.domain(timeDomain);
+
+    // Recalculate scale extent
+    this.scaleExtent = calculateScaleExtent(timeDomain, this.width, this.zoomLimited);
+
+    // Update zoom behavior
+    this.zoom
+      .scaleExtent(this.scaleExtent)
+      .translateExtent([[0, 0], [this.width, this.height]])
+      .extent([[0, 0], [this.width, this.height]]);
+
+    // Calculate new visible domain based on relative position
+    const newTotalMs = timeDomain[1] - timeDomain[0];
+    const newVisibleDomain = [
+      new Date(timeDomain[0].getTime() + relStart * newTotalMs),
+      new Date(timeDomain[0].getTime() + relEnd * newTotalMs)
+    ];
+
+    // Clamp to new domain bounds
+    if (newVisibleDomain[0] < timeDomain[0]) newVisibleDomain[0] = timeDomain[0];
+    if (newVisibleDomain[1] > timeDomain[1]) newVisibleDomain[1] = timeDomain[1];
+
+    // Apply new domain
+    this.setDomain(newVisibleDomain);
+  }
 }

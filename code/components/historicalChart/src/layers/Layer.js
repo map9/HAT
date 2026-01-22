@@ -10,9 +10,10 @@ export class Layer {
   constructor(id, options = {}) {
     this.id = id;
     this.options = options;
+
     this.group = null; // SVG group element
     this.chart = null;
-    this.visible = options.visible ?? true;
+    this.visible = true;
   }
 
   /**
@@ -21,6 +22,8 @@ export class Layer {
    */
   create(chart) {
     this.chart = chart;
+
+    this.destroy();
     this.group = this.chart.bodyGroup.append('g')
       .classed(`layer-${this.id}`, true)
       .attr('visibility', this.visible ? 'visible' : 'hidden');
@@ -88,6 +91,15 @@ export class Layer {
   }
 
   /**
+   * Clear all layers
+   */
+  clear() {
+    if (this.group) {
+      this.group.selectAll('*').remove();
+    }
+  }
+
+  /**
    * Destroy layer and cleanup resources
    */
   destroy() {
@@ -98,10 +110,33 @@ export class Layer {
   }
 
   /**
-   * Update layer options
+   * Update layer options and trigger re-render if attached to chart
    * @param {Object} options - New options to merge
+   * @param {boolean} [skipRender=false] - Skip re-render (useful when batch updating)
    */
-  setOptions(options) {
+  setOptions(options, skipRender = false) {
     this.options = { ...this.options, ...options };
+
+    // Trigger re-render if layer is attached to chart and visible
+    if (!skipRender && this.chart && this.visible) {
+      this._triggerRender();
+    }
+  }
+
+  /**
+   * Trigger a re-render of this layer
+   * Subclasses can override for custom behavior
+   * @protected
+   */
+  _triggerRender() {
+    if (!this.chart || !this.chart.zoomManager) return;
+
+    const xScale = this.chart.zoomManager.getScale();
+    const axisHeight = this.chart.axisManager ? this.chart.axisManager.getHeight() : 0;
+    const indexHeight = this.chart.options.hasIndexAxis ? this.chart.options.indexAxisHeight : 0
+    const bodyHeight = this.chart.options.height - axisHeight - indexHeight;
+    const contentHeight = this.chart.contentHeight || bodyHeight;
+
+    this.render(xScale, bodyHeight, contentHeight);
   }
 }

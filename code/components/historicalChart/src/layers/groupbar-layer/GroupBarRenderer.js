@@ -4,24 +4,39 @@
  */
 import * as d3 from 'd3';
 
-// Default group colors by level
-const DEFAULT_GROUP_COLORS = ['#7c4dff', '#0288d1', '#00897b', '#f57c00', '#c62828'];
-
 export class GroupBarRenderer {
   /**
    * @param {Object} options
    * @param {string} options.mode - 'separate' | 'background'
-   * @param {number} options.opacity - Group bar opacity (0-1)
    * @param {number} options.roundRadius - Corner radius
    * @param {number} options.yPadding - Vertical padding (same as bars)
-   * @param {Function} options.colorFn - Function to get color for a node
+   * @param {Function} options.styleFn - Style callback for groupBars
+   * - styleFn(type, node) => { stroke, strokeWidth, strokeDasharray, fill, fillOpacity }
+   * - type: 'separate' | 'background'
+   * - node: groupbar node
+   * - type: 'link'
+   * - link: link data
+   * - Returned style object properties:
+   * - stroke: string - Border color
+   * - strokeWidth: number - Border width
+   * - strokeDasharray: string - Dash pattern (e.g., '5,5', '10,5,2,5')
+   * - fill: string - Fill color
+   * - fillOpacity: number - Fill opacity (0 to 1)
+   * @param {Function} options.onClick - Click handler
+   * @param {Function} options.onHover - Hover handler
+   * @param {Function} options.onLeave - Leave handler
    */
   constructor(options = {}) {
-    this.mode = options.mode || 'separate';
-    this.opacity = options.opacity ?? 0.3;
-    this.roundRadius = options.roundRadius ?? 4;
-    this.yPadding = options.yPadding ?? 2;
-    this.colorFn = options.colorFn || null;
+    this.options = {
+      mode: 'separate',
+      roundRadius: 4,
+      yPadding: 2,
+      styleFn: null,
+      onClick: null,
+      onHover: null,
+      onLeave: null,
+      ...options
+    };
 
     this.container = null;
   }
@@ -31,6 +46,8 @@ export class GroupBarRenderer {
    * @param {d3.Selection} container - SVG group to append to
    */
   create(container) {
+    this.destroy();
+    
     this.container = container.append('g').classed('group-items', true);
     return this.container;
   }
@@ -54,7 +71,7 @@ export class GroupBarRenderer {
     const nodesToRender = this._collectGroupNodes(laneTree, start, end);
 
     // Render based on mode
-    if (this.mode === 'separate') {
+    if (this.options.mode === 'separate') {
       this._renderSeparate(nodesToRender, xScale, rowHeight);
     } else {
       this._renderBackground(nodesToRender, xScale, rowHeight);
@@ -93,31 +110,41 @@ export class GroupBarRenderer {
    * Uses yPadding for consistency with GanttChart
    */
   _renderSeparate(nodes, xScale, rowHeight) {
+    const self = this;
     nodes.forEach(node => {
       if (node.groupBarRow < 0) return;
 
       const x = xScale(node.timeStart);
       const width = Math.max(1, xScale(node.timeEnd) - x);
-      const y = node.groupBarRow * rowHeight + this.yPadding;
-      const height = rowHeight - 2 * this.yPadding;
-      const color = this._getColor(node, 'groupBar');
+      const y = node.groupBarRow * rowHeight + self.options.yPadding;
+      const height = rowHeight - 2 * self.options.yPadding;
+      const style = self._getStyle(node);
 
-      const g = this.container.append('g')
+      const g = self.container.append('g')
         .classed('group-item', true)
         .attr('data-level', node.level)
         .attr('data-key', node.key);
 
-      g.append('rect')
+      const element = g.append('rect')
         .attr('x', x)
         .attr('y', y)
         .attr('width', width)
         .attr('height', height)
-        .attr('rx', this.roundRadius)
-        .attr('ry', this.roundRadius)
-        .attr('fill', color)
-        .attr('fill-opacity', this.opacity)
-        .attr('stroke', color)
-        .attr('stroke-width', 1.5);
+        .attr('rx', self.options.roundRadius)
+        .attr('ry', self.options.roundRadius)
+        .call(elem => {
+          if (self.options.onClick) {
+            elem.on('click', (e) => self.options.onClick(node, e));
+          }
+          if (self.options.onHover) {
+            elem.on('mouseenter', (e) => self.options.onHover(node, e));
+          }
+          if (self.options.onLeave) {
+            elem.on('mouseleave', (e) => self.options.onLeave(node, e));
+          }
+        });
+
+      self._applyStyle(element, style);
     });
   }
 
@@ -129,12 +156,13 @@ export class GroupBarRenderer {
     // Sort by level (render higher levels first for proper layering)
     const sorted = [...nodes].sort((a, b) => a.level - b.level);
 
+    const self = this;
     sorted.forEach(node => {
       const x = xScale(node.timeStart);
       const width = Math.max(1, xScale(node.timeEnd) - x);
       const y = node.rowStart * rowHeight;
       const height = (node.rowEnd - node.rowStart + 1) * rowHeight;
-      const color = this._getColor(node, 'groupBackground');
+      const style = self._getStyle(node);
 
       const g = this.container.append('g')
         .classed('group-item', true)
@@ -147,60 +175,82 @@ export class GroupBarRenderer {
         .attr('y', y)
         .attr('width', width)
         .attr('height', height)
-        .attr('rx', this.roundRadius * 2)
-        .attr('ry', this.roundRadius * 2)
-        .attr('fill', color)
-        .attr('fill-opacity', this.opacity)
-        .style('pointer-events', 'none'); // Don't block bar interactions
+        .attr('rx', self.options.roundRadius * 2)
+        .attr('ry', self.options.roundRadius * 2)
+        .call(elem => {
+          if (self.options.onClick) {
+            elem.on('click', (e) => self.options.onClick(node, e));
+          }
+          if (self.options.onHover) {
+            elem.on('mouseenter', (e) => self.options.onHover(node, e));
+          }
+          if (self.options.onLeave) {
+            elem.on('mouseleave', (e) => self.options.onLeave(node, e));
+          }
+        });
+
+      self._applyStyle(element, style);
     });
   }
 
   /**
-   * Get color for a node
-   * @param {LaneNode} node - The lane node
-   * @param {string} type - 'groupBar' or 'groupBackground'
+   * Get style for a group bar
+   * @param {Object} node - groupbar node
+   * @returns {Object} Style object with stroke, strokeWidth, strokeDasharray, fill, fillOpacity
    */
-  _getColor(node, type = 'groupBar') {
-    if (this.colorFn) {
-      const color = this.colorFn(type, { node, mode: this.mode });
-      if (color != null) {
-        return color;
+  _getStyle(node) {
+    if (!this.options.styleFn) {
+      return null;
+    }
+
+    const style = this.options.styleFn(this.mode, node) || {};
+    if (!style || typeof style !== 'object') {
+      return null;
+    } else {
+      return {
+        stroke: style.stroke ?? null,
+        strokeWidth: style.strokeWidth ?? null,
+        strokeDasharray: style.strokeDasharray ?? null,
+        fill: style.fill ?? null,
+        fillOpacity: style.fillOpacity ?? null
+      };
+    }
+  }
+
+  /**
+   * Apply style to a bar element
+   * @param {d3.Selection} element - D3 selection of the bar element
+   * @param {Object} style - Style object from _getStyle
+   */
+  _applyStyle(element, style) {
+    // Apply stroke style only if styleFn is provided
+    if (this.options.styleFn && style) {
+      if (style.stroke !== null) {
+        element.style('stroke', style.stroke);
+      }
+      if (style.strokeWidth !== null) {
+        element.style('stroke-width', style.strokeWidth);
+      }
+      if (style.strokeDasharray !== null) {
+        element.style('stroke-dasharray', style.strokeDasharray);
+      }
+      if (style.fill !== null) {
+        element.style('fill', style.fill);
+      }
+      if (style.fillOpacity !== null) {
+        element.style('fill-opacity', style.fillOpacity);
       }
     }
-    return DEFAULT_GROUP_COLORS[node.level % DEFAULT_GROUP_COLORS.length];
   }
 
   /**
    * Update group bar positions (on zoom/pan)
+   * need to fixed
    * @param {d3.ScaleTime} xScale - New time scale
    */
   update(xScale) {
     if (!this.container) return;
 
-    this.container.selectAll('.group-item rect')
-      .attr('x', function() {
-        const g = d3.select(this.parentNode);
-        const key = g.attr('data-key');
-        // Need to recalculate from node - simplified approach
-        return d3.select(this).attr('x'); // Keep current position
-      });
-
-    // For proper update, we'd need to store node references
-    // This simplified version just keeps positions
-  }
-
-  /**
-   * Update with full redraw (needed when tree changes)
-   */
-  updateFull(laneTree, xScale, rowHeight, accessors) {
-    this.render(laneTree, xScale, rowHeight, accessors);
-  }
-
-  /**
-   * Set mode
-   */
-  setMode(mode) {
-    this.mode = mode;
   }
 
   /**
@@ -211,4 +261,23 @@ export class GroupBarRenderer {
       this.container.selectAll('*').remove();
     }
   }
+  
+  destroy() {
+    if (this.container) {
+      this.container.remove();
+      this.container = null;
+    }
+  }
+
+  /**
+   * Update render options by GroupbarLayer and need to re-render by caller
+   * @param {Object} options - New options to merge
+   */
+  setOptions(options) {
+    this.options = {
+      ...this.options,
+      ...options,
+    };
+  }
+
 }

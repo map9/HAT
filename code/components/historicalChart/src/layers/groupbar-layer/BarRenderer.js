@@ -13,24 +13,37 @@ export class BarRenderer {
    * @param {Object} options
    * @param {number} options.roundRadius - Corner radius
    * @param {number} options.yPadding - Vertical padding
-   * @param {string} options.textPosition - 'left' | 'center' | 'right' | 'none'
+   * @param {string} options.textPosition -  'none' | 'left' | 'center' | 'right'
+   * @param {Function} options.styleFn - Style callback for bars
+   * - styleFn(type, context) => { stroke, strokeWidth, strokeDasharray, fill, fillOpacity }
+   * - type: 'bar'
+   * - context: { data, accessors }
+   * - Returned style object properties:
+   * - stroke: string - Border color
+   * - strokeWidth: number - Border width
+   * - strokeDasharray: string - Dash pattern (e.g., '5,5', '10,5,2,5')
+   * - fill: string - Fill color
+   * - fillOpacity: number - Fill opacity (0 to 1)
    * @param {Function} options.onClick - Click handler
    * @param {Function} options.onHover - Hover handler
    * @param {Function} options.onLeave - Leave handler
    */
   constructor(options = {}) {
-    this.roundRadius = options.roundRadius ?? 4;
-    this.yPadding = options.yPadding ?? 2;
-    this.textPosition = options.textPosition ?? 'center';
-    this.colorFn = options.colorFn ?? null;
+    // Set defaults
+    this.options = {
+      roundRadius: 4,
+      yPadding: 2,
+      textPosition: 'center',
+      barStyleFn: null,
+      
+      onClick: null,
+      onHover: null,
+      onLeave: null,
 
-    this.onClick = options.onClick ?? (() => {});
-    this.onHover = options.onHover ?? (() => {});
-    this.onLeave = options.onLeave ?? (() => {});
+      ...options
+    };
 
     this.container = null;
-    this.xScale = null;
-    this.rowHeight = 0;
     this.accessors = null;
   }
 
@@ -39,6 +52,8 @@ export class BarRenderer {
    * @param {d3.Selection} container - SVG group to append bars to
    */
   create(container) {
+    this.destroy();
+    
     this.container = container.append('g').classed('items', true);
     return this.container;
   }
@@ -50,56 +65,54 @@ export class BarRenderer {
    * @param {number} rowHeight - Height of each row
    * @param {Object} accessors - Data accessors
    */
-  render(data, xScale, rowHeight, accessors = {}) {
+  render(data, xScale, rowHeight, accessors) {
     if (!this.container) return;
 
-    this.xScale = xScale;
-    this.rowHeight = rowHeight;
+    this.accessors = accessors;
 
-    const defaultColorAccessor = accessors.color ?? (d => d.color);
-
-    this.accessors = {
-      key: accessors.key ?? (d => d.id),
-      start: accessors.start ?? (d => d.start),
-      end: accessors.end ?? (d => d.end),
-      label: accessors.label ?? (d => d.label ?? ''),
-      color: this.colorFn
-        ? (d => this.colorFn('bar', { data: d, accessors }) ?? defaultColorAccessor(d))
-        : defaultColorAccessor,
-      title: accessors.title ?? (d => d.title ?? '')
-    };
-
-    const { key } = this.accessors;
-    const barHeight = rowHeight - 2 * this.yPadding;
+    const { key, start, end } = this.accessors;
+    const barHeight = rowHeight - 2 * this.options.yPadding;
 
     const bars = this.container
-      .selectAll('.item')
+      .selectAll('.bar-item')
       .data(data, key);
 
     bars.exit().remove();
 
     const enter = bars.enter()
       .append('g')
-      .classed('item', true);
+      .classed('bar-item', true);
 
     enter.append('rect');
     enter.append('text');
 
     const merged = enter.merge(bars);
 
-    // ===== Rect：只负责几何与交互 =====
+    const self = this;
     merged.select('rect')
-      .attr('y', d => d.rowNo * rowHeight + this.yPadding)
+      .attr('x', d => xScale(start(d)))
+      .attr('y', d => d.rowNo * rowHeight + self.options.yPadding)
+      .attr('width', d => Math.max(1, xScale(end(d)) - xScale(start(d))))
       .attr('height', barHeight)
-      .attr('rx', this.roundRadius)
-      .attr('ry', this.roundRadius)
-      .style('fill', d => this.accessors.color(d) ?? null)
-      .on('click', (event, d) => this.onClick(d, event))
-      .on('mouseenter', (event, d) => this.onHover(d, event))
-      .on('mouseleave', (event, d) => this.onLeave(d, event));
+      .attr('rx', self.options.roundRadius)
+      .attr('ry', self.options.roundRadius)
+      .each(function (d) {
+        const style = self._getStyle(d, accessors);
+        self._applyStyle(d3.select(this), style);
+      })
+      .call(elem => {
+        if (self.options.onClick) {
+          elem.on('click', (e, d) => self.options.onClick(d, e));
+        }
+        if (self.options.onHover) {
+          elem.on('mouseenter', (e, d) => self.options.onHover(d, e));
+        }
+        if (self.options.onLeave) {
+          elem.on('mouseleave', (e, d) => self.options.onLeave(d, e));
+        }
+      });
 
-    // ===== Text：只在 render 阶段测量 =====
-    if (this.textPosition !== 'none') {
+    if (this.options.textPosition !== 'none') {
       merged.select('text')
         .attr('y', d => d.rowNo * rowHeight + rowHeight / 2)
         .attr('dy', '0.35em')
@@ -109,36 +122,73 @@ export class BarRenderer {
           d.__textWidth = this.getComputedTextLength();
           d.__textHidden = false;
         });
+
+      this._updateTextPositions(xScale);
     } else {
       merged.select('text')
         .style('display', 'none');
     }
-
-    // 初次定位
-    this.update(xScale);
   }
 
   /**
-   * Update bar positions (on zoom/pan)
-   * @param {d3.ScaleTime} xScale - New time scale
+   * Get style for a bar
+   * @param {Object} data - bar data
+   * @param {Object} accessors - Data accessors
+   * @returns {Object} Style object with stroke, strokeWidth, strokeDasharray, fill, fillOpacity
    */
-  update(xScale) {
-    if (!this.container || !this.accessors) return;
+  _getStyle(data, accessors) {
+    if (!this.options.styleFn) {
+      return null;
+    }
 
-    this.xScale = xScale;
+    const style = this.options.styleFn('bar', { data: data, accessors }) || {};
+    if (!style || typeof style !== 'object') {
+      return null;
+    } else {
+      return {
+        stroke: style.stroke ?? null,
+        strokeWidth: style.strokeWidth ?? null,
+        strokeDasharray: style.strokeDasharray ?? null,
+        fill: style.fill ?? null,
+        fillOpacity: style.fillOpacity ?? null
+      };
+    }
+  }
+
+  /**
+   * Apply style to a bar element
+   * @param {d3.Selection} element - D3 selection of the bar element
+   * @param {Object} style - Style object from _getStyle
+   */
+  _applyStyle(element, style) {
+    // Apply stroke style only if styleFn is provided
+    if (this.options.styleFn && style) {
+      if (style.stroke !== null) {
+        element.style('stroke', style.stroke);
+      }
+      if (style.strokeWidth !== null) {
+        element.style('stroke-width', style.strokeWidth);
+      }
+      if (style.strokeDasharray !== null) {
+        element.style('stroke-dasharray', style.strokeDasharray);
+      }
+      if (style.fill !== null) {
+        element.style('fill', style.fill);
+      }
+      if (style.fillOpacity !== null) {
+        element.style('fill-opacity', style.fillOpacity);
+      }
+    }
+  }
+
+  /**
+   * Update text positions
+   */
+  _updateTextPositions(xScale) {
     const { start, end } = this.accessors;
+    const textPosition = this.options.textPosition;
 
-    // ===== Rect：仅更新几何 =====
-    this.container.selectAll('.item rect')
-      .attr('x', d => xScale(start(d)))
-      .attr('width', d => Math.max(1, xScale(end(d)) - xScale(start(d))));
-
-    if (this.textPosition === 'none') return;
-
-    const self = this;
-
-    // ===== Text：只做位置判断，不再测量 =====
-    this.container.selectAll('.item text')
+    this.container.selectAll('.bar-item text')
       .each(function (d) {
         const barX = xScale(start(d));
         const barWidth = xScale(end(d)) - xScale(start(d));
@@ -146,7 +196,7 @@ export class BarRenderer {
 
         const text = d3.select(this);
 
-        switch (self.textPosition) {
+        switch (textPosition) {
           case 'left':
             text
               .attr('x', barX - 5)
@@ -182,6 +232,24 @@ export class BarRenderer {
   }
 
   /**
+   * Update bar positions (on zoom/pan)
+   * @param {d3.ScaleTime} xScale - New time scale
+   */
+  update(xScale) {
+    if (!this.container || !this.accessors) return;
+
+    const { start, end } = this.accessors;
+
+    this.container.selectAll('.bar-item rect')
+      .attr('x', d => xScale(start(d)))
+      .attr('width', d => Math.max(1, xScale(end(d)) - xScale(start(d))));
+
+    if (this.options.textPosition !== 'none') {
+      this._updateTextPositions(xScale);
+    }
+  }
+
+  /**
    * Clear all bars
    */
   clear() {
@@ -189,11 +257,23 @@ export class BarRenderer {
       this.container.selectAll('*').remove();
     }
   }
-
-  /**
-   * Set text position
-   */
-  setTextPosition(position) {
-    this.textPosition = position;
+  
+  destroy() {
+    if (this.container) {
+      this.container.remove();
+      this.container = null;
+    }
   }
+  
+  /**
+   * Update render options by GroupbarLayer and need to re-render by caller
+   * @param {Object} options - New options to merge
+   */
+  setOptions(options) {
+    this.options = {
+      ...this.options,
+      ...options,
+    };
+  }
+
 }

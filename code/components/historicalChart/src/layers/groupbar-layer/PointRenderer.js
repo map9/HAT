@@ -21,26 +21,28 @@ export class PointRenderer {
   /**
    * @param {Object} options
    * @param {number} options.sizeRatio - Point size relative to rowHeight (0-1)
-   * @param {string} options.labelPosition - 'none' | 'right' | 'top'
-   * @param {Function} options.colorFn - Color callback function
-   * @param {Function} options.shapeFn - Shape callback function
+   * @param {string} options.textPosition - 'none' | 'top' | 'center' | 'right'
+   * @param {Function} options.styleFn - Style callback for points
+   * - styleFn(type, context) => { stroke, strokeWidth, fill, fillOpacity, marker }
+   * - type: 'point'
+   * - marker: 'circle' | 'diamond' | 'square' | 'star' | 'cross' | 'wye', default to 'circle' if invalid
+   * - context: { data, accessors }
    * @param {Function} options.onClick - Click handler
    * @param {Function} options.onHover - Hover handler
    * @param {Function} options.onLeave - Leave handler
    */
   constructor(options = {}) {
-    this.sizeRatio = options.sizeRatio ?? 0.6;
-    this.labelPosition = options.labelPosition ?? 'none';
-    this.colorFn = options.colorFn ?? null;
-    this.shapeFn = options.shapeFn ?? null;
-
-    this.onClick = options.onClick ?? (() => {});
-    this.onHover = options.onHover ?? (() => {});
-    this.onLeave = options.onLeave ?? (() => {});
+    this.options = {
+      sizeRatio: 0.6,
+      textPosition: 'none',
+      styleFn: null,
+      onClick: null,
+      onHover: null,
+      onLeave: null,
+      ...options
+    };
 
     this.container = null;
-    this.xScale = null;
-    this.rowHeight = 0;
     this.accessors = null;
   }
 
@@ -49,45 +51,10 @@ export class PointRenderer {
    * @param {d3.Selection} container - SVG group to append points to
    */
   create(container) {
-    // Points should be rendered above bars, so we create a separate group
+    this.destroy();
+
     this.container = container.append('g').classed('points', true);
     return this.container;
-  }
-
-  /**
-   * Get shape symbol type
-   * @param {Object} d - Data item
-   * @returns {d3.Symbol} D3 symbol type
-   */
-  _getShape(d) {
-    let shapeName = DEFAULT_SHAPE;
-
-    if (this.shapeFn) {
-      const result = this.shapeFn('point', { data: d, accessors: this.accessors });
-      if (result && SYMBOL_TYPES[result]) {
-        shapeName = result;
-      }
-    }
-
-    return SYMBOL_TYPES[shapeName] || SYMBOL_TYPES[DEFAULT_SHAPE];
-  }
-
-  /**
-   * Get color for a point
-   * @param {Object} d - Data item
-   * @returns {string|null} Color string or null for default
-   */
-  _getColor(d) {
-    const defaultColorAccessor = this.accessors?.color ?? (item => item.color);
-
-    if (this.colorFn) {
-      const color = this.colorFn('point', { data: d, accessors: this.accessors });
-      if (color != null) {
-        return color;
-      }
-    }
-
-    return defaultColorAccessor(d);
   }
 
   /**
@@ -100,7 +67,6 @@ export class PointRenderer {
   render(data, xScale, rowHeight, accessors = {}) {
     if (!this.container) return;
 
-    this.xScale = xScale;
     this.rowHeight = rowHeight;
 
     const defaultColorAccessor = accessors.color ?? (d => d.color);
@@ -109,16 +75,13 @@ export class PointRenderer {
       key: accessors.key ?? (d => d.id),
       start: accessors.start ?? (d => d.start),
       label: accessors.label ?? (d => d.label ?? ''),
-      color: this.colorFn
-        ? (d => this.colorFn('point', { data: d, accessors }) ?? defaultColorAccessor(d))
-        : defaultColorAccessor,
       title: accessors.title ?? (d => d.title ?? '')
     };
 
     const { key, start } = this.accessors;
 
     // Calculate point size based on rowHeight
-    const pointRadius = (rowHeight * this.sizeRatio) / 2;
+    const pointRadius = (rowHeight * this.options.sizeRatio) / 2;
     const symbolSize = Math.PI * pointRadius * pointRadius; // Area for d3.symbol
 
     const points = this.container
@@ -133,41 +96,117 @@ export class PointRenderer {
 
     enter.append('path');
 
-    if (this.labelPosition !== 'none') {
+    if (this.options.textPosition !== 'none') {
       enter.append('text');
     }
 
     const merged = enter.merge(points);
 
     // Render paths with shapes
+    const self = this;
     merged.select('path')
       .attr('transform', d => {
         const x = xScale(start(d));
         const y = d.rowNo * rowHeight + rowHeight / 2;
         return `translate(${x}, ${y})`;
       })
-      .attr('d', d => {
-        const symbolType = this._getShape(d);
-        return d3.symbol().type(symbolType).size(symbolSize)();
+      .each(function (d) {
+        const style = self._getStyle(d, accessors);
+        self._applyStyle(d3.select(this), style, symbolSize);
       })
-      .style('fill', d => this._getColor(d) ?? null)
-      .on('click', (event, d) => this.onClick(d, event))
-      .on('mouseenter', (event, d) => this.onHover(d, event))
-      .on('mouseleave', (event, d) => this.onLeave(d, event));
+      .call(elem => {
+        if (self.options.onClick) {
+          elem.on('click', (e, d) => self.options.onClick(d, e));
+        }
+        if (self.options.onHover) {
+          elem.on('mouseenter', (e, d) => self.options.onHover(d, e));
+        }
+        if (self.options.onLeave) {
+          elem.on('mouseleave', (e, d) => self.options.onLeave(d, e));
+        }
+      });
+
 
     // Render labels if enabled
-    if (this.labelPosition !== 'none') {
+    if (this.options.textPosition !== 'none') {
       merged.select('text')
         .attr('y', d => d.rowNo * rowHeight + rowHeight / 2)
-        .attr('dy', this.labelPosition === 'top' ? -pointRadius - 4 : '0.35em')
+        .attr('dy', this.options.textPosition === 'top' ? -pointRadius - 4 : '0.35em')
         .text(d => this.accessors.label(d))
-        .each(function(d) {
-          d.__pointTextWidth = this.getComputedTextLength();
-        });
 
-      // Position text based on labelPosition
+      // Position text based on textPosition
       this._updateTextPositions(xScale, pointRadius);
     }
+  }
+
+  /**
+   * Get style for a point
+   * @param {Object} data - point data
+   * @param {Object} accessors - Data accessors
+   * @returns {Object} Style object with stroke, strokeWidth, fill, fillOpacity, marker
+   */
+  _getStyle(data, accessors) {
+    if (!this.options.styleFn) {
+      return null;
+    }
+
+    const style = this.options.styleFn('point', { data: data, accessors }) || {};
+    if (!style || typeof style !== 'object') {
+      return null;
+    } else {
+      return {
+        stroke: style.stroke ?? null,
+        strokeWidth: style.strokeWidth ?? null,
+        fill: style.fill ?? null,
+        fillOpacity: style.fillOpacity ?? null,
+        marker: style.marker ?? DEFAULT_SHAPE,
+      };
+    }
+  }
+
+  /**
+   * Apply style to a point element
+   * @param {d3.Selection} element - D3 selection of the point element
+   * @param {Object} style - Style object from _getStyle
+   */
+  _applyStyle(element, style, symbolSize) {
+    // Apply stroke style only if styleFn is provided
+    element.attr('d', () => {
+      const symbolType = this._getShape(style);
+      return d3.symbol().type(symbolType).size(symbolSize)();
+    })
+
+    if (this.options.styleFn && style) {
+      if (style.stroke !== null) {
+        element.style('stroke', style.stroke);
+      }
+      if (style.strokeWidth !== null) {
+        element.style('stroke-width', style.strokeWidth);
+      }
+      if (style.fill !== null) {
+        element.style('fill', style.fill);
+      }
+      if (style.fillOpacity !== null) {
+        element.style('fill-opacity', style.fillOpacity);
+      }
+    }
+  }
+  
+  /**
+   * Get shape symbol type
+   * @param {Object} style - Style object from _getStyle
+   * @returns {d3.Symbol} D3 symbol type
+   */
+  _getShape(style) {
+    let shapeName = DEFAULT_SHAPE;
+
+    if (this.options.styleFn && style) {
+      if (style.marker && SYMBOL_TYPES[style.marker]) {
+        shapeName = style.marker;
+      }
+    }
+
+    return SYMBOL_TYPES[shapeName] || SYMBOL_TYPES[DEFAULT_SHAPE];
   }
 
   /**
@@ -175,21 +214,21 @@ export class PointRenderer {
    */
   _updateTextPositions(xScale, pointRadius) {
     const { start } = this.accessors;
-    const labelPosition = this.labelPosition;
+    const textPosition = this.options.textPosition;
 
     this.container.selectAll('.point-item text')
       .each(function(d) {
         const x = xScale(start(d));
         const text = d3.select(this);
 
-        if (labelPosition === 'right') {
-          text
-            .attr('x', x + pointRadius + 4)
-            .attr('text-anchor', 'start');
-        } else if (labelPosition === 'top') {
+        if (textPosition === 'top' || textPosition === 'center') {
           text
             .attr('x', x)
             .attr('text-anchor', 'middle');
+        } else {  // textPosition === 'right'
+          text
+            .attr('x', x + pointRadius + 4)
+            .attr('text-anchor', 'start');
         }
       });
   }
@@ -197,14 +236,13 @@ export class PointRenderer {
   /**
    * Update point positions (on zoom/pan)
    * @param {d3.ScaleTime} xScale - New time scale
+   * @param {number} rowHeight - Height of each row
    */
-  update(xScale) {
+  update(xScale, rowHeight) {
     if (!this.container || !this.accessors) return;
 
-    this.xScale = xScale;
     const { start } = this.accessors;
-    const rowHeight = this.rowHeight;
-    const pointRadius = (rowHeight * this.sizeRatio) / 2;
+    const pointRadius = (rowHeight * this.options.sizeRatio) / 2;
 
     // Update path positions
     this.container.selectAll('.point-item path')
@@ -215,7 +253,7 @@ export class PointRenderer {
       });
 
     // Update text positions if labels are enabled
-    if (this.labelPosition !== 'none') {
+    if (this.options.textPosition !== 'none') {
       this._updateTextPositions(xScale, pointRadius);
     }
   }
@@ -229,17 +267,21 @@ export class PointRenderer {
     }
   }
 
-  /**
-   * Set label position
-   */
-  setLabelPosition(position) {
-    this.labelPosition = position;
+  destroy() {
+    if (this.container) {
+      this.container.remove();
+      this.container = null;
+    }
   }
 
   /**
-   * Set size ratio
+   * Update render options by GroupbarLayer and need to re-render by caller
+   * @param {Object} options - New options to merge
    */
-  setSizeRatio(ratio) {
-    this.sizeRatio = ratio;
+  setOptions(options) {
+    this.options = {
+      ...this.options,
+      ...options,
+    };
   }
 }
