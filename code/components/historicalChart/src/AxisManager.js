@@ -9,16 +9,17 @@ export class AxisManager {
   /**
    * @param {Object} options
    * @param {Array} options.axises - Array of axis configurations
-   * @param {string} options.locale - Locale for date formatting
-   * @param {number} options.gap - Gap between elements
    * @param {string} options.type - Filter type: 'mark' | 'grid' | 'both'
+   * @param {number} options.gap - Gap between elements
+   * @param {string} options.locale - Locale for date formatting
    */
   constructor(options = {}) {
     this.options = {
       axises: [],
-      locale: 'en-us',
-      gap: 1,
       type: 'both',
+      gap: 1,
+
+      locale: 'en-us',
       ...options
     }
 
@@ -45,12 +46,15 @@ export class AxisManager {
    */
   calculateHeight() {
     this.totalHeight = 0;
-    const filteredAxises = this._filterAxises(this.options.axises);
-    for (const axis of filteredAxises) {
-      if (axis.height !== -1) {
+
+    const renderAxises = this._filterAxises(this.options.axises);
+
+    for (const axis of renderAxises) {
+      if (!axis.isGrid) {
         this.totalHeight += axis.height;
       }
     }
+
     return this.totalHeight;
   }
 
@@ -63,6 +67,16 @@ export class AxisManager {
       if (!a.isGrid && b.isGrid) return -1;
       return 0;
     });
+
+    // Sync DOM order
+    if (this.axisContainer) {
+      for (const axis of this.options.axises) {
+        const node = this.axisNodes[axis.name];
+        if (node) {
+          node.raise();
+        }
+      }
+    }
   }
 
   /**
@@ -73,39 +87,41 @@ export class AxisManager {
     const self = this;
 
     return (axisNode, hoursPerPixel, scale, y1, y2) => {
-      // Handle domain limitation
+      // domain clipping
       if (axis.domain) {
-        if (scale.domain()[1] < axis.domain[0] || scale.domain()[0] > axis.domain[1]) {
+        const [d0, d1] = scale.domain();
+        if (d1 < axis.domain[0] || d0 > axis.domain[1]) {
           axisNode.attr('visibility', 'hidden');
           return;
         }
 
-        if (scale.domain()[0] < axis.domain[0] || scale.domain()[1] > axis.domain[1]) {
+        if (d0 < axis.domain[0] || d1 > axis.domain[1]) {
           const domain = [
-            Math.max(scale.domain()[0], axis.domain[0]),
-            Math.min(scale.domain()[1], axis.domain[1])
+            Math.max(d0, axis.domain[0]),
+            Math.min(d1, axis.domain[1])
           ];
           const range = domain.map(scale);
           scale = d3.scaleUtc().domain(domain).range(range);
         }
       }
 
-      // Find appropriate interval and format based on hoursPerPixel
-      let interval = undefined;
-      let format = undefined;
+      let interval;
+      let format;
 
       for (const [limit, config] of axis.map(hoursPerPixel, self.options.locale)) {
         if (hoursPerPixel < limit) {
           [interval, format] = config;
-          format = typeof format !== 'function' ? d3.utcFormat(format) : format;
+          format = typeof format === 'function'
+            ? format
+            : d3.utcFormat(format);
           break;
         }
       }
 
-      axisNode.attr('visibility', interval === undefined ? 'hidden' : 'visible');
-      if (interval === undefined) return;
+      axisNode.attr('visibility', interval ? 'visible' : 'hidden');
+      if (!interval) return;
 
-      let el = null;
+      let el;
       if (axis.isGrid) {
         el = axisNode
           .attr('transform', `translate(0, ${y1})`)
@@ -114,7 +130,13 @@ export class AxisManager {
       } else {
         el = axisNode
           .attr('transform', `translate(0, ${y1})`)
-          .call(d3.axisTop(scale).ticks(interval).tickFormat(format).tickSizeOuter(0));
+          .call(
+            d3.axisTop(scale)
+              .ticks(interval)
+              .tickFormat(format)
+              .tickSizeOuter(0)
+          );
+
         el.selectAll('text')
           .attr('x', 3 * self.options.gap)
           .attr('y', axis.height - 2 * self.options.gap)
@@ -134,21 +156,18 @@ export class AxisManager {
    */
   create(container) {
     this.destroy();
-    
+
+    this.axisContainer = container.append('g').classed('axises', true);
+
+    for (const axis of this.options.axises) {
+      this.axisObjects[axis.name] = this.createAxisObject(axis);
+      this.axisNodes[axis.name] = this.axisContainer
+        .append('g')
+        .classed(axis.class, true);
+    }
+
     this.sortAxises();
     this.calculateHeight();
-
-    const filteredAxises = this._filterAxises(this.options.axises);
-    // Create axis objects
-    for (const axis of filteredAxises) {
-      this.axisObjects[axis.name] = this.createAxisObject(axis);
-    }
-
-    // Create axis nodes
-    this.axisContainer = container.append('g').classed('axises', true);
-    for (const axis of filteredAxises) {
-      this.axisNodes[axis.name] = this.axisContainer.append('g').classed(axis.class, true);
-    }
 
     return this.axisContainer;
   }
@@ -159,12 +178,14 @@ export class AxisManager {
    * @param {number} bodyHeight - Height of body area
    */
   update(xScale, bodyHeight = 0) {
+    if (!this.axisContainer || !xScale) return;
+    
     const hoursPerPixel = getHoursPerPixel(xScale);
 
     let axisHeightTemp = 0;
-    const filteredAxises = this._filterAxises(this.options.axises);
-    for (const axis of filteredAxises) {
-      const y2 = axis.height === -1
+    const renderAxises = this._filterAxises(this.options.axises);
+    for (const axis of renderAxises) {
+      const y2 = axis.isGrid
         ? bodyHeight + this.totalHeight - axisHeightTemp
         : axis.height - this.options.gap;
 
@@ -176,7 +197,9 @@ export class AxisManager {
         y2
       );
 
-      axisHeightTemp += axis.height === -1 ? 0 : axis.height;
+      if (!axis.isGrid) {
+        axisHeightTemp += axis.height;
+      }
     }
   }
 
@@ -193,13 +216,20 @@ export class AxisManager {
    */
   addAxises(axises) {
     if (!axises || axises.length === 0) return;
-    
-    const filteredAxises = this._filterAxises(axises);
-    for (const axis of filteredAxises) {
-      if (!this.axisObjects[axis.name]) {
-        this.options.axises.push(axis);
+
+    for (const axis of axises) {
+      // 先检查 options.axises 中是否已有同名 axis
+      if (this.options.axises.some(a => a.name === axis.name)) continue;
+
+      // 添加到配置数组
+      this.options.axises.push(axis);
+
+      // 只有在 create 后才创建 axisObject 和 axisNode
+      if (this.axisContainer) {
         this.axisObjects[axis.name] = this.createAxisObject(axis);
-        this.axisNodes[axis.name] = this.axisContainer.append('g').classed(axis.class, true);
+        this.axisNodes[axis.name] = this.axisContainer
+          .append('g')
+          .classed(axis.class, true);
       }
     }
 
@@ -212,26 +242,17 @@ export class AxisManager {
    * @param {Array} axises - Axis configurations to remove (matched by name)
    */
   removeAxises(axises) {
-    const namesToRemove = new Set(axises.map(axis => axis.name));
+    const names = new Set(axises.map(a => a.name));
 
-    for (const name of namesToRemove) {
-      if (this.axisObjects[name]) {
-        // Remove DOM node
-        if (this.axisNodes[name]) {
-          this.axisNodes[name].remove();
-          delete this.axisNodes[name];
-        }
-
-        // Remove axis object
-        delete this.axisObjects[name];
-
-        // Remove from axises array
-        const index = this.options.axises.findIndex(axis => axis.name === name);
-        if (index !== -1) {
-          this.options.axises.splice(index, 1);
-        }
+    this.options.axises = this.options.axises.filter(axis => {
+      if (names.has(axis.name)) {
+        this.axisNodes[axis.name]?.remove();
+        delete this.axisNodes[axis.name];
+        delete this.axisObjects[axis.name];
+        return false;
       }
-    }
+      return true;
+    });
 
     this.calculateHeight();
   }
@@ -241,14 +262,21 @@ export class AxisManager {
    * @param {Array} axises - Axis configurations to set
    */
   setAxises(axises) {
-    this.removeAxises(this.options.axises);
-    this.addAxises(axises);
+    const parent = this.axisContainer?.node()?.parentNode;
+    this.destroy();
+
+    this.options.axises = axises.slice();
+
+    if (parent) {
+      this.create(d3.select(parent));
+    }
   }
 
   destroy() {
     this.axisObjects = {};
     this.axisNodes = {};
     this.totalHeight = 0;
+
     if (this.axisContainer) {
       this.axisContainer.remove();
       this.axisContainer = null;
@@ -256,10 +284,10 @@ export class AxisManager {
   }
 
   setOptions(options) {
-    if (options.locale !== undefined) this.options.locale = options.locale;
-    if (options.gap !== undefined) this.options.gap = options.gap;
+    if (options.locale) this.options.locale = options.locale;
+    if (options.gap) this.options.gap = options.gap;
 
-    if (options.axises !== undefined) {
+    if (options.axises) {
       this.setAxises(options.axises);
     }
   }

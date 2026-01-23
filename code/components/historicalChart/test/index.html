@@ -506,12 +506,22 @@
       <div class="config-section">
         <h2>🎨 样式配置</h2>
 
-        <div class="control-group">
-          <label>主题</label>
-          <select id="theme">
-            <option value="light" selected>浅色 (Light)</option>
-            <option value="dark">深色 (Dark)</option>
-          </select>
+        <div class="control-row">
+          <div class="control-group">
+            <label>主题</label>
+            <select id="theme">
+              <option value="light" selected>浅色 (Light)</option>
+              <option value="dark">深色 (Dark)</option>
+            </select>
+          </div>
+
+          <div class="control-group">
+            <label>强调色</label>
+            <select id="accentScheme">
+              <option value="default" selected>默认</option>
+              <!-- 动态生成 -->
+            </select>
+          </div>
         </div>
 
         <div class="control-group">
@@ -644,8 +654,7 @@
       initChineseCalendar,
       isLunarLoaded,
       isChineseCalendarLoaded,
-      LIGHT,
-      DARK
+      getAccentSchemes,
     } from '../src/index.js';
 
     // Global state
@@ -658,6 +667,25 @@
       hasTooltip: true,
     };
     let laneGroupCounter = 0;
+
+    // 初始化 AccentScheme 选择器
+    function initAccentSchemeSelectors() {
+      // 更新 AccentScheme 选择器
+      const accentSchemeSelect = document.getElementById('accentScheme');
+      // 保留默认选项，添加动态字段
+      const defaultOption = accentSchemeSelect.querySelector('option[value="default"]');
+      accentSchemeSelect.innerHTML = '';
+      accentSchemeSelect.appendChild(defaultOption);
+      const accentSchemes = getAccentSchemes();
+      accentSchemes.forEach(scheme => {
+        const option = document.createElement('option');
+        option.value = scheme;
+        option.textContent = scheme;
+        accentSchemeSelect.appendChild(option);
+      });
+
+      accentSchemeSelect.value = accentSchemeSelect[0].value;
+    }
 
     // 可用分组字段 (动态生成)
     let availableFields = [];
@@ -1249,7 +1277,8 @@
           parseFloat(document.getElementById('zoomMin').value),
           parseFloat(document.getElementById('zoomMax').value)
         ],
-        style: document.getElementById('theme').value === 'dark' ? DARK : LIGHT,
+        style: document.getElementById('theme').value,
+        accentScheme: document.getElementById('accentScheme').value,
         locale: document.getElementById('locale').value,
         hasActiveAxis: featureFlags.hasActiveAxis,
         hasTooltip: featureFlags.hasTooltip,
@@ -1274,17 +1303,20 @@
         mode: document.getElementById('groupBarMode').value,
         groupYPadding: parseInt(document.getElementById('groupYPadding').value),
         // Bars
-        barTextPosition: 'none',  // 'none' | 'left' | 'center' | 'right'
-        barStyleFn: createStyleFn(),
+        barTextPosition: 'center',  // 'none' | 'left' | 'center' | 'right'
+        //barStyleFn: createStyleFn(),
+        barStyleFn: null,
         // Points
-        pointSizeRatio: 0.4,      // Point size relative to rowHeight (0-1)
+        pointSizeRatio: 0.3,      // Point size relative to rowHeight (0-1)
         pointTextPosition: 'none',// 'none' | 'right' | 'top'
-        pointStyleFn: createStyleFn(),
+        //pointStyleFn: createStyleFn(),
+        pointStyleFn: null,
         // Links
         curve: 'curveBumpX',      // d3 curve type for links
         minLinkLength: 20,        // Minimum link length to display
         headSize: 5,
-        linkStyleFn: createStyleFn(),
+        //linkStyleFn: createStyleFn(),
+        linkStyleFn: null,
       }
     }
 
@@ -1328,7 +1360,9 @@
         }
 
         // Create new chart
-        chart = new HistoricalChart('#chart', config);
+        chart = new HistoricalChart(config);
+        chart.Create('#chart');
+        
         updateGridLayer();
         updateGroupBarLayer();
 
@@ -1508,6 +1542,7 @@
       document.getElementById('groupYPaddingValue').textContent = '5';
       document.getElementById('theme').value = 'light';
       document.getElementById('locale').value = 'zh-cn';
+      document.getElementById('accentScheme').value = 'default';
 
       featureFlags = { hasActiveAxis: true, hasTooltip: true };
       document.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.add('active'));
@@ -1566,10 +1601,10 @@
       });
 
       // Select inputs
-      const selectInputs = ['axisType', 'locale', 'hasIndexAxis', 'labelPosition', 'theme', 'groupBarMode', 'barColorField', 'groupColorMode', 'labelPosition'];
+      const selectInputs = ['axisType', 'locale', 'hasIndexAxis', 'labelPosition', 'theme', 'accentScheme', 'groupBarMode', 'barColorField', 'groupColorMode', 'labelPosition'];
       selectInputs.forEach(id => {
         const input = document.getElementById(id);
-        if (['hasIndexAxis', 'labelPosition', 'theme'].includes(id)) {
+        if (['hasIndexAxis', 'labelPosition', 'theme', 'accentScheme'].includes(id)) {
           input.addEventListener('change', updateChart);
         } else if (['groupBarMode', 'barColorField', 'groupColorMode'].includes(id)) {
           input.addEventListener('change', updateChart);
@@ -1606,7 +1641,7 @@
     async function init() {
       // Try to load Chinese calendar libraries
       console.log('Attempting to load Chinese calendar libraries...');
-
+      
       // Try to load ChineseCalendar (722 BCE - 2200 CE)
       try {
         const chineseCalendarModule = await import('../../chinesecalendar/src/calendar.js');
@@ -1633,6 +1668,8 @@
 
       // 初始化字段选择器
       initFieldSelectors();
+
+      initAccentSchemeSelectors();
 
       // Initialize default lane groups (after data is loaded)
       initDefaultLaneGroups();

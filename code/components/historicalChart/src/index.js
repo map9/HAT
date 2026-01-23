@@ -28,7 +28,7 @@ export * as chineseCalendarAxises from './axises/chineseCalendarAxises.js';
 export { initChineseCalendar, isChineseCalendarLoaded, getAxises as getChineseCalendarAxises } from './axises/chineseCalendarAxises.js';
 
 // Styles
-export { LIGHT, DARK } from './style.js';
+export { getSystemTheme, getAccentSchemes } from './style.js';
 
 // Utilities
 export {

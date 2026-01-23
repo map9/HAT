@@ -3,7 +3,7 @@
  * Combines TimelineChart's axis system with GanttChart's hierarchical lanes
  */
 import * as d3 from 'd3';
-import { LIGHT } from './style.js';
+import { getSystemTheme } from './style.js';
 import { AxisManager } from './AxisManager.js';
 import { IndexAxisManager } from './IndexAxisManager.js';
 import { ZoomManager } from './ZoomManager.js';
@@ -14,65 +14,65 @@ import * as westernAxises from './axises/westernAxises.js';
 
 export class HistoricalChart {
   /**
-   * @param {string|HTMLElement} container - Container selector or element
    * @param {Object} options - Chart options
    * @param {number} options.width - Chart width
    * @param {number} options.height - Chart height
+   * @param {Array} options.timeDomain - [startDate, endDate]
+   * @param {Array} options.zoomLimited - [minZoomLevel, maxZoomLevel]
+   * @param {Array} options.axises - Array of axis configurations
    * @param {number} options.labelWidth - Label area width
    * @param {string} options.labelPosition - 'left' | 'right' | 'none'
-   * @param {Array} options.timeDomain - [startDate, endDate]
-   * @param {Array} options.axises - Array of axis configurations
+   * @param {number} options.roundRadius - Round radius for all chart elements
    * @param {boolean} options.hasIndexAxis - Whether to show index axis
    * @param {number} options.indexAxisHeight - Height of index axis
-   * @param {Array} options.zoomLimited - [minZoomLevel, maxZoomLevel]
-   * @param {string} options.style - CSS style string
-   * @param {string} options.locale - Locale for date formatting
    * @param {boolean} options.hasActiveAxis - Whether to show active axis
    * @param {boolean} options.hasTooltip - Whether to enable tooltips
-   * 
+   * @param {string} options.style - CSS style string
+   * @param {string} options.accentScheme - Accent color scheme
+   * @param {string} options.locale - Locale for date formatting
    */
-  constructor(container, options = {}) {
-    this.container = typeof container === 'string'
-      ? document.querySelector(container)
-      : container;
-
+  constructor(options = {}) {
     // Default options
     this.options = {
       // Dimensions
       width: 960,
       height: 500,
 
-      // Labels
-      labelWidth: 160,
-      labelPosition: 'left', // 'left' | 'right' | 'none'
-      roundRadius: 4,
-
       // Time axis
       timeDomain: [
         new Date(new Date().setFullYear(new Date().getFullYear() - 50)),
         new Date(new Date().setFullYear(new Date().getFullYear() + 50))
       ],
+      zoomLimited: [-1, -1],
       axises: [
         westernAxises.yearlyAxis,
         westernAxises.dailyAxis,
       ],
+
+      // Labels
+      labelWidth: 160,
+      labelPosition: 'left', // 'left' | 'right' | 'none'
+
+      // Round radius for all chart elements
+      roundRadius: 4,
+
+      // Index axis
       hasIndexAxis: true,
       indexAxisHeight: 28,
-      zoomLimited: [-1, -1],
-
-      // Style
-      style: LIGHT,
-      locale: 'en-us',
 
       // Features
       hasActiveAxis: true,
       hasTooltip: true,
 
+      // Style
+      style: 'light',
+      accentScheme: 'default',
+      locale: 'en-us',
+
       ...options
     };
 
-    // State
-    this.xScale = null;
+    this.container = null;
 
     // Managers
     this.axisManager = null;
@@ -83,6 +83,32 @@ export class HistoricalChart {
     this.layerManager = null;
 
     // Event dispatch
+    this.dispatch = null;
+  
+    // DOM references
+    this.wrapper = null;
+    this.axisContainer = null;
+    this.contentContainer = null;
+    this.labelsContainer = null;
+    this.bodyContainer = null;
+    this.indexContainer = null;
+
+    this.contentHeight = null;
+  }
+
+  /**
+   * @param {string|HTMLElement} container - Container selector or element
+   * Create the chart structure
+   */
+  Create(container) {
+    this.destroy();
+
+    this.container = typeof container === 'string'
+      ? document.querySelector(container)
+      : container;
+    this.container.innerHTML = '';
+
+    // Create event dispatcher
     this.dispatch = d3.dispatch(
       'render',
       'update',
@@ -94,27 +120,6 @@ export class HistoricalChart {
       'groupToggle',
     );
 
-    // DOM references
-    this.wrapper = null;
-    this.axisContainer = null;
-    this.contentContainer = null;
-    this.labelsContainer = null;
-    this.bodyContainer = null;
-    this.indexContainer = null;
-
-    // height
-    this.contentHeight = null;
-
-    this._init();
-  }
-
-  /**
-   * Initialize the chart structure
-   */
-  _init() {
-    // Clear container
-    this.container.innerHTML = '';
-
     // Create wrapper
     this.wrapper = d3.select(this.container)
       .append('div')
@@ -123,19 +128,15 @@ export class HistoricalChart {
       .style('height', `${this.options.height}px`);
 
     // Add styles
-    this.wrapper.append('style').text(this.options.style);
+    this.wrapper
+      .append('style')
+      .text(getSystemTheme(this.options.style, this.options.accentScheme));
 
     // Create main chart div
     this.chartDiv = this.wrapper.append('div')
       .classed('historical-chart', true)
       .style('width', '100%')
       .style('height', '100%');
-
-    // Initialize scale
-    const bodyWidth = this._calculateBodyWidth();
-    this.xScale = d3.scaleUtc()
-      .domain(this.options.timeDomain)
-      .range([0, bodyWidth]);
 
     // Create structure
     this._createAxisArea();
@@ -163,24 +164,24 @@ export class HistoricalChart {
 
   /**
    * Calculate body area width
-   * Body width = total width - label width
+   * Body width = total width (labels float over content)
    */
-  _calculateBodyWidth() {
-    const labelWidth = this._getLabelWidth();
-    return this.options.width - labelWidth;
+  getBodyWidth() {
+    return this.options.width;
   }
 
   /**
    * Get effective label width based on position setting
+   * Returns 0 when labels are hidden (none) since they don't affect layout
    */
-  _getLabelWidth() {
+  getLabelWidth() {
     return this.options.labelPosition === 'none' ? 0 : this.options.labelWidth;
   }
 
   /**
    * Get index axis height (0 if disabled)
    */
-  _getIndexHeight() {
+  getIndexHeight() {
     return this.options.hasIndexAxis ? this.options.indexAxisHeight : 0;
   }
 
@@ -190,8 +191,6 @@ export class HistoricalChart {
   _createAxisArea() {
     this.axisContainer = this.chartDiv.append('div')
       .classed('hc-axis-container', true);
-
-    const labelWidth = this._getLabelWidth();
 
     // Calculate axis height
     this.axisManager = new AxisManager({
@@ -207,11 +206,8 @@ export class HistoricalChart {
       .attr('width', this.options.width)
       .attr('height', axisHeight);
 
-    // Offset for labels: axis aligns with body area
-    const offsetX = this.options.labelPosition === 'left' ? labelWidth : 0;
-
-    this.axisGroup = this.axisSvg.append('g')
-      .attr('transform', `translate(${offsetX}, 0)`);
+    // No offset needed - labels float over content
+    this.axisGroup = this.axisSvg.append('g');
 
     // Create axis elements
     this.axisManager.create(this.axisGroup);
@@ -219,38 +215,35 @@ export class HistoricalChart {
 
   _createLabelsArea() {
     const axisHeight = this.axisManager.getHeight();
-    const bodyHeight = this.options.height - axisHeight - this._getIndexHeight();
-    const labelWidth = this._getLabelWidth();
-    const isLabelLeft = this.options.labelPosition === 'left';
+    const bodyHeight = this.options.height - axisHeight - this.getIndexHeight();
+    const labelWidth = this.options.labelWidth;
+    const labelPosition = this.options.labelPosition;
 
-    if (this.options.labelPosition !== 'none') {
-      if (this.labelsContainer) {
-        this.labelsContainer.style('width', `${labelWidth}px`);
-        this.labelsContainer.style('height', `${bodyHeight}px`)
-        this.labelsContainer.style('order', isLabelLeft ? 0 : 1);
+    if (this.labelsContainer) {
+      // Update existing container
+      this.labelsContainer
+        .style('width', `${labelWidth}px`)
+        .style('height', `${bodyHeight}px`)
+        .classed('label-left', labelPosition === 'left')
+        .classed('label-right', labelPosition === 'right')
+        .classed('label-none', labelPosition === 'none');
 
-        this.labelsSvg.attr('width', labelWidth);
-      } else {
-        this.labelsContainer = this.contentContainer.append('div')
-          .classed('hc-labels-container', true)
-          .style('width', `${labelWidth}px`)
-          .style('height', `${bodyHeight}px`)
-          .style('overflow', 'hidden')
-          .style('order', isLabelLeft ? 0 : 1);
-
-        this.labelsSvg = this.labelsContainer.append('svg')
-          .classed('hc-labels-svg', true)
-          .attr('width', labelWidth);
-
-        this.labelsGroup = this.labelsSvg.append('g');
-      }
+      this.labelsSvg.attr('width', labelWidth);
     } else {
-      if (this.labelsContainer) {
-        this.labelsContainer.remove();
-        this.labelsContainer = null;
-        this.labelsGroup = null;
-        this.labelsSvg = null;
-      }
+      // Create new container
+      this.labelsContainer = this.contentContainer.append('div')
+        .classed('hc-labels-container', true)
+        .classed('label-left', labelPosition === 'left')
+        .classed('label-right', labelPosition === 'right')
+        .classed('label-none', labelPosition === 'none')
+        .style('width', `${labelWidth}px`)
+        .style('height', `${bodyHeight}px`);
+
+      this.labelsSvg = this.labelsContainer.append('svg')
+        .classed('hc-labels-svg', true)
+        .attr('width', labelWidth);
+
+      this.labelsGroup = this.labelsSvg.append('g');
     }
   }
   
@@ -262,12 +255,12 @@ export class HistoricalChart {
    */
   _createContentArea() {
     const axisHeight = this.axisManager.getHeight();
-    const bodyHeight = this.options.height - axisHeight - this._getIndexHeight();
+    const bodyHeight = this.options.height - axisHeight - this.getIndexHeight();
 
     this.contentContainer = this.chartDiv.append('div')
       .classed('hc-content', true)
       .style('height', `${bodyHeight}px`);
-    const bodyWidth = this._calculateBodyWidth();
+    const bodyWidth = this.getBodyWidth();
 
     // Create labels container (left or right)
     this._createLabelsArea();
@@ -306,8 +299,6 @@ export class HistoricalChart {
    * Create index axis area (bottom)
    */
   _createIndexArea() {
-    const labelWidth = this._getLabelWidth();
-
     this.indexContainer = this.chartDiv.append('div')
       .classed('hc-indexaxis-container', true);
 
@@ -316,11 +307,8 @@ export class HistoricalChart {
       .attr('width', this.options.width)
       .attr('height', this.options.indexAxisHeight);
 
-    // Index axis aligns with body area
-    const offsetX = this.options.labelPosition === 'left' ? labelWidth : 0;
-
-    this.indexGroup = this.indexSvg.append('g')
-      .attr('transform', `translate(${offsetX}, 0)`);
+    // No offset needed - labels float over content
+    this.indexGroup = this.indexSvg.append('g');
   }
 
   /**
@@ -328,31 +316,19 @@ export class HistoricalChart {
    */
   _createTooltip() {
     this.tooltipManager = new TooltipManager({
-      locale: this.options.locale,
-      gap: 1,
       roundRadius: this.options.roundRadius,
+      gap: 1,
+      locale: this.options.locale,
     });
 
-    // Create axis tooltip in axis SVG
-    this.tooltipManager.createAxisTooltip(this.axisGroup);
-
-    // Create event tooltip in wrapper
-    this.tooltipManager.createItemTooltip(this.chartDiv.node());
-
-    // Set bound box
-    this.tooltipManager.setBoundBox({
-      left: 0,
-      top: 0,
-      right: this.options.width,
-      bottom: this.options.height
-    });
+    this.tooltipManager.create(this.chartDiv.node(), this.axisGroup);
   }
 
   /**
    * Initialize managers
    */
   _initManagers() {
-    const bodyWidth = this._calculateBodyWidth();
+    const bodyWidth = this.getBodyWidth();
 
     // Index axis manager
     if (this.options.hasIndexAxis) {
@@ -382,16 +358,15 @@ export class HistoricalChart {
    * Setup zoom behavior
    */
   _setupZoom() {
-    const bodyWidth = this._calculateBodyWidth();
+    const bodyWidth = this.getBodyWidth();
     const axisHeight = this.axisManager.getHeight();
-    const bodyHeight = this.options.height - axisHeight - this._getIndexHeight();
+    const bodyHeight = this.options.height - axisHeight - this.getIndexHeight();
 
     this.zoomManager = new ZoomManager({
       timeDomain: this.options.timeDomain,
       width: bodyWidth,
       height: bodyHeight,
       zoomLimited: this.options.zoomLimited,
-      xScale: this.xScale,
       onZoom: (xScale, transform, sourceEvent) => this._onZoom(xScale, transform, sourceEvent)
     });
 
@@ -458,7 +433,7 @@ export class HistoricalChart {
    */
   _onZoom(xScale, _transform, sourceEvent) {
     // Update axis
-    const bodyHeight = this.options.height - this.axisManager.getHeight() - this._getIndexHeight();
+    const bodyHeight = this.options.height - this.axisManager.getHeight() - this.getIndexHeight();
     this.axisManager.update(xScale, this.axisManager.getHeight());
 
     // Update layers
@@ -479,7 +454,7 @@ export class HistoricalChart {
    * Handle brush change from index axis
    */
   _onBrushChange(domain) {
-    this.zoomManager.setDomain(domain);
+    this.zoomManager.zoomToDomain(domain);
   }
 
   /**
@@ -494,7 +469,7 @@ export class HistoricalChart {
    */
   render() {
     const xScale = this.zoomManager.getScale();
-    const bodyHeight = this.options.height - this.axisManager.getHeight() - this._getIndexHeight();
+    const bodyHeight = this.options.height - this.axisManager.getHeight() - this.getIndexHeight();
     this.updateContentHeight();
 
     // Render all layers
@@ -504,7 +479,7 @@ export class HistoricalChart {
     this.axisManager.update(xScale, this.axisManager.getHeight());
 
     // Dispatch initial event
-    const bodyWidth = this._calculateBodyWidth();
+    const bodyWidth = this.getBodyWidth();
     this.dispatch.call('render', this, { left: 0, top: 0, width: bodyWidth, height: bodyHeight }, xScale);
 
     return this;
@@ -525,12 +500,9 @@ export class HistoricalChart {
       .style('height', `${height}px`);
 
     // Recalculate dimensions
-    const bodyWidth = this._calculateBodyWidth();
+    const bodyWidth = this.getBodyWidth();
     const axisHeight = this.axisManager.getHeight();
-    const bodyHeight = height - axisHeight - this._getIndexHeight();
-
-    // Update scale
-    this.xScale.range([0, bodyWidth]);
+    const bodyHeight = height - axisHeight - this.getIndexHeight();
 
     // Update containers
     this.axisSvg.attr('width', width);
@@ -542,14 +514,17 @@ export class HistoricalChart {
       .style('height', `${bodyHeight}px`);
     this.bodySvg.attr('width', bodyWidth);
 
-    // Update labels container height / width / order
+    // Update labels container height / width / position class
     if (this.labelsContainer) {
-      const labelWidth = this._getLabelWidth();
-      const isLabelLeft = this.options.labelPosition === 'left';
+      const labelWidth = this.options.labelWidth;
+      const labelPosition = this.options.labelPosition;
 
-      this.labelsContainer.style('width', `${labelWidth}px`);
-      this.labelsContainer.style('height', `${bodyHeight}px`)
-      this.labelsContainer.style('order', isLabelLeft ? 0 : 1);
+      this.labelsContainer
+        .style('width', `${labelWidth}px`)
+        .style('height', `${bodyHeight}px`)
+        .classed('label-left', labelPosition === 'left')
+        .classed('label-right', labelPosition === 'right')
+        .classed('label-none', labelPosition === 'none');
 
       this.labelsSvg.attr('width', labelWidth);
     }
@@ -614,10 +589,12 @@ export class HistoricalChart {
   /**
    * Set style/theme
    * @param {string} style - LIGHT or DARK or custom CSS
+   * @param {string} accentScheme - Accent color scheme
    */
-  setStyle(style) {
-    this.options.style = style;
-    this.wrapper.select('style').text(style);
+  setStyle(style, accentScheme) {
+    this.options.style = style || 'light';
+    this.options.accentScheme = accentScheme || 'default';
+    this.wrapper.select('style').text(getSystemTheme(this.options.style, this.options.accentScheme));
   }
 
   /**
@@ -634,9 +611,13 @@ export class HistoricalChart {
     // No changes
     if (Object.keys(changes).length === 0) return;
 
+    // Track if render is needed
+    let needsRender = false;
+
     // Apply changes based on type
     if (changes.timeDomain || changes.axises || changes.zoomLimited || changes.roundRadius) {
       this._applyTimeAxisChanges(oldOptions, changes);
+      needsRender = true;
     }
 
     if (changes.hasIndexAxis !== undefined) {
@@ -646,11 +627,46 @@ export class HistoricalChart {
     if (changes.width || changes.height || changes.labelWidth || changes.labelPosition || changes.axises) {
       if (changes.labelPosition !== undefined) this._createLabelsArea();
       this._applyDimensionChanges(oldOptions);
+      needsRender = true;
     }
 
     if (changes.style) {
       this.setStyle(this.options.style);
     }
+
+    // Propagate layer-related options to LayerManager
+    const layerOptions = this._extractLayerOptions(changes);
+    if (Object.keys(layerOptions).length > 0 && this.layerManager) {
+      const layerNeedsRender = this.layerManager.setOptions(layerOptions, true);
+      needsRender = layerNeedsRender || needsRender;
+    }
+
+    // Render if needed and not already rendered
+    if (needsRender && !changes.timeDomain && !changes.axises && !changes.zoomLimited && !changes.roundRadius) {
+      this.render();
+    }
+  }
+
+  /**
+   * Extract layer-related options from changes
+   * @private
+   */
+  _extractLayerOptions(changes) {
+    const layerKeys = [
+      'roundRadius', 'rowHeight', 'mode',
+      'barStyleFn', 'pointStyleFn', 'linkStyleFn',
+      'barTextPosition', 'pointTextPosition',
+      'xPadding', 'yPadding', 'groupYPadding',
+      'pointSizeRatio', 'curve', 'headSize', 'minLinkLength'
+    ];
+
+    const result = {};
+    layerKeys.forEach(key => {
+      if (changes[key] !== undefined) {
+        result[key] = this.options[key];
+      }
+    });
+    return result;
   }
 
   /**
@@ -689,6 +705,18 @@ export class HistoricalChart {
     // Style
     if (oldOptions.style !== newOptions.style) changes.style = newOptions.style;
 
+    // Layer-related options
+    const layerKeys = [
+      'rowHeight', 'mode', 'barStyleFn', 'pointStyleFn', 'linkStyleFn',
+      'barTextPosition', 'pointTextPosition', 'xPadding', 'yPadding',
+      'groupYPadding', 'pointSizeRatio', 'curve', 'headSize', 'minLinkLength'
+    ];
+    layerKeys.forEach(key => {
+      if (oldOptions[key] !== newOptions[key]) {
+        changes[key] = newOptions[key];
+      }
+    });
+
     return changes;
   }
 
@@ -718,7 +746,7 @@ export class HistoricalChart {
    */
   _applyTimeAxisChanges(oldOptions, changes) {
     // Save current visible domain for restoration
-    const currentDomain = this.getDomain();
+    const currentDomain = this.getCurrentDomain();
 
     // Update zoom manager
     if (changes.timeDomain || changes.zoomLimited) {
@@ -759,7 +787,7 @@ export class HistoricalChart {
     if (hasIndexAxis && !this.indexContainer) {
       // Create index axis
       this._createIndexArea();
-      const bodyWidth = this._calculateBodyWidth();
+      const bodyWidth = this.getBodyWidth();
       this.indexAxisManager = new IndexAxisManager({
         timeDomain: this.options.timeDomain,
         width: bodyWidth,
@@ -779,7 +807,7 @@ export class HistoricalChart {
 
     // Update content area height
     const axisHeight = this.axisManager.getHeight();
-    const bodyHeight = this.options.height - axisHeight - this._getIndexHeight();
+    const bodyHeight = this.options.height - axisHeight - this.getIndexHeight();
     this.contentContainer.style('height', `${bodyHeight}px`);
     this.bodyContainer.style('height', `${bodyHeight}px`);
     if (this.labelsContainer) {
@@ -809,16 +837,16 @@ export class HistoricalChart {
   /**
    * Get current visible domain
    */
-  getDomain() {
-    return this.zoomManager.getDomain();
+  getCurrentDomain() {
+    return this.zoomManager.getCurrentDomain();
   }
 
   /**
    * Set visible domain
    * @param {Array} domain - [startDate, endDate]
    */
-  setDomain(domain) {
-    this.zoomManager.setDomain(domain);
+  zoomToDomain(domain) {
+    this.zoomManager.zoomToDomain(domain);
   }
 
   /**
@@ -871,6 +899,8 @@ export class HistoricalChart {
    * Destroy chart and cleanup
    */
   destroy() {
+    if (this.container === null) return;
+
     this.scrollManager.destroy();
     this.layerManager.destroy();
 

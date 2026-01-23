@@ -70,6 +70,9 @@ export class GroupBarRenderer {
     // Collect nodes that should have group bars
     const nodesToRender = this._collectGroupNodes(laneTree, start, end);
 
+    // Save for update
+    this.lastRenderData = { nodes: nodesToRender, rowHeight };
+
     // Render based on mode
     if (this.options.mode === 'separate') {
       this._renderSeparate(nodesToRender, xScale, rowHeight);
@@ -126,6 +129,7 @@ export class GroupBarRenderer {
         .attr('data-key', node.key);
 
       const element = g.append('rect')
+        .datum(node)  // Bind node data for update
         .attr('x', x)
         .attr('y', y)
         .attr('width', width)
@@ -170,7 +174,8 @@ export class GroupBarRenderer {
         .attr('data-level', node.level)
         .attr('data-key', node.key);
 
-      g.append('rect')
+      const element = g.append('rect')
+        .datum(node)  // Bind node data for update
         .attr('x', x)
         .attr('y', y)
         .attr('width', width)
@@ -203,7 +208,8 @@ export class GroupBarRenderer {
       return null;
     }
 
-    const style = this.options.styleFn(this.mode, node) || {};
+    // Unified signature: styleFn(type, context) where context = { data, mode }
+    const style = this.options.styleFn('groupBar', { data: node, mode: this.options.mode }) || {};
     if (!style || typeof style !== 'object') {
       return null;
     } else {
@@ -245,12 +251,15 @@ export class GroupBarRenderer {
 
   /**
    * Update group bar positions (on zoom/pan)
-   * need to fixed
    * @param {d3.ScaleTime} xScale - New time scale
    */
   update(xScale) {
-    if (!this.container) return;
+    if (!this.container || !this.lastRenderData) return;
 
+    // Update rect positions using bound data
+    this.container.selectAll('.group-item rect')
+      .attr('x', d => xScale(d.timeStart))
+      .attr('width', d => Math.max(1, xScale(d.timeEnd) - xScale(d.timeStart)));
   }
 
   /**
@@ -270,14 +279,19 @@ export class GroupBarRenderer {
   }
 
   /**
-   * Update render options by GroupbarLayer and need to re-render by caller
+   * Update render options by GroupBarLayer
    * @param {Object} options - New options to merge
+   * @returns {boolean} Whether re-render is needed
    */
   setOptions(options) {
-    this.options = {
-      ...this.options,
-      ...options,
-    };
+    // Detect which options actually changed
+    const renderTriggerKeys = ['mode', 'roundRadius', 'yPadding', 'styleFn'];
+    const needsRender = renderTriggerKeys.some(
+      key => options[key] !== undefined && options[key] !== this.options[key]
+    );
+
+    Object.assign(this.options, options);
+    return needsRender;
   }
 
 }

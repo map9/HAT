@@ -13,33 +13,42 @@ const TOOLTIP_HIDE_DELAY = 100;   // Delay before hiding tooltip (ms)
 export class TooltipManager {
   /**
    * @param {Object} options
-   * @param {string} options.locale - Locale for date formatting
+   * @param {number} options.roundRadius - Round radius for tooltip background
    * @param {number} options.gap - Gap between elements
+   * @param {string} options.locale - Locale for date formatting
    */
   constructor(options = {}) {
     this.options = {
-      locale: 'en-us',
-      gap: 1,
       roundRadius: 4,
+      gap: 1,
+
+      locale: 'en-us',
       ...options
     }
 
-    this.axisTooltip = null;
+    this.itemTooltipContainer = null;
     this.itemTooltip = null;
-    this.boundBox = null;
+    this.axisTooltip = null;
+    this.itemTooltipBoundBox = null;
 
     // Timers for delayed show/hide
     this._axisShowTimer = null;
     this._axisHideTimer = null;
-    this._eventShowTimer = null;
-    this._eventHideTimer = null;
+    this._itemShowTimer = null;
+    this._itemHideTimer = null;
+  }
+
+  create(itemTooltipContainer, axisTooltipContainer) {
+    this.destroy();
+    this._createItemTooltip(itemTooltipContainer);
+    this._createAxisTooltip(axisTooltipContainer);
   }
 
   /**
    * Create axis tooltip (SVG)
    * @param {d3.Selection} container - SVG group to append to
    */
-  createAxisTooltip(container) {
+  _createAxisTooltip(container) {
     this.axisTooltip = container.append('g').classed('axis-tooltip', true);
     this.axisTooltip.attr('visibility', 'hidden');
 
@@ -60,7 +69,8 @@ export class TooltipManager {
    * Create item tooltip (HTML)
    * @param {HTMLElement} container - DOM element to append to
    */
-  createItemTooltip(container) {
+  _createItemTooltip(container) {
+    this.itemTooltipContainer = container;
     this.itemTooltip = d3.select(container)
       .append('div')
       .classed('hc-tooltip', true);
@@ -68,12 +78,8 @@ export class TooltipManager {
     return this.itemTooltip;
   }
 
-  /**
-   * Set bounding box for tooltip positioning
-   * @param {Object} box - {left, top, right, bottom}
-   */
-  setBoundBox(box) {
-    this.boundBox = box;
+  setItemTooltipBoundBox(box) {
+    this.itemTooltipBoundBox = box;
   }
 
   /**
@@ -210,9 +216,14 @@ export class TooltipManager {
    * @private
    */
   _positionItemTooltip(x, y) {
-    if (!this.itemTooltip || !this.boundBox) return;
+    if (!this.itemTooltip || !this.itemTooltipContainer) return;
 
-    const box = this.boundBox;
+    const box = this.itemTooltipBoundBox || {
+      left: 0,
+      top: 0,
+      right: this.itemTooltipContainer.offsetWidth,
+      bottom: this.itemTooltipContainer.offsetHeight
+    };
     const boxWidth = box.right - box.left;
     const boxHeight = box.bottom - box.top;
 
@@ -246,21 +257,21 @@ export class TooltipManager {
    * @param {number} y - Y position (relative to container)
    */
   showItemTooltip(html, x, y) {
-    if (!this.itemTooltip || !this.boundBox) return;
+    if (!this.itemTooltip || !this.itemTooltipContainer) return;
 
     // Clear any pending hide timer
-    clearTimeout(this._eventHideTimer);
-    this._eventHideTimer = null;
+    clearTimeout(this._itemHideTimer);
+    this._itemHideTimer = null;
 
     // Update content and position immediately (so it's ready when shown)
     this.itemTooltip.html(html);
     this._positionItemTooltip(x, y);
 
     // Delay show
-    if (!this._eventShowTimer) {
-      this._eventShowTimer = setTimeout(() => {
+    if (!this._itemShowTimer) {
+      this._itemShowTimer = setTimeout(() => {
         this.itemTooltip.style('visibility', 'visible');
-        this._eventShowTimer = null;
+        this._itemShowTimer = null;
       }, this.showDelay);
     }
   }
@@ -272,14 +283,14 @@ export class TooltipManager {
     if (!this.itemTooltip) return;
 
     // Clear any pending show timer
-    clearTimeout(this._eventShowTimer);
-    this._eventShowTimer = null;
+    clearTimeout(this._itemShowTimer);
+    this._itemShowTimer = null;
 
     // Delay hide
-    if (!this._eventHideTimer) {
-      this._eventHideTimer = setTimeout(() => {
+    if (!this._itemHideTimer) {
+      this._itemHideTimer = setTimeout(() => {
         this.itemTooltip.style('visibility', 'hidden');
-        this._eventHideTimer = null;
+        this._itemHideTimer = null;
       }, this.hideDelay);
     }
   }
@@ -290,7 +301,28 @@ export class TooltipManager {
    * @param {number} y - Y position
    */
   updateItemTooltipPosition(x, y) {
+    if (!this.itemTooltip) return;
     this._positionItemTooltip(x, y);
+  }
+
+  destroy() {
+    if (this.axisTooltip) {
+      this.axisTooltip.remove();
+      this.axisTooltip = null;
+    }
+
+    if (this.itemTooltip) {
+      this.itemTooltip.remove();
+      this.itemTooltip = null;
+    }
+
+    this.itemTooltipContainer = null;
+
+    // Clear timers
+    clearTimeout(this._axisShowTimer);
+    clearTimeout(this._axisHideTimer);
+    clearTimeout(this._itemShowTimer);
+    clearTimeout(this._itemHideTimer);
   }
 
   /**
@@ -298,12 +330,10 @@ export class TooltipManager {
    * @param {string} locale
    */
   setOptions(options) {
-    this.options.roundRadius = options.roundRadius ?? this.options.roundRadius;
-    this.options.locale = options.locale ?? this.options.locale;
-    this.options.gap = options.gap ?? this.options.gap;
-
+    this.options = {...this.options, ...options};
+    
     // Update axis tooltip styling if exists
-    if (this.axisTooltip && options.roundRadius !== undefined) {
+    if (this.axisTooltip && options.roundRadius) {
       this.axisTooltip.select('rect')
         .attr('rx', this.options.roundRadius)
         .attr('ry', this.options.roundRadius);

@@ -296,14 +296,19 @@ export class LabelRenderer {
   }
 
   /**
-   * Update render options by GroupbarLayer and need to re-render by caller
+   * Update render options by GroupBarLayer
    * @param {Object} options - New options to merge
+   * @returns {boolean} Whether re-render is needed
    */
   setOptions(options) {
-    this.options = {
-      ...this.options,
-      ...options,
-    };
+    // Detect which options actually changed
+    const renderTriggerKeys = ['position', 'width', 'padding'];
+    const needsRender = renderTriggerKeys.some(
+      key => options[key] !== undefined && options[key] !== this.options[key]
+    );
+
+    Object.assign(this.options, options);
+    return needsRender;
   }
 
 }

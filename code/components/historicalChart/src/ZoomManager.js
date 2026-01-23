@@ -8,22 +8,29 @@ import { calculateScaleExtent, MS_PER_HOUR } from './utils/scales.js';
 export class ZoomManager {
   /**
    * @param {Object} options
-   * @param {Array} options.timeDomain - [startDate, endDate]
    * @param {number} options.width - Chart width
    * @param {number} options.height - Chart height (for zoom extent)
+   * @param {Array} options.timeDomain - [startDate, endDate]
    * @param {Array} options.zoomLimited - [minPixelsPerHour, maxPixelsPerHour]
-   * @param {d3.ScaleTime} options.xScale - Base time scale
    * @param {Function} options.onZoom - Callback when zoom changes
    */
   constructor(options = {}) {
-    this.timeDomain = options.timeDomain;
-    this.width = options.width || 800;
-    this.height = options.height || 400;
-    this.zoomLimited = options.zoomLimited || [-1, -1];
-    this.xScale = options.xScale;
-    this.onZoom = options.onZoom || (() => {});
+    this.options = {
+      width: 960,
+      height: 500,
 
-    this.scaleExtent = calculateScaleExtent(this.timeDomain, this.width, this.zoomLimited);
+      timeDomain: [
+        new Date(new Date().setFullYear(new Date().getFullYear() - 50)),
+        new Date(new Date().setFullYear(new Date().getFullYear() + 50))
+      ],
+      zoomLimited: [-1, -1],
+
+      onZoom: () => {},
+      ...options
+    }
+    
+    this.xScale = null;
+    this.scaleExtent = null;
     this.zoom = null;
     this.zoomTarget = null;
   }
@@ -33,12 +40,26 @@ export class ZoomManager {
    * @param {d3.Selection} target - Element to attach zoom to
    */
   create(target) {
+    if (!target || target.empty()) {
+      return null;
+    }
+
     this.zoomTarget = target;
+
+    // Initialize scale
+    this.xScale = d3.scaleUtc()
+      .domain(this.options.timeDomain)
+      .range([0, this.options.width]);
+
+    this.scaleExtent = calculateScaleExtent(
+      this.options.timeDomain,
+      this.options.width,
+      this.options.zoomLimited);
 
     this.zoom = d3.zoom()
       .scaleExtent(this.scaleExtent)
-      .translateExtent([[0, 0], [this.width, this.height]])
-      .extent([[0, 0], [this.width, this.height]])
+      .translateExtent([[0, 0], [this.options.width, this.options.height]])
+      .extent([[0, 0], [this.options.width, this.options.height]])
       .filter(event => this._filterEvent(event))
       .on('zoom', this._onZoom.bind(this));
 
@@ -46,7 +67,7 @@ export class ZoomManager {
     const initialTransform = d3.zoomIdentity
       .translate(this.xScale.range()[0], 0)
       .scale(this.scaleExtent[0])
-      .translate(-this.xScale(this.timeDomain[0]), 0);
+      .translate(-this.xScale(this.options.timeDomain[0]), 0);
 
     target
       .call(this.zoom.transform, initialTransform)
@@ -106,13 +127,17 @@ export class ZoomManager {
     const xt = transform.rescaleX(this.xScale);
 
     // Notify callback
-    this.onZoom(xt, transform, sourceEvent);
+    this.options.onZoom(xt, transform, sourceEvent);
   }
 
   /**
    * Get current transform
    */
   getTransform() {
+    if (this.zoomTarget === null) {
+      return null;
+    }
+
     return d3.zoomTransform(this.zoomTarget.node());
   }
 
@@ -120,21 +145,63 @@ export class ZoomManager {
    * Get current transformed scale
    */
   getScale() {
+    if (this.zoomTarget === null) {
+      return null;
+    }
+
     return this.getTransform().rescaleX(this.xScale);
   }
 
   /**
    * Get current visible domain
    */
-  getDomain() {
+  getCurrentDomain() {
+    if (this.zoomTarget === null) {
+      return null;
+    }
+
     return this.getScale().domain();
   }
 
   /**
-   * Set zoom to show specific domain
+   * Resize zoom extent
+   * @param {number} width - New width
+   * @param {number} height - New height
+   */
+  resize(width, height) {
+    this.options.width = width || this.options.width;
+    this.options.height = height || this.options.height;
+
+    if (this.zoomTarget === null)
+      return;
+
+    // Save current domain
+    const currentDomain = this.getCurrentDomain();
+
+    // Update scale
+    this.xScale.range([0, this.options.width]);
+
+    // Recalculate scale extent
+    this.scaleExtent = calculateScaleExtent(this.options.timeDomain, this.options.width, this.options.zoomLimited);
+
+    // Update zoom behavior
+    this.zoom
+      .scaleExtent(this.scaleExtent)
+      .translateExtent([[0, 0], [this.options.width, this.options.height]])
+      .extent([[0, 0], [this.options.width, this.options.height]]);
+
+    // Restore domain
+    this.zoomToDomain(currentDomain);
+  }
+
+  /**
+   * zoom to specific domain
    * @param {Array} domain - [startDate, endDate]
    */
-  setDomain(domain) {
+  zoomToDomain(domain) {
+    if (this.zoomTarget === null)
+      return;
+
     let scaleRatio = (this.xScale.domain()[1] - this.xScale.domain()[0]) / (domain[1] - domain[0]);
 
     // Clamp to scale extent
@@ -153,32 +220,10 @@ export class ZoomManager {
    * Reset zoom to initial state
    */
   reset() {
-    this.setDomain(this.timeDomain);
-  }
+    if (this.zoomTarget === null)
+      return;
 
-  /**
-   * Resize zoom behavior
-   * @param {number} width - New width
-   * @param {number} height - New height
-   */
-  resize(width, height) {
-    // Save current domain
-    const currentDomain = this.getDomain();
-
-    this.width = width;
-    this.height = height;
-
-    // Recalculate scale extent
-    this.scaleExtent = calculateScaleExtent(this.timeDomain, width, this.zoomLimited);
-
-    // Update zoom behavior
-    this.zoom
-      .scaleExtent(this.scaleExtent)
-      .translateExtent([[0, 0], [width, height]])
-      .extent([[0, 0], [width, height]]);
-
-    // Restore domain
-    this.setDomain(currentDomain);
+    this.zoomToDomain(this.options.timeDomain);
   }
 
   /**
@@ -186,6 +231,9 @@ export class ZoomManager {
    * @param {number} factor - Zoom factor (> 1)
    */
   zoomIn(factor = 1.5) {
+    if (this.zoomTarget === null)
+      return;
+
     const currentTransform = this.getTransform();
     const newK = Math.min(currentTransform.k * factor, this.scaleExtent[1]);
     this.zoomTarget.call(this.zoom.scaleTo, newK);
@@ -196,6 +244,9 @@ export class ZoomManager {
    * @param {number} factor - Zoom factor (> 1)
    */
   zoomOut(factor = 1.5) {
+    if (this.zoomTarget === null)
+      return;
+
     const currentTransform = this.getTransform();
     const newK = Math.max(currentTransform.k / factor, this.scaleExtent[0]);
     this.zoomTarget.call(this.zoom.scaleTo, newK);
@@ -206,6 +257,9 @@ export class ZoomManager {
    * @param {number} dx - Horizontal pan amount
    */
   pan(dx) {
+    if (this.zoomTarget === null)
+      return;
+
     const currentTransform = this.getTransform();
     this.zoomTarget.call(this.zoom.translateBy, dx / currentTransform.k, 0);
   }
@@ -216,51 +270,70 @@ export class ZoomManager {
    * @param {Array} [zoomLimited] - Optional new zoom limits [minPixelsPerHour, maxPixelsPerHour]
    */
   setTimeDomain(timeDomain, zoomLimited) {
-    // Save current visible domain ratio (for restoration)
-    const oldDomain = this.timeDomain;
-    const currentVisibleDomain = this.getDomain();
+    const visible = this.getCurrentDomain();
+    this.options.timeDomain = timeDomain || this.options.timeDomain;
+    this.options.zoomLimited = zoomLimited || this.options.zoomLimited;
 
-    // Clamp visible domain to old bounds before calculating ratios
-    const clampedVisibleDomain = [
-      new Date(Math.max(currentVisibleDomain[0].getTime(), oldDomain[0].getTime())),
-      new Date(Math.min(currentVisibleDomain[1].getTime(), oldDomain[1].getTime()))
-    ];
-
-    // Calculate relative position within old domain
-    const oldTotalMs = oldDomain[1] - oldDomain[0];
-    const relStart = (clampedVisibleDomain[0] - oldDomain[0]) / oldTotalMs;
-    const relEnd = (clampedVisibleDomain[1] - oldDomain[0]) / oldTotalMs;
-
-    // Update domain and limits
-    this.timeDomain = timeDomain;
-    if (zoomLimited) {
-      this.zoomLimited = zoomLimited;
+    if (this.zoomTarget === null) {
+      return;
     }
 
-    // Update base scale domain
+    // 更新 options
+    this.options.timeDomain = timeDomain || this.options.timeDomain;
+    this.options.zoomLimited = zoomLimited || this.options.zoomLimited;
+
+    // 更新 base scale
     this.xScale.domain(timeDomain);
 
-    // Recalculate scale extent
-    this.scaleExtent = calculateScaleExtent(timeDomain, this.width, this.zoomLimited);
+    // 重新计算 zoom 约束
+    this.scaleExtent = calculateScaleExtent(
+      timeDomain,
+      this.options.width,
+      this.options.zoomLimited
+    );
 
-    // Update zoom behavior
     this.zoom
       .scaleExtent(this.scaleExtent)
-      .translateExtent([[0, 0], [this.width, this.height]])
-      .extent([[0, 0], [this.width, this.height]]);
+      .translateExtent([[0, 0], [this.options.width, this.options.height]])
+      .extent([[0, 0], [this.options.width, this.options.height]]);
 
-    // Calculate new visible domain based on relative position
-    const newTotalMs = timeDomain[1] - timeDomain[0];
-    const newVisibleDomain = [
-      new Date(timeDomain[0].getTime() + relStart * newTotalMs),
-      new Date(timeDomain[0].getTime() + relEnd * newTotalMs)
-    ];
+    let targetDomain;
 
-    // Clamp to new domain bounds
-    if (newVisibleDomain[0] < timeDomain[0]) newVisibleDomain[0] = timeDomain[0];
-    if (newVisibleDomain[1] > timeDomain[1]) newVisibleDomain[1] = timeDomain[1];
+    // 1. 完全不相交 → 直接 reset 到新 domain
+    if (visible[1] <= timeDomain[0] || visible[0] >= timeDomain[1]) {
+      targetDomain = timeDomain;
+    }
+    // 2. 有交集 → 裁剪保留
+    else {
+      targetDomain = [
+        new Date(Math.max(visible[0].getTime(), timeDomain[0].getTime())),
+        new Date(Math.min(visible[1].getTime(), timeDomain[1].getTime()))
+      ];
+    }
 
-    // Apply new domain
-    this.setDomain(newVisibleDomain);
+    // 3. 应用
+    this.zoomToDomain(targetDomain);
+  }
+
+
+  setOptions(options = {}) {
+    if (options.timeDomain || options.zoomLimited) {
+      this.setTimeDomain(
+        options.timeDomain || this.options.timeDomain,
+        options.zoomLimited || this.options.zoomLimited
+      );
+    }
+    
+    if (options.width || options.height) {
+      this.resize(
+        options.width || this.options.width,
+        options.height || this.options.height
+      );
+    }
+    
+    this.options = {
+      ...this.options,
+      ...options
+    };
   }
 }

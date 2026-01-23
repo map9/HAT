@@ -8,18 +8,25 @@ import { MS_PER_HOUR } from './utils/scales.js';
 export class IndexAxisManager {
   /**
    * @param {Object} options
-   * @param {Array} options.timeDomain - [startDate, endDate]
    * @param {number} options.width - Width of the index axis
    * @param {number} options.height - Height of the index axis
+   * @param {Array} options.timeDomain - [startDate, endDate]
    * @param {Array} options.zoomLimited - [minPixelsPerHour, maxPixelsPerHour]
    * @param {Function} options.onBrush - Callback when brush selection changes
    */
   constructor(options = {}) {
     this.options = {
-      timeDomain: [new Date(), new Date()],
-      width: 800,
+      // Dimensions
+      width: 960,
       height: 28,
+
+      // Time axis
+      timeDomain: [
+        new Date(new Date().setFullYear(new Date().getFullYear() - 50)),
+        new Date(new Date().setFullYear(new Date().getFullYear() + 50))
+      ],
       zoomLimited: [-1, -1],
+
       onBrush: () => {},
       ...options,
     }
@@ -147,11 +154,26 @@ export class IndexAxisManager {
   }
 
   /**
+   * Preserve current visible domain across scale changes
+   * @private
+   */
+  _preserveDomain(fn) {
+    const currentDomain = this.getCurrentDomain();
+    fn();
+    if (currentDomain && this.brushGroup) {
+      this.brushGroup.call(
+        this.brush.move,
+        currentDomain.map(this.indexScale)
+      );
+    }
+  }
+
+  /**
    * Update brush selection from external source (e.g., zoom)
    * @param {Array} domain - [startDate, endDate]
    */
   updateFromZoom(domain) {
-    if (!domain) return;
+    if (!domain || this.container === null) return;
 
     const selection = domain.map(this.indexScale);
     if (selection[0] === 0 && selection[1] === this.options.width) {
@@ -162,27 +184,11 @@ export class IndexAxisManager {
   }
 
   /**
-   * Resize the index axis
-   * @param {number} width - New width
-   * @param {number} height - New height
-   */
-  resize(width, height) {
-    this.options.width = width;
-    this.options.height = height;
-    this.indexScale.range([0, this.options.width]);
-
-    // Update brush extent
-    this.brush.extent([[0, 1], [this.options.width, this.options.height - 1]]);
-    this.brushGroup.call(this.brush);
-
-    // Update axis
-    this.container.select('.index').call(this.axisObject);
-  }
-
-  /**
    * Get current visible domain
    */
-  getDomain() {
+  getCurrentDomain() {
+    if (this.container === null) return null;
+
     const selection = d3.brushSelection(this.brushGroup.node());
     if (!selection) return this.options.timeDomain;
     return selection.map(this.indexScale.invert);
@@ -195,6 +201,30 @@ export class IndexAxisManager {
     return this.options.height;
   }
 
+  /**
+   * Resize the index axis
+   * @param {number} width - New width
+   * @param {number} height - New height
+   */
+  resize(width, height) {
+    this.options.width = width;
+    this.options.height = height;
+
+    if (this.container === null) return;
+
+    this._preserveDomain(() => {
+      // Update scale
+      this.indexScale.range([0, this.options.width]);
+
+      // Update brush extent
+      this.brush.extent([[0, 1], [this.options.width, this.options.height - 1]]);
+      this.brushGroup.call(this.brush);
+
+      // Update axis
+      this.container.select('.index').call(this.axisObject);
+    });
+  }
+  
   destroy() {
     if (this.container) {
       this.container.remove();
@@ -209,10 +239,17 @@ export class IndexAxisManager {
   }
 
   setOptions(options) {
-    this.options = { ...this.options, ...options };
-    if ((options.timeDomain || options.timeDomain) && this.container) {
-      this.indexScale.domain(this.options.timeDomain);
-      this.container.select('.index').call(this.axisObject);
+    const affectsScale =
+      options.timeDomain !== undefined;
+
+    if (affectsScale && this.container) {
+      this._preserveDomain(() => {
+        this.options = { ...this.options, ...options };
+        this.indexScale.domain(this.options.timeDomain);
+        this.container.select('.index').call(this.axisObject);
+      });
+    } else {
+      this.options = { ...this.options, ...options };
     }
   }
 

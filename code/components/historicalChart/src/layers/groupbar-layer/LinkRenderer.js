@@ -63,18 +63,25 @@ export class LinkRenderer {
   }
 
   _createDefs(container) {
-    if (container) {
-      const svg = container.node().ownerSVGElement;
-      let defs = d3.select(svg).select('defs');
-      defs.selectAll('*').remove();
-      if (defs.empty()) {
-        defs = d3.select(svg).insert('defs', ':first-child');
-      }
+    if (!container) return null;
 
-      return defs;
+    const svg = container.node().ownerSVGElement;
+    let defs = d3.select(svg).select('defs');
+    if (defs.empty()) {
+      defs = d3.select(svg).insert('defs', ':first-child');
     }
 
-    return null;
+    // Use namespaced group to avoid clearing other defs content (e.g., clipPath)
+    const markersGroupId = `link-markers-${this.markerIdPrefix}`;
+    let markerGroup = defs.select(`#${markersGroupId}`);
+    if (markerGroup.empty()) {
+      markerGroup = defs.append('g').attr('id', markersGroupId);
+    } else {
+      // Only clear our own marker group, not the entire defs
+      markerGroup.selectAll('*').remove();
+    }
+
+    return markerGroup;
   }
 
   /**
@@ -168,7 +175,8 @@ export class LinkRenderer {
       return defaultStyle;
     }
 
-    const style = this.options.styleFn('link', link) || {};
+    // Unified signature: styleFn(type, context) where context = { data, ... }
+    const style = this.options.styleFn('link', { data: link }) || {};
     if (!style || typeof style !== 'object') {
       return defaultStyle;
     } else {
@@ -286,24 +294,28 @@ export class LinkRenderer {
   }
 
   /**
-   * Clear all links
+   * Clear all links (keep containers, clear content)
    */
   clear() {
     if (this.defs) {
       this.defs.selectAll('*').remove();
     }
+    this.markers.clear();
     if (this.container) {
       this.container.selectAll('*').remove();
     }
   }
-  
+
+  /**
+   * Destroy and remove all DOM elements
+   */
   destroy() {
+    this.markers.clear();
+
     if (this.defs) {
       this.defs.remove();
       this.defs = null;
     }
-    
-    this.markers.clear();
 
     if (this.container) {
       this.container.remove();
@@ -312,20 +324,27 @@ export class LinkRenderer {
   }
 
   /**
-   * Update render options by GroupbarLayer and need to re-render by caller
+   * Update render options by GroupBarLayer
    * @param {Object} options - New options to merge
+   * @returns {boolean} Whether re-render is needed
    */
   setOptions(options) {
+    // Detect which options actually changed
+    const renderTriggerKeys = ['curve', 'headSize', 'styleFn'];
+    const needsRender = renderTriggerKeys.some(
+      key => options[key] !== undefined && options[key] !== this.options[key]
+    );
+
     const isHeadSizeChanged = options.headSize && (options.headSize !== this.options.headSize);
 
-    this.options = {
-      ...this.options,
-      ...options,
-    };
+    Object.assign(this.options, options);
 
-    // re-create defs
+    // Re-create defs if head size changed
     if (isHeadSizeChanged) {
+      this.markers.clear();
       this.defs = this._createDefs(this.container);
     }
+
+    return needsRender;
   }
 }

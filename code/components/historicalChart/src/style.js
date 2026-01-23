@@ -1,60 +1,115 @@
 /**
  * Theme styles for HistoricalChart
- * Extended from TimelineChart with additional styles for GanttChart features
  */
+import * as d3 from 'd3';
 
-const light_colors = `
+const accent_schemes = {
+  'Greys': d3.schemeGreys[5],
+  'Blues': d3.schemeBlues[5],
+  'Greens': d3.schemeGreens[5],
+  'Oranges': d3.schemeOranges[5],
+  'Purples': d3.schemePurples[5],
+  'Reds': d3.schemeReds[5],
+  'BuGn': d3.schemeBuGn[5],
+  'BuPu': d3.schemeBuPu[5],
+  'GnBu': d3.schemeGnBu[5],
+  'OrRd': d3.schemeOrRd[5],
+  'PuBuGn': d3.schemePuBuGn[5],
+  'PuBu': d3.schemePuBu[5],
+  'PuRd': d3.schemePuRd[5],
+  'RdPu': d3.schemeRdPu[5],
+  'YlGnBu': d3.schemeYlGnBu[5],
+  'YlGn': d3.schemeYlGn[5],
+  'YlOrBr': d3.schemeYlOrBr[5],
+  'YlOrRd': d3.schemeYlOrRd[5],
+};
+
+export const getAccentSchemes = () => {
+  return Object.keys(accent_schemes);
+}
+
+export const getSystemTheme = (theme, accent) => {
+  const colorScale = d3.scaleOrdinal(accent_schemes[accent] || d3.schemeGreys[5]);
+  const colors = colorScale.domain([0, 5]).range().slice(0, 5);
+  
+  if (theme === 'dark') {
+    colors.reverse();
+    return _build_accent_colors(colors) + _dark_constants + _styles;
+  } else {
+    return _build_accent_colors(colors) + _light_constants + _styles;
+  }
+}
+
+const _build_accent_colors = (colors) => {
+  return `
+    .historical-chart {
+      --item-text-color: ${colors[0]};
+      --group-item-fill-color: ${colors[1]};
+      --bar-item-fill-color: ${colors[2]};
+      --link-item-stroke-color: ${colors[3]};
+      --point-item-fill-color: ${colors[4]};
+    }`;
+}
+
+const _light_constants = `
   .historical-chart {
-    --background-color: white;
-    --shadow-color: rgba(0,0,0,0.3);
-    --link-shadow-color: 0 2 2px rgba(0,0,0,0.3);
-    --primary-gridline-color: rgb(81, 93, 93);
-    --second-gridline-color: rgb(194, 199, 200);
-    --yearly-tick-color: rgb(81, 93, 93);
-    --yearly-label-color: rgb(60, 79, 81);
-    --daily-tick-color: rgb(161, 173, 173);
-    --daily-label-color: rgb(161, 173, 173);
-    --active-axis-color: rgb(255, 0, 0);
-    --tooltip-color: rgb(255, 0, 0);
-    --item-rect-color: #4682b4;
-    --item-text-color: #333;
-    --item-path-color: #15151b;
-    --index-brushline-color: #444;
-    --index-brushfill-color: #777;
-    --label-text-color: #333;
-    --label-toggle-color: #333;
-    --label-toggle-hover-color: #000;
-    --lane-boundary-color: #e0e0e0;
+    /* Background & Shadow */
+    --background-color: #ffffff;
+    --shadow-color: rgba(0, 0, 0, 0.12);
+
+    /* Axis & Grid */
+    --yearly-tick-color: #2b2b2b;
+    --yearly-label-color: #2b2b2b;
+    --daily-tick-color: #a8adb3;
+    --daily-label-color: #a8adb3;
+    --primary-gridline-color: #6b7280;
+    --second-gridline-color: #e1e4e8;
+
+    /* Hover axis */
+    --active-axis-color: #b23a2f;
+    --tooltip-color: #b23a2f;
+
+    /* Index Brush */
+    --index-brushline-color: #6b7280;
+    --index-brushfill-color: #9aa0a6;
+
+    /* Labels */
+    --label-text-color: #1f2933;
+    --label-toggle-color: #6b7280;
+    --label-toggle-hover-color: #000000;
   }
 `;
 
-const dark_colors = `
+const _dark_constants = `
   .historical-chart {
-    --background-color: #15151b;
-    --panel-shadow: 0 4px 16px rgba(255,255,255,0.3);
-    --tooltip-shadow: 0 2 2px rgba(255,255,255,0.3);
-    --link-shadow: 0 2 2px rgba(255,255,255,0.3);
-    --primary-gridline-color: white;
-    --second-gridline-color: lightyellow;
-    --yearly-tick-color: white;
-    --yearly-label-color: white;
-    --daily-tick-color: ghostwhite;
-    --daily-label-color: ghostwhite;
-    --active-axis-color: pink;
-    --tooltip-color: pink;
-    --item-rect-color: #FF1791;
-    --item-text-color: white;
-    --item-path-color: white;
-    --index-brushline-color: #444;
-    --index-brushfill-color: #777;
-    --label-text-color: #e0e0e0;
-    --label-toggle-color: #e0e0e0;
-    --label-toggle-hover-color: #fff;
-    --lane-boundary-color: #444;
+    /* Background & Shadow */
+    --background-color: #14161a;
+    --shadow-color: rgba(0, 0, 0, 0.7);
+
+    /* Axis & Grid */
+    --yearly-tick-color: #d1d5db;
+    --yearly-label-color: #d1d5db;
+    --daily-tick-color: #7b818a;
+    --daily-label-color: #7b818a;
+    --primary-gridline-color: #8b919a;
+    --second-gridline-color: #2f3339;
+
+    /* Hover axis */
+    --active-axis-color: #e07a7a;
+    --tooltip-color: #e07a7a;
+
+    /* Index Brush */
+    --index-brushline-color: #9aa0a6;
+    --index-brushfill-color: #9aa0a6;
+
+    /* Labels */
+    --label-text-color: #e5e7eb;
+    --label-toggle-color: #b6bcc6;
+    --label-toggle-hover-color: #ffffff;
   }
 `;
 
-const base_styles = `
+const _styles = `
   /* Container styles */
   .historical-chart-wrapper {
     position: relative;
@@ -85,20 +140,32 @@ const base_styles = `
 
   /* Content area */
   .hc-content {
+    position: relative;
     display: flex;
     flex: 1;
     overflow: hidden;
   }
 
-  /* Labels container */
+  /* Labels container - floats over content */
   .hc-labels-container {
-    flex-shrink: 0;
-    position: sticky;
-    left: 0;
+    position: absolute;
+    top: 0;
     z-index: 10;
     background-color: var(--background-color);
     box-shadow: 0 4px 16px var(--shadow-color);
     overflow: hidden;
+  }
+
+  .hc-labels-container.label-left {
+    left: 0;
+  }
+
+  .hc-labels-container.label-right {
+    right: 0;
+  }
+
+  .hc-labels-container.label-none {
+    display: none;
   }
 
   .hc-labels-svg {
@@ -211,11 +278,11 @@ const base_styles = `
   }
 
   /* Event tooltip (HTML) */
-  .historical-chart  .hc-tooltip {
+  .historical-chart .hc-tooltip {
     position: absolute;
     font-size: 12px;
     visibility: hidden;
-    background: white;
+    background: #fff;
     border-radius: 5px;
     padding: 10px;
     box-shadow: 0 0 10px var(--shadow-color);
@@ -225,13 +292,13 @@ const base_styles = `
     transition: opacity 0.15s ease-in-out;
   }
 
-  .historical-chart  .hc-tooltip.visible {
+  .historical-chart .hc-tooltip.visible {
     opacity: 1;
   }
     
   /* Items */
   .historical-chart .bar-item rect {
-    fill: var(--item-rect-color);
+    fill: var(--bar-item-fill-color);
     fill-opacity: 0.8;
     cursor: pointer;
   }
@@ -248,12 +315,24 @@ const base_styles = `
 
   /* Group Items */
   .historical-chart .group-item rect {
+    fill: var(--group-item-fill-color);
+    fill-opacity: 0.9;
+    cursor: pointer;
+  }
+
+  .historical-chart .group-item rect:hover {
+    fill-opacity: 1;
+  }
+
+  .historical-chart .group-item text {
+    fill: var(--item-text-color);
+    font-size: 11px;
     pointer-events: none;
   }
 
   /* Point Items */
   .historical-chart .point-item path {
-    fill: var(--item-rect-color);
+    fill: var(--point-item-fill-color);
     fill-opacity: 0.9;
     stroke: var(--background-color);
     stroke-width: 1;
@@ -274,7 +353,7 @@ const base_styles = `
   /* Link Items */
   .historical-chart .link-item path {
     fill: none;
-    stroke: var(--item-path-color);
+    stroke: var(--link-item-stroke-color);
     stroke-width: 1.5;
     cursor: pointer;
   }
@@ -339,6 +418,3 @@ const base_styles = `
     pointer-events: all;
   }
 `;
-
-export const LIGHT = light_colors + base_styles;
-export const DARK = dark_colors + base_styles;

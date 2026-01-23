@@ -17,11 +17,13 @@ export class LayerManager {
    * Add a layer to the manager
    * @param {Layer} layer - Layer instance
    * @param {number} zIndex - Z-index for rendering order (lower = behind)
+   * @param {Object} createOptions - Options to pass to layer.create()
    * @returns {Layer} The added layer
    */
-  addLayer(layer, zIndex = 0) {
-    // Create layer's SVG group
-    layer.create(this.chart);
+  addLayer(layer, zIndex = 0, createOptions = {}) {
+    // Create layer's SVG group with optional createOptions
+    // createOptions allows passing dependencies like labelsGroup without tight coupling
+    layer.create(this.chart, createOptions);
 
     // Store layer with zIndex
     this.layers.set(layer.id, { layer, zIndex });
@@ -79,12 +81,20 @@ export class LayerManager {
       .sort(([, a], [, b]) => a.zIndex - b.zIndex)
       .map(([id]) => id);
 
+    const bodyGroupNode = this.chart.bodyGroup.node();
+
+    // Ensure board stays at the bottom (for event capture)
+    const board = this.chart.bodyGroup.select('.board');
+    if (!board.empty()) {
+      bodyGroupNode.insertBefore(board.node(), bodyGroupNode.firstChild);
+    }
+
     // Reorder DOM nodes to match z-index
     // In SVG, later elements are rendered on top
     this.layerOrder.forEach(id => {
       const { layer } = this.layers.get(id);
       if (layer.group && layer.group.node()) {
-        this.chart.bodyGroup.node().appendChild(layer.group.node());
+        bodyGroupNode.appendChild(layer.group.node());
       }
     });
   }
@@ -180,6 +190,25 @@ export class LayerManager {
    */
   getLayerOrder() {
     return [...this.layerOrder];
+  }
+
+  /**
+   * Update options for all layers
+   * @param {Object} options - Options to propagate to layers
+   * @param {boolean} [skipRender=true] - Skip re-render (default true, let caller control render)
+   * @returns {boolean} Whether any layer needs re-render
+   */
+  setOptions(options, skipRender = true) {
+    let needsRender = false;
+
+    this.layers.forEach(({ layer }) => {
+      if (typeof layer.setOptions === 'function') {
+        const layerNeedsRender = layer.setOptions(options, skipRender);
+        needsRender = layerNeedsRender || needsRender;
+      }
+    });
+
+    return needsRender;
   }
 
 }

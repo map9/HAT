@@ -69,7 +69,7 @@ export class GroupBarLayer extends Layer {
       groupYPadding: 5,         // Vertical padding for groups in background mode
 
       // Bars
-      barTextPosition: 'none',  // 'none' | 'left' | 'center' | 'right'
+      barTextPosition: 'center',  // 'none' | 'left' | 'center' | 'right'
       barStyleFn: null,
 
       // Points
@@ -110,9 +110,14 @@ export class GroupBarLayer extends Layer {
   /**
    * Create layer's SVG group
    * @param {HistoricalChart} chart - historical chart
+   * @param {Object} createOptions - Options for layer creation
+   * @param {d3.Selection} createOptions.labelsGroup - Container for labels (dependency injection)
    */
-  create(chart) {
+  create(chart, createOptions = {}) {
     const group = super.create(chart);
+
+    // Store injected dependencies (prefer createOptions over direct chart access)
+    this.labelsGroup = createOptions.labelsGroup || chart.labelsGroup;
 
     // Bar renderer (for time range items)
     this.barRenderer = new BarRenderer({
@@ -160,15 +165,15 @@ export class GroupBarLayer extends Layer {
     });
     this.groupBarRenderer.create(this.group);
 
-    // Label renderer
+    // Label renderer - use injected labelsGroup
     this.labelRenderer = new LabelRenderer({
       position: this.options.labelPosition,
       width: this.options.labelWidth,
       padding: this.options.labelXPadding,
       onToggle: (node, expanded) => this._onGroupToggle(node, expanded)
     });
-    if (this.chart.labelsGroup) {
-      this.labelRenderer.create(this.chart.labelsGroup);
+    if (this.labelsGroup) {
+      this.labelRenderer.create(this.labelsGroup);
     }
 
     // Item highlighter for link hover
@@ -625,6 +630,7 @@ export class GroupBarLayer extends Layer {
    * Override from Layer base class
    * @param {Object} options - New options to merge
    * @param {boolean} [skipRender=false] - Skip re-render
+   * @returns {boolean} Whether re-render is needed
    */
   setOptions(options, skipRender = false) {
     // Detect if structural changes require cache invalidation
@@ -640,7 +646,7 @@ export class GroupBarLayer extends Layer {
     const linkOptions = {};
     const pointOptions = {};
     const labelOptions = {};
-    
+
     // groupBarRenderer and barRenderer options
     if (options.mode !== undefined) {
       groupBarOptions.mode = options.mode;
@@ -671,7 +677,7 @@ export class GroupBarLayer extends Layer {
     if (options.linkStyleFn !== undefined) {
       linkOptions.styleFn = options.linkStyleFn;
     }
-    
+
     // pointRenderer options
     if (options.pointSizeRatio !== undefined) {
       pointOptions.sizeRatio = options.pointSizeRatio;
@@ -682,7 +688,7 @@ export class GroupBarLayer extends Layer {
     if (options.pointStyleFn !== undefined) {
       pointOptions.styleFn = options.pointStyleFn;
     }
-    
+
     // labelRenderer options
     if (options.labelPosition !== undefined) {
       labelOptions.position = options.labelPosition;
@@ -694,7 +700,7 @@ export class GroupBarLayer extends Layer {
       labelOptions.padding = options.labelXPadding;
     }
 
-    // all sub-renderer message options
+    // all sub-renderer message options (these don't require re-render)
     if (options.onClick !== undefined) {
       linkOptions.onClick = options.onClick;
       pointOptions.onClick = options.onClick;
@@ -711,25 +717,23 @@ export class GroupBarLayer extends Layer {
       labelOptions.onToggle = options.onLabelToggle;
     }
 
-    let isLinkNeedsRender = false;
-    let isPointNeedsRender = false;
-    let isLabelNeedsRender = false;
-    let isBarNeedsRender = false;
-    let isGroupBarNeedsRender = false;
+    // Propagate options to sub-renderers and collect render flags
+    let needsRender = needsFullRebuild;
+
     if (Object.keys(groupBarOptions).length > 0 && this.groupBarRenderer) {
-      isGroupBarNeedsRender = this.groupBarRenderer.setOptions(groupBarOptions);
+      needsRender = this.groupBarRenderer.setOptions(groupBarOptions) || needsRender;
     }
     if (Object.keys(barOptions).length > 0 && this.barRenderer) {
-      isBarNeedsRender = this.barRenderer.setOptions(barOptions);
+      needsRender = this.barRenderer.setOptions(barOptions) || needsRender;
     }
     if (Object.keys(linkOptions).length > 0 && this.linkRenderer) {
-      isLinkNeedsRender = this.linkRenderer.setOptions(linkOptions);
+      needsRender = this.linkRenderer.setOptions(linkOptions) || needsRender;
     }
     if (Object.keys(pointOptions).length > 0 && this.pointRenderer) {
-      isPointNeedsRender = this.pointRenderer.setOptions(pointOptions);
+      needsRender = this.pointRenderer.setOptions(pointOptions) || needsRender;
     }
     if (Object.keys(labelOptions).length > 0 && this.labelRenderer) {
-      isLabelNeedsRender = this.labelRenderer.setOptions(labelOptions);
+      needsRender = this.labelRenderer.setOptions(labelOptions) || needsRender;
     }
 
     // Clear cached data if structural changes
@@ -739,8 +743,15 @@ export class GroupBarLayer extends Layer {
       this.enrichedLinks = null;
     }
 
-    // Call parent setOptions (will trigger render if not skipped)
-    super.setOptions(options, skipRender);
+    // Update own options
+    Object.assign(this.options, options);
+
+    // Trigger render if needed and not skipped
+    if (needsRender && !skipRender) {
+      this._triggerRender();
+    }
+
+    return needsRender;
   }
 
   /**
