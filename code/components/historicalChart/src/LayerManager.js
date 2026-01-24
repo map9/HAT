@@ -22,7 +22,7 @@ export class LayerManager {
    */
   addLayer(layer, zIndex = 0, createOptions = {}) {
     // Create layer's SVG group with optional createOptions
-    // createOptions allows passing dependencies like labelsGroup without tight coupling
+    // createOptions allows passing dependencies like labelsSlot without tight coupling
     layer.create(this.chart, createOptions);
 
     // Store layer with zIndex
@@ -209,6 +209,18 @@ export class LayerManager {
     });
 
     return needsRender;
+  }
+
+  /**
+   * Update content height for all layers (notifies layers that manage their own SVG heights)
+   * @param {number} contentHeight - New content height
+   */
+  updateContentHeight(contentHeight) {
+    this.layers.forEach(({ layer }) => {
+      if (typeof layer.updateContentHeight === 'function') {
+        layer.updateContentHeight(contentHeight);
+      }
+    });
   }
 
 }

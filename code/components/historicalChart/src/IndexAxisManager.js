@@ -1,6 +1,11 @@
 /**
  * IndexAxisManager - Index axis with brush for time range selection
  * Ported from TimelineChart with modular refactoring
+ *
+ * DOM Ownership: IndexAxisManager creates and manages its own DOM structure:
+ * - indexContainer (div.hc-indexaxis-container)
+ * - indexSvg (svg.hc-index-svg)
+ * - indexGroup (g.indexAxis)
  */
 import * as d3 from 'd3';
 import { MS_PER_HOUR } from './utils/scales.js';
@@ -31,7 +36,12 @@ export class IndexAxisManager {
       ...options,
     }
 
-    this.container = null;
+    // DOM elements (owned by this manager)
+    this.slot = null;           // External mounting point (not owned)
+    this.indexContainer = null; // div.hc-indexaxis-container (owned)
+    this.indexSvg = null;       // svg.hc-index-svg (owned)
+    this.indexGroup = null;     // g.indexAxis (owned)
+
     this.indexScale = null;
     this.axisObject = null;
     this.brush = null;
@@ -40,20 +50,35 @@ export class IndexAxisManager {
   }
 
   /**
-   * Create index axis elements
-   * @param {d3.Selection} container - Container to append index axis to
+   * Create DOM structure and index axis elements
+   * @param {d3.Selection} slot - Mounting point (div) to create DOM inside
    */
-  create(container) {
+  create(slot) {
     this.destroy();
 
-    this.container = container.append('g').classed('indexAxis', true);
+    if (!slot) return null;
+
+    this.slot = slot;
+
+    // Create container (div)
+    this.indexContainer = this.slot.append('div')
+      .classed('hc-indexaxis-container', true);
+
+    // Create SVG
+    this.indexSvg = this.indexContainer.append('svg')
+      .classed('hc-index-svg', true)
+      .attr('width', this.options.width)
+      .attr('height', this.options.height);
+
+    // Create root group
+    this.indexGroup = this.indexSvg.append('g').classed('indexAxis', true);
 
     // Create axis
     this.indexScale = d3.scaleUtc()
       .domain(this.options.timeDomain)
       .range([0, this.options.width]);
     this.axisObject = d3.axisBottom(this.indexScale);
-    this.container.append('g').classed('index', true).call(this.axisObject);
+    this.indexGroup.append('g').classed('index', true).call(this.axisObject);
 
     // Create brush
     this.brush = d3.brushX()
@@ -61,12 +86,12 @@ export class IndexAxisManager {
       .on('start', this._onBrushStart.bind(this))
       .on('brush end', this._onBrushEnd.bind(this));
 
-    this.brushGroup = this.container.append('g').classed('brush', true);
+    this.brushGroup = this.indexGroup.append('g').classed('brush', true);
     this.brushGroup
       .call(this.brush)
       .call(this.brush.move, this.options.timeDomain.map(this.indexScale));
 
-    return this.container;
+    return this.indexGroup;
   }
 
   /**
@@ -173,7 +198,7 @@ export class IndexAxisManager {
    * @param {Array} domain - [startDate, endDate]
    */
   updateFromZoom(domain) {
-    if (!domain || this.container === null) return;
+    if (!domain || this.indexGroup === null) return;
 
     const selection = domain.map(this.indexScale);
     if (selection[0] === 0 && selection[1] === this.options.width) {
@@ -187,7 +212,7 @@ export class IndexAxisManager {
    * Get current visible domain
    */
   getCurrentDomain() {
-    if (this.container === null) return null;
+    if (this.indexGroup === null) return null;
 
     const selection = d3.brushSelection(this.brushGroup.node());
     if (!selection) return this.options.timeDomain;
@@ -210,7 +235,14 @@ export class IndexAxisManager {
     this.options.width = width;
     this.options.height = height;
 
-    if (this.container === null) return;
+    if (this.indexGroup === null) return;
+
+    // Update SVG dimensions
+    if (this.indexSvg) {
+      this.indexSvg
+        .attr('width', width)
+        .attr('height', height);
+    }
 
     this._preserveDomain(() => {
       // Update scale
@@ -221,32 +253,37 @@ export class IndexAxisManager {
       this.brushGroup.call(this.brush);
 
       // Update axis
-      this.container.select('.index').call(this.axisObject);
+      this.indexGroup.select('.index').call(this.axisObject);
     });
   }
   
   destroy() {
-    if (this.container) {
-      this.container.remove();
-      this.container = null;
+    // Remove owned DOM elements
+    if (this.indexContainer) {
+      this.indexContainer.remove();
     }
+
+    this.indexContainer = null;
+    this.indexSvg = null;
+    this.indexGroup = null;
 
     this.indexScale = null;
     this.axisObject = null;
 
     this.brush = null;
     this.brushGroup = null;
+    // Keep slot reference for potential recreation
   }
 
   setOptions(options) {
     const affectsScale =
       options.timeDomain !== undefined;
 
-    if (affectsScale && this.container) {
+    if (affectsScale && this.indexGroup) {
       this._preserveDomain(() => {
         this.options = { ...this.options, ...options };
         this.indexScale.domain(this.options.timeDomain);
-        this.container.select('.index').call(this.axisObject);
+        this.indexGroup.select('.index').call(this.axisObject);
       });
     } else {
       this.options = { ...this.options, ...options };

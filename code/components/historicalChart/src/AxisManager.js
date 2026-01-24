@@ -1,6 +1,12 @@
 /**
  * AxisManager - Multi-level time axis management
  * Ported from TimelineChart with modular refactoring
+ *
+ * DOM Ownership: AxisManager creates and manages its own DOM structure:
+ * - axisContainer (div.hc-axis-container)
+ * - axisSvg (svg.hc-axis-svg)
+ * - axisGroup (g) - for external elements like activeAxis
+ * - axisesGroup (g.axises) - for axis rendering
  */
 import * as d3 from 'd3';
 import { getHoursPerPixel } from './utils/scales.js';
@@ -12,16 +18,24 @@ export class AxisManager {
    * @param {string} options.type - Filter type: 'mark' | 'grid' | 'both'
    * @param {number} options.gap - Gap between elements
    * @param {string} options.locale - Locale for date formatting
+   * @param {number} options.width - Initial width
    */
   constructor(options = {}) {
     this.options = {
       axises: [],
       type: 'both',
       gap: 1,
-
+      width: 960,
       locale: 'en-us',
       ...options
     }
+
+    // DOM elements (owned by this manager)
+    this.slot = null;           // External mounting point (not owned)
+    this.axisContainer = null;  // div.hc-axis-container (owned)
+    this.axisSvg = null;        // svg.hc-axis-svg (owned)
+    this.axisGroup = null;      // g - root group for all content (owned)
+    this.axisesGroup = null;    // g.axises - for axis rendering (owned)
 
     this.axisObjects = {};
     this.axisNodes = {};
@@ -69,7 +83,7 @@ export class AxisManager {
     });
 
     // Sync DOM order
-    if (this.axisContainer) {
+    if (this.axisesGroup) {
       for (const axis of this.options.axises) {
         const node = this.axisNodes[axis.name];
         if (node) {
@@ -151,25 +165,81 @@ export class AxisManager {
   }
 
   /**
-   * Create all axis elements in the container
-   * @param {d3.Selection} container - SVG group to append axes to
+   * Create DOM structure and all axis elements
+   * Supports two modes:
+   * - Slot mode: Pass a div selection, creates full DOM structure (container/svg/group)
+   * - Group mode: Pass an svg g selection, renders directly into it (for GridLayer)
+   * @param {d3.Selection} slotOrGroup - Mounting point (div for slot mode, svg g for group mode)
    */
-  create(container) {
+  create(slotOrGroup) {
     this.destroy();
 
-    this.axisContainer = container.append('g').classed('axises', true);
+    if (!slotOrGroup) return null;
+
+    // Detect mode based on element type
+    const nodeName = slotOrGroup.node().nodeName.toLowerCase();
+    const isGroupMode = nodeName === 'g';
+
+    // Calculate height first
+    this.calculateHeight();
+
+    if (isGroupMode) {
+      // Group mode: render directly into the svg g element (for GridLayer)
+      this.slot = null;
+      this.axisContainer = null;
+      this.axisSvg = null;
+      this.axisGroup = slotOrGroup;
+      this.axisesGroup = this.axisGroup.append('g').classed('axises', true);
+    } else {
+      // Slot mode: create full DOM structure (for HistoricalChart)
+      this.slot = slotOrGroup;
+
+      // Create container (div)
+      this.axisContainer = this.slot.append('div')
+        .classed('hc-axis-container', true);
+
+      // Create SVG
+      this.axisSvg = this.axisContainer.append('svg')
+        .classed('hc-axis-svg', true)
+        .attr('width', this.options.width)
+        .attr('height', this.totalHeight);
+
+      // Create root group (for external elements like activeAxis)
+      this.axisGroup = this.axisSvg.append('g');
+
+      // Create axes group
+      this.axisesGroup = this.axisGroup.append('g').classed('axises', true);
+    }
 
     for (const axis of this.options.axises) {
       this.axisObjects[axis.name] = this.createAxisObject(axis);
-      this.axisNodes[axis.name] = this.axisContainer
+      this.axisNodes[axis.name] = this.axisesGroup
         .append('g')
         .classed(axis.class, true);
     }
 
     this.sortAxises();
-    this.calculateHeight();
 
-    return this.axisContainer;
+    return this.axisGroup;
+  }
+
+  /**
+   * Get the root group for external elements (e.g., activeAxis)
+   * @returns {d3.Selection|null}
+   */
+  getGroup() {
+    return this.axisGroup;
+  }
+
+  /**
+   * Update width
+   * @param {number} width - New width
+   */
+  resize(width) {
+    this.options.width = width;
+    if (this.axisSvg) {
+      this.axisSvg.attr('width', width);
+    }
   }
 
   /**
@@ -178,7 +248,7 @@ export class AxisManager {
    * @param {number} bodyHeight - Height of body area
    */
   update(xScale, bodyHeight = 0) {
-    if (!this.axisContainer || !xScale) return;
+    if (!this.axisesGroup || !xScale) return;
     
     const hoursPerPixel = getHoursPerPixel(xScale);
 
@@ -225,9 +295,9 @@ export class AxisManager {
       this.options.axises.push(axis);
 
       // 只有在 create 后才创建 axisObject 和 axisNode
-      if (this.axisContainer) {
+      if (this.axisesGroup) {
         this.axisObjects[axis.name] = this.createAxisObject(axis);
-        this.axisNodes[axis.name] = this.axisContainer
+        this.axisNodes[axis.name] = this.axisesGroup
           .append('g')
           .classed(axis.class, true);
       }
@@ -262,13 +332,13 @@ export class AxisManager {
    * @param {Array} axises - Axis configurations to set
    */
   setAxises(axises) {
-    const parent = this.axisContainer?.node()?.parentNode;
+    const slot = this.slot;
     this.destroy();
 
     this.options.axises = axises.slice();
 
-    if (parent) {
-      this.create(d3.select(parent));
+    if (slot) {
+      this.create(slot);
     }
   }
 
@@ -277,10 +347,20 @@ export class AxisManager {
     this.axisNodes = {};
     this.totalHeight = 0;
 
+    // Remove owned DOM elements based on mode
     if (this.axisContainer) {
+      // Slot mode: remove entire container
       this.axisContainer.remove();
-      this.axisContainer = null;
+    } else if (this.axisesGroup) {
+      // Group mode: only remove axisesGroup we created
+      this.axisesGroup.remove();
     }
+
+    this.axisContainer = null;
+    this.axisSvg = null;
+    this.axisGroup = null;
+    this.axisesGroup = null;
+    // Keep slot reference for potential recreation
   }
 
   setOptions(options) {

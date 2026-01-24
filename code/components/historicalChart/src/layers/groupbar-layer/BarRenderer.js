@@ -3,6 +3,7 @@
  * Combines features from TimelineChart eventChart and GanttChart
  */
 import * as d3 from 'd3';
+import { applyElementStyle } from '../../utils/styleHelper.js';
 
 // Hysteresis margins for text visibility to prevent flickering
 const TEXT_HIDE_MARGIN = 6;
@@ -161,24 +162,7 @@ export class BarRenderer {
    * @param {Object} style - Style object from _getStyle
    */
   _applyStyle(element, style) {
-    // Apply stroke style only if styleFn is provided
-    if (this.options.styleFn && style) {
-      if (style.stroke !== null) {
-        element.style('stroke', style.stroke);
-      }
-      if (style.strokeWidth !== null) {
-        element.style('stroke-width', style.strokeWidth);
-      }
-      if (style.strokeDasharray !== null) {
-        element.style('stroke-dasharray', style.strokeDasharray);
-      }
-      if (style.fill !== null) {
-        element.style('fill', style.fill);
-      }
-      if (style.fillOpacity !== null) {
-        element.style('fill-opacity', style.fillOpacity);
-      }
-    }
+    applyElementStyle(element, style, !!this.options.styleFn);
   }
 
   /**

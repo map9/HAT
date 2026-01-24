@@ -1,6 +1,6 @@
 /**
  * ScrollManager - Synchronize scrolling between multiple areas
- * Handles body scroll and syncs with labels
+ * Handles bidirectional scroll sync between body and labels
  */
 export class ScrollManager {
   /**
@@ -16,7 +16,9 @@ export class ScrollManager {
 
     this.scrollTop = 0;
     this.scrollLeft = 0;
-    this._boundOnScroll = this._handleScroll.bind(this);
+    this._isSyncing = false; // Prevent circular sync
+    this._boundOnBodyScroll = this._handleBodyScroll.bind(this);
+    this._boundOnLabelsScroll = this._handleLabelsScroll.bind(this);
   }
 
   /**
@@ -24,22 +26,46 @@ export class ScrollManager {
    */
   init() {
     if (this.bodyContainer) {
-      this.bodyContainer.addEventListener('scroll', this._boundOnScroll, { passive: true });
+      this.bodyContainer.addEventListener('scroll', this._boundOnBodyScroll, { passive: true });
     }
     return this;
   }
 
   /**
-   * Handle scroll event
+   * Handle body scroll event - sync to labels
    */
-  _handleScroll(event) {
+  _handleBodyScroll(event) {
+    if (this._isSyncing) return;
+
     const target = event.target;
     this.scrollTop = target.scrollTop;
     this.scrollLeft = target.scrollLeft;
 
     // Sync labels container
     if (this.labelsContainer) {
+      this._isSyncing = true;
       this.labelsContainer.scrollTop = this.scrollTop;
+      this._isSyncing = false;
+    }
+
+    // Notify callback
+    this.onScroll(this.scrollTop, this.scrollLeft);
+  }
+
+  /**
+   * Handle labels scroll event - sync to body
+   */
+  _handleLabelsScroll(event) {
+    if (this._isSyncing) return;
+
+    const target = event.target;
+    this.scrollTop = target.scrollTop;
+
+    // Sync body container
+    if (this.bodyContainer) {
+      this._isSyncing = true;
+      this.bodyContainer.scrollTop = this.scrollTop;
+      this._isSyncing = false;
     }
 
     // Notify callback
@@ -96,17 +122,45 @@ export class ScrollManager {
    * Update container references
    */
   setContainers(bodyContainer, labelsContainer) {
-    // Remove old listener
+    // Remove old listeners
     if (this.bodyContainer) {
-      this.bodyContainer.removeEventListener('scroll', this._boundOnScroll);
+      this.bodyContainer.removeEventListener('scroll', this._boundOnBodyScroll);
+    }
+    if (this.labelsContainer) {
+      this.labelsContainer.removeEventListener('scroll', this._boundOnLabelsScroll);
     }
 
     this.bodyContainer = bodyContainer;
     this.labelsContainer = labelsContainer;
 
-    // Add new listener
+    // Add new listeners
     if (this.bodyContainer) {
-      this.bodyContainer.addEventListener('scroll', this._boundOnScroll, { passive: true });
+      this.bodyContainer.addEventListener('scroll', this._boundOnBodyScroll, { passive: true });
+    }
+    if (this.labelsContainer) {
+      this.labelsContainer.addEventListener('scroll', this._boundOnLabelsScroll, { passive: true });
+    }
+  }
+
+  /**
+   * Set labels container for scroll sync (called after LabelRenderer creates its DOM)
+   * @param {HTMLElement} labelsContainer - The labels container element
+   */
+  setLabelsContainer(labelsContainer) {
+    // Remove old listener if exists
+    if (this.labelsContainer) {
+      this.labelsContainer.removeEventListener('scroll', this._boundOnLabelsScroll);
+    }
+
+    this.labelsContainer = labelsContainer;
+
+    // Add listener for bidirectional sync
+    if (this.labelsContainer) {
+      this.labelsContainer.addEventListener('scroll', this._boundOnLabelsScroll, { passive: true });
+      // Sync current scroll position immediately
+      if (this.scrollTop > 0) {
+        this.labelsContainer.scrollTop = this.scrollTop;
+      }
     }
   }
 
@@ -115,7 +169,10 @@ export class ScrollManager {
    */
   destroy() {
     if (this.bodyContainer) {
-      this.bodyContainer.removeEventListener('scroll', this._boundOnScroll);
+      this.bodyContainer.removeEventListener('scroll', this._boundOnBodyScroll);
+    }
+    if (this.labelsContainer) {
+      this.labelsContainer.removeEventListener('scroll', this._boundOnLabelsScroll);
     }
   }
 }

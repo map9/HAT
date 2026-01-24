@@ -55,6 +55,7 @@ const _light_constants = `
   .historical-chart {
     /* Background & Shadow */
     --background-color: #ffffff;
+    --panel-color: #fafafa;
     --shadow-color: rgba(0, 0, 0, 0.12);
 
     /* Axis & Grid */
@@ -84,6 +85,7 @@ const _dark_constants = `
   .historical-chart {
     /* Background & Shadow */
     --background-color: #14161a;
+    --panel-color: #1f1f1f;
     --shadow-color: rgba(0, 0, 0, 0.7);
 
     /* Axis & Grid */
@@ -125,6 +127,11 @@ const _styles = `
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
 
+  /* Axis slot - mounting point for AxisManager */
+  .hc-axis-slot {
+    display: contents; /* Let AxisManager's container participate directly in flex layout */
+  }
+
   /* Axis container */
   .hc-axis-container {
     flex-shrink: 0;
@@ -144,28 +151,35 @@ const _styles = `
     display: flex;
     flex: 1;
     overflow: hidden;
+    border-top: 1px solid var(--second-gridline-color);
   }
 
-  /* Labels container - floats over content */
-  .hc-labels-container {
+  /* Labels slot - mounting point for LabelRenderer (positions the labels area) */
+  .hc-labels-slot {
     position: absolute;
     top: 0;
     z-index: 10;
-    background-color: var(--background-color);
-    box-shadow: 0 4px 16px var(--shadow-color);
-    overflow: hidden;
   }
 
-  .hc-labels-container.label-left {
+  .hc-labels-slot.label-left {
     left: 0;
   }
 
-  .hc-labels-container.label-right {
+  .hc-labels-slot.label-right {
     right: 0;
   }
 
-  .hc-labels-container.label-none {
+  .hc-labels-slot.label-none {
     display: none;
+  }
+
+  /* Labels container - created by LabelRenderer inside slot */
+  .hc-labels-container {
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    background-color: var(--panel-color);
+    box-shadow: -4px 0 16px var(--shadow-color), 4px 0 16px var(--shadow-color), 0 4px 16px var(--shadow-color);
   }
 
   .hc-labels-svg {
@@ -175,21 +189,29 @@ const _styles = `
   /* Body container */
   .hc-body-container {
     flex: 1;
-    border-top: 1px solid var(--second-gridline-color);
-    border-bottom: 1px solid var(--second-gridline-color);
-    overflow: auto;
+    overflow-y: auto;
+    overflow-x: hidden;
   }
 
-  .hc-body-container.left {
-    border-right: 1px solid var(--second-gridline-color);
+  /* When labels on left: labels hides scrollbar, body shows it */
+  .hc-labels-slot.label-left .hc-labels-container {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .hc-labels-slot.label-left .hc-labels-container::-webkit-scrollbar {
+    display: none;
   }
 
-  .hc-body-container.right {
-    border-left: 1px solid var(--second-gridline-color);
-  }
+  /* When labels on right: labels shows scrollbar (body is covered, doesn't matter) */
+  /* No special rules needed - default behavior */
 
   .hc-body-svg {
     display: block;
+  }
+
+  /* Index slot - mounting point for IndexAxisManager */
+  .hc-index-slot {
+    display: contents; /* Let IndexAxisManager's container participate directly in flex layout */
   }
 
   /* Index axis container */

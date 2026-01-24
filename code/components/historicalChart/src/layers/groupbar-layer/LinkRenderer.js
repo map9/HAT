@@ -2,6 +2,7 @@
  * LinkRenderer - Render links between items using d3.link
  */
 import * as d3 from 'd3';
+import { applyStrokeStyle } from '../../utils/styleHelper.js';
 
 // Curve types mapping
 const CURVE_TYPES = {
@@ -203,17 +204,9 @@ export class LinkRenderer {
       element.attr('marker-end', `url(#${markerId})`);
     }
 
-    // Apply stroke style only if styleFn is provided
+    // Apply stroke style
     if (this.options.styleFn) {
-      if (style.stroke !== null) {
-        element.style('stroke', style.stroke);
-      }
-      if (style.strokeWidth !== null) {
-        element.style('stroke-width', style.strokeWidth);
-      }
-      if (style.strokeDasharray !== null) {
-        element.style('stroke-dasharray', style.strokeDasharray);
-      }
+      applyStrokeStyle(element, style);
     }
   }
 

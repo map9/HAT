@@ -3,6 +3,7 @@
  * Supports multiple shapes: circle, diamond, triangle, square
  */
 import * as d3 from 'd3';
+import { applyStrokeStyle, applyFillStyle } from '../../utils/styleHelper.js';
 
 // D3 symbol types mapping
 const SYMBOL_TYPES = {
@@ -170,25 +171,16 @@ export class PointRenderer {
    * @param {Object} style - Style object from _getStyle
    */
   _applyStyle(element, style, symbolSize) {
-    // Apply stroke style only if styleFn is provided
+    // Apply shape
     element.attr('d', () => {
       const symbolType = this._getShape(style);
       return d3.symbol().type(symbolType).size(symbolSize)();
-    })
+    });
 
+    // Apply stroke and fill styles
     if (this.options.styleFn && style) {
-      if (style.stroke !== null) {
-        element.style('stroke', style.stroke);
-      }
-      if (style.strokeWidth !== null) {
-        element.style('stroke-width', style.strokeWidth);
-      }
-      if (style.fill !== null) {
-        element.style('fill', style.fill);
-      }
-      if (style.fillOpacity !== null) {
-        element.style('fill-opacity', style.fillOpacity);
-      }
+      applyStrokeStyle(element, style);
+      applyFillStyle(element, style);
     }
   }
   

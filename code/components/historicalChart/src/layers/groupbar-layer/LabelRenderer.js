@@ -1,6 +1,11 @@
 /**
  * LabelRenderer - Render hierarchical labels with expand/collapse
  * Ported from GanttChart
+ *
+ * DOM Ownership: LabelRenderer creates and manages its own DOM structure:
+ * - labelsContainer (div.hc-labels-container)
+ * - labelsSvg (svg.hc-labels-svg)
+ * - labelsGroup (g.labels)
  */
 import * as d3 from 'd3';
 
@@ -18,6 +23,7 @@ export class LabelRenderer {
    * @param {number} options.width - Label area width
    * @param {number} options.padding - Padding between label and left or right edge
    * @param {Function} options.onToggle - Callback when group is toggled
+   * @param {Function} options.onContainerCreated - Callback when container is created (for scroll sync)
    */
   constructor(options = {}) {
     this.options = {
@@ -25,21 +31,66 @@ export class LabelRenderer {
       width: 160,
       padding: 6,
       onToggle: (() => {}),
+      onContainerCreated: (() => {}),
       ...options,
     };
 
-    this.container = null;
+    // DOM elements (owned by this renderer)
+    this.slot = null;           // External mounting point (not owned)
+    this.labelsContainer = null; // div.hc-labels-container (owned)
+    this.labelsSvg = null;       // svg.hc-labels-svg (owned)
+    this.labelsGroup = null;     // g.labels (owned)
   }
 
   /**
-   * Create label container
-   * @param {d3.Selection} container - SVG to append labels to
+   * Create label DOM structure in the given slot
+   * @param {d3.Selection} slot - Mounting point (div) to create DOM inside
    */
-  create(container) {
+  create(slot) {
     this.destroy();
-    
-    this.container = container.append('g').classed('labels', true);
-    return this.container;
+
+    if (!slot) return null;
+
+    this.slot = slot;
+
+    // Create container (div) - owns scrolling behavior
+    this.labelsContainer = this.slot.append('div')
+      .classed('hc-labels-container', true)
+      .style('width', '100%')
+      .style('height', '100%')
+      .style('overflow-y', 'auto')
+      .style('overflow-x', 'hidden');
+
+    // Create SVG
+    this.labelsSvg = this.labelsContainer.append('svg')
+      .classed('hc-labels-svg', true)
+      .attr('width', this.options.width);
+
+    // Create group for labels
+    this.labelsGroup = this.labelsSvg.append('g').classed('labels', true);
+
+    // Notify that container is created (for scroll sync registration)
+    this.options.onContainerCreated(this.labelsContainer.node());
+
+    return this.labelsGroup;
+  }
+
+  /**
+   * Get the labels container element (for scroll sync)
+   * @returns {HTMLElement|null}
+   */
+  getContainer() {
+    return this.labelsContainer ? this.labelsContainer.node() : null;
+  }
+
+  /**
+   * Update SVG height when content height changes
+   * @param {number} height - New content height
+   */
+  updateContentHeight(height) {
+    if (this.labelsSvg) {
+      this.labelsSvg.attr('height', height);
+    }
   }
 
   /**
@@ -49,7 +100,7 @@ export class LabelRenderer {
    * @param {string} mode - 'separate' | 'background'
    */
   render(laneTree, rowHeight, mode = 'separate') {
-    if (!this.container || this.options.position === 'none') return;
+    if (!this.labelsGroup || this.options.position === 'none') return;
 
     // Clear existing labels
     this.clear();
@@ -150,7 +201,7 @@ export class LabelRenderer {
       ? iconX - LABEL_STYLE.ICON_SIZE - this.options.padding
       : iconX + LABEL_STYLE.ICON_SIZE + this.options.padding;
 
-    const g = this.container.append('g')
+    const g = this.labelsGroup.append('g')
       .classed('group-item-labels', true)
       .attr('data-level', node.level)
       .attr('data-key', node.key);
@@ -180,7 +231,7 @@ export class LabelRenderer {
       ? this.options.width - this.options.padding
       : this.options.padding;
 
-    const g = this.container.append('g')
+    const g = this.labelsGroup.append('g')
       .classed(`item-label ${this._getNodeLabelClass(node)}`, true)
       .attr('data-level', node.level)
       .attr('data-key', node.key);
@@ -222,7 +273,7 @@ export class LabelRenderer {
       const y = startY + index * LABEL_STYLE.LINE_HEIGHT;
       const labelText = `${pathNode.key} (${pathNode.getAllItems().length})`;
 
-      const labelGroup = this.container.append('g')
+      const labelGroup = this.labelsGroup.append('g')
         .classed('group-item-labels outer-group', true)
         .attr('data-level', pathNode.level)
         .attr('data-key', pathNode.key);
@@ -283,16 +334,29 @@ export class LabelRenderer {
    * Clear all labels
    */
   clear() {
-    if (this.container) {
-      this.container.selectAll('*').remove();
+    if (this.labelsGroup) {
+      this.labelsGroup.selectAll('*').remove();
     }
   }
-  
+
+  /**
+   * Destroy all owned DOM elements
+   */
   destroy() {
-    if (this.container) {
-      this.container.remove();
-      this.container = null;
+    // Clear group content
+    if (this.labelsGroup) {
+      this.labelsGroup.remove();
+      this.labelsGroup = null;
     }
+
+    // Remove container (this also removes svg and group)
+    if (this.labelsContainer) {
+      this.labelsContainer.remove();
+      this.labelsContainer = null;
+    }
+
+    this.labelsSvg = null;
+    this.slot = null;
   }
 
   /**

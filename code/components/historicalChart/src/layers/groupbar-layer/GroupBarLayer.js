@@ -111,13 +111,13 @@ export class GroupBarLayer extends Layer {
    * Create layer's SVG group
    * @param {HistoricalChart} chart - historical chart
    * @param {Object} createOptions - Options for layer creation
-   * @param {d3.Selection} createOptions.labelsGroup - Container for labels (dependency injection)
+   * @param {d3.Selection} createOptions.labelsSlot - Mounting point for LabelRenderer (dependency injection)
    */
   create(chart, createOptions = {}) {
     const group = super.create(chart);
 
     // Store injected dependencies (prefer createOptions over direct chart access)
-    this.labelsGroup = createOptions.labelsGroup || chart.labelsGroup;
+    this.labelsSlot = createOptions.labelsSlot || chart.labelsSlot;
 
     // Bar renderer (for time range items)
     this.barRenderer = new BarRenderer({
@@ -165,15 +165,21 @@ export class GroupBarLayer extends Layer {
     });
     this.groupBarRenderer.create(this.group);
 
-    // Label renderer - use injected labelsGroup
+    // Label renderer - creates its own DOM inside labelsSlot
     this.labelRenderer = new LabelRenderer({
       position: this.options.labelPosition,
       width: this.options.labelWidth,
       padding: this.options.labelXPadding,
-      onToggle: (node, expanded) => this._onGroupToggle(node, expanded)
+      onToggle: (node, expanded) => this._onGroupToggle(node, expanded),
+      onContainerCreated: (container) => {
+        // Register the labels container for scroll sync
+        if (this.chart && this.chart.registerLabelsContainer) {
+          this.chart.registerLabelsContainer(container);
+        }
+      }
     });
-    if (this.labelsGroup) {
-      this.labelRenderer.create(this.labelsGroup);
+    if (this.labelsSlot) {
+      this.labelRenderer.create(this.labelsSlot);
     }
 
     // Item highlighter for link hover
@@ -623,6 +629,16 @@ export class GroupBarLayer extends Layer {
    */
   resize() {
     // Currently no resize logic needed for GroupBarLayer
+  }
+
+  /**
+   * Update content height (notifies LabelRenderer to update its SVG height)
+   * @param {number} contentHeight - New content height
+   */
+  updateContentHeight(contentHeight) {
+    if (this.labelRenderer) {
+      this.labelRenderer.updateContentHeight(contentHeight);
+    }
   }
 
   /**
