@@ -11,6 +11,7 @@ import { ScrollManager } from './ScrollManager.js';
 import { TooltipManager } from './TooltipManager.js';
 import { LayerManager } from './LayerManager.js';
 import * as westernAxises from './axises/westernAxises.js';
+import { isObjectValueChanged } from './utils/options.js'
 
 export class HistoricalChart {
   /**
@@ -142,10 +143,8 @@ export class HistoricalChart {
     // Create structure
     this._createAxisArea();
     this._createContentArea();
-    if (this.options.hasIndexAxis) {
-      this._createIndexSlot();
-    }
-
+    this._createIndexAxis();
+    
     // Create tooltip
     if (this.options.hasTooltip) {
       this._createTooltip();
@@ -159,8 +158,12 @@ export class HistoricalChart {
 
     // Setup active axis
     if (this.options.hasActiveAxis) {
-      this._setupActiveAxis();
+      this._createActiveAxis();
     }
+  }
+
+  isCreated() {
+    return this.container !== null;
   }
 
   /**
@@ -169,8 +172,8 @@ export class HistoricalChart {
    */
   _getBodyHeight() {
     const axisHeight = this.axisManager.getHeight();
-    const indexAxisHeight = this.indexAxisManager
-      ? this.indexAxisManager.getHeight()
+    const indexAxisHeight = this.options.hasIndexAxis
+      ? (this.indexAxisManager ? this.indexAxisManager.getHeight() : this.options.indexAxisHeight)
       : 0;
     return this.options.height - axisHeight - indexAxisHeight;
   }
@@ -204,7 +207,7 @@ export class HistoricalChart {
    * Create labels slot (mounting point for LabelRenderer to build its own DOM)
    * LabelRenderer is responsible for creating its own container/svg/group
    */
-  _createLabelsSlot() {
+  _createOrUpdateLabelsSlot() {
     const bodyHeight = this._getBodyHeight();
     const labelWidth = this.options.labelWidth;
     const labelPosition = this.options.labelPosition;
@@ -244,7 +247,7 @@ export class HistoricalChart {
       .style('height', `${bodyHeight}px`);
 
     // Create labels slot (mounting point for LabelRenderer)
-    this._createLabelsSlot();
+    this._createOrUpdateLabelsSlot();
     
     // Body container
     this.bodyContainer = this.contentContainer.append('div')
@@ -280,10 +283,22 @@ export class HistoricalChart {
    * Create index axis slot (mounting point for IndexAxisManager to build its own DOM)
    * IndexAxisManager is responsible for creating its own container/svg/group
    */
-  _createIndexSlot() {
+  _createIndexAxis() {
     // Create slot - just a mounting point, IndexAxisManager creates the actual DOM
     this.indexSlot = this.chartDiv.append('div')
       .classed('hc-index-slot', true);
+    
+    // Index axis manager
+    if (this.options.hasIndexAxis) {
+      this.indexAxisManager = new IndexAxisManager({
+        timeDomain: this.options.timeDomain,
+        width: this.options.width,
+        height: this.options.indexAxisHeight,
+        zoomLimited: this.options.zoomLimited,
+        onBrush: (domain) => this._onBrushChange(domain)
+      });
+      this.indexAxisManager.create(this.indexSlot);
+    }
   }
 
   /**
@@ -303,18 +318,6 @@ export class HistoricalChart {
    * Initialize managers
    */
   _initManagers() {
-    // Index axis manager
-    if (this.options.hasIndexAxis) {
-      this.indexAxisManager = new IndexAxisManager({
-        timeDomain: this.options.timeDomain,
-        width: this.options.width,
-        height: this.options.indexAxisHeight,
-        zoomLimited: this.options.zoomLimited,
-        onBrush: (domain) => this._onBrushChange(domain)
-      });
-      this.indexAxisManager.create(this.indexSlot);
-    }
-
     // Layer manager and layers
     this.layerManager = new LayerManager(this);
 
@@ -344,9 +347,9 @@ export class HistoricalChart {
   }
 
   /**
-   * Setup active axis (vertical line at mouse position)
+   * Create active axis (vertical line at mouse position)
    */
-  _setupActiveAxis() {
+  _createActiveAxis() {
     const axisHeight = this.axisManager.getHeight();
 
     this.activeAxis = this.axisGroup.append('g')
@@ -362,22 +365,46 @@ export class HistoricalChart {
     // Mouse events on board
     const self = this;
     this.board
-      .on('mousemove', function(event) {
+      .on('mousemove.activeAxis', function(event) {
         const [x] = d3.pointer(event);
         self._onMouseMove(x);
       })
-      .on('mouseenter', function() {
+      .on('mouseenter.activeAxis', function() {
         self.activeAxis.attr('visibility', 'visible');
         if (self.tooltipManager) {
           self.tooltipManager.showAxisTooltip(true);
         }
       })
-      .on('mouseleave', function() {
+      .on('mouseleave.activeAxis', function() {
         self.activeAxis.attr('visibility', 'hidden');
         if (self.tooltipManager) {
           self.tooltipManager.showAxisTooltip(false);
         }
       });
+  }
+
+  /**
+   * 销毁活跃轴（activeAxis）并清理相关事件监听
+   */
+  _destroyActiveAxis() {
+    // 1. 移除 activeAxis 元素（如果存在）
+    if (this.activeAxis) {
+      this.activeAxis.remove(); // 从 DOM 中移除 g 元素及其子元素
+      this.activeAxis = null;   // 清空引用，避免内存泄漏
+    }
+
+    // 2. 清理 board 上的鼠标事件监听（通过命名空间精准清理）
+    if (this.board) {
+      this.board
+        .on('mousemove.activeAxis', null)  // 只删 activeAxis 命名空间的 mousemove
+        .on('mouseenter.activeAxis', null) // 只删 activeAxis 命名空间的 mouseenter
+        .on('mouseleave.activeAxis', null); // 只删 activeAxis 命名空间的 mouseleave
+    }
+
+    // 3. 隐藏轴提示框（可选：确保 tooltip 状态重置）
+    if (this.tooltipManager) {
+      this.tooltipManager.showAxisTooltip(false);
+    }
   }
 
   /**
@@ -492,17 +519,7 @@ export class HistoricalChart {
     this.bodySvg.attr('width', this.options.width);
 
     // Update labels slot dimensions (LabelRenderer manages its own DOM inside the slot)
-    if (this.labelsSlot) {
-      const labelWidth = this.options.labelWidth;
-      const labelPosition = this.options.labelPosition;
-
-      this.labelsSlot
-        .style('width', `${labelWidth}px`)
-        .style('height', `${bodyHeight}px`)
-        .classed('label-left', labelPosition === 'left')
-        .classed('label-right', labelPosition === 'right')
-        .classed('label-none', labelPosition === 'none');
-    }
+    this._createOrUpdateLabelsSlot();
 
     // Update clip path
     this.bodySvg.select('#hc-body-clip rect')
@@ -529,18 +546,27 @@ export class HistoricalChart {
 
     // Re-render with current scale
     const xScale = this.zoomManager.getScale();
-    this.axisManager.update(xScale, axisHeight);
+    this.axisManager.update(xScale);
     this.layerManager.update(xScale, bodyHeight, this.contentHeight);
 
     this.dispatch.call('resize', this, width, height);
   }
 
-  updateContentHeight(forceUpdate = false) {
+  getContentHeight(forceUpdate = false) {
+    let contentHeight = null;
     if (forceUpdate || !this.contentHeight) {
-      this.contentHeight = this.layerManager.calculateContentHeight(
+      contentHeight = this.layerManager.calculateContentHeight(
         this.zoomManager.getScale()
       );
+    } else {
+      contentHeight = this.contentHeight;
     }
+
+    return contentHeight;
+  }
+
+  updateContentHeight(forceUpdate = false) {
+    this.contentHeight = this.getContentHeight(forceUpdate);
 
     // Update SVG heights
     this.bodySvg.attr('height', this.contentHeight);
@@ -577,6 +603,10 @@ export class HistoricalChart {
   on(event, callback) {
     this.dispatch.on(event, callback);
     return this;
+  }
+
+  getScale() {
+    return this.zoomManager.getScale();
   }
 
   /**
@@ -646,136 +676,139 @@ export class HistoricalChart {
   destroy() {
     if (this.container === null) return;
 
-    if (this.scrollManager) this.scrollManager.destroy();
-    if (this.layerManager) this.layerManager.destroy();
     if (this.axisManager) this.axisManager.destroy();
     if (this.indexAxisManager) this.indexAxisManager.destroy();
+    if (this.scrollManager) this.scrollManager.destroy();
     if (this.tooltipManager) this.tooltipManager.destroy();
+    if (this.layerManager) this.layerManager.destroy();
+    
+    this.axisManager = null;
+    this.indexAxisManager = null;
+    this.zoomManager = null;
+    this.scrollManager = null;
+    this.tooltipManager = null;
+    this.layerManager = null;
 
+    // Event dispatch
+    // 没有清理
+    this.dispatch = null;
+
+    // Dom 没有清理
+    this._destroyActiveAxis();
     this.container.innerHTML = '';
+    this.container = null;
   }
 
     /**
    * Update chart options dynamically without recreating the chart
+   * Options 的属性的传递链路的逻辑是，谁传递到下一层，谁负责将变更传递到下一层
    * @param {Object} options - Options to update (partial)
    */
   setOptions(options) {
     const oldOptions = { ...this.options };
     this.options = { ...this.options, ...options };
 
-    // Detect what changed
-    const changes = this._detectChanges(oldOptions, this.options);
-
-    // No changes
-    if (Object.keys(changes).length === 0) return;
-
-    // Track if render is needed
-    let needsRender = false;
-
-    // Apply changes based on type
-    if (changes.timeDomain || changes.axises || changes.zoomLimited || changes.roundRadius) {
-      this._applyTimeAxisChanges(oldOptions, changes);
-      needsRender = true;
-    }
-
-    if (changes.hasIndexAxis !== undefined) {
-      this._applyIndexAxisChanges(changes.hasIndexAxis);
-    }
-
-    if (changes.width || changes.height || changes.labelWidth || changes.labelPosition || changes.axises) {
-      if (changes.labelPosition !== undefined) this._createLabelsSlot();
-      this._applyDimensionChanges(oldOptions);
-      needsRender = true;
-    }
-
-    if (changes.style) {
-      this.setStyle(this.options.style);
-    }
-
-    // Propagate layer-related options to LayerManager
-    const layerOptions = this._extractLayerOptions(changes);
-    if (Object.keys(layerOptions).length > 0 && this.layerManager) {
-      const layerNeedsRender = this.layerManager.setOptions(layerOptions, true);
-      needsRender = layerNeedsRender || needsRender;
-    }
-
-    // Render if needed and not already rendered
-    if (needsRender && !changes.timeDomain && !changes.axises && !changes.zoomLimited && !changes.roundRadius) {
-      this.render();
-    }
-  }
-
-  /**
-   * Extract layer-related options from changes
-   * @private
-   */
-  _extractLayerOptions(changes) {
-    const layerKeys = [
-      'roundRadius', 'rowHeight', 'mode',
-      'barStyleFn', 'pointStyleFn', 'linkStyleFn',
-      'barTextPosition', 'pointTextPosition',
-      'xPadding', 'yPadding', 'groupYPadding',
-      'pointSizeRatio', 'curve', 'headSize', 'minLinkLength'
-    ];
-
-    const result = {};
-    layerKeys.forEach(key => {
-      if (changes[key] !== undefined) {
-        result[key] = this.options[key];
+    // Dimensions & Labels
+    const changeWidth = oldOptions.width !== this.options.width;
+    const changeHeight = oldOptions.height !== this.options.height;
+    const changeLabelWidth = oldOptions.labelWidth !== this.options.labelWidth;
+    const changeLabelPosition = oldOptions.labelPosition !== this.options.labelPosition;
+    if ( changeWidth || changeHeight || changeLabelWidth || changeLabelPosition) {
+      if (changeWidth || changeHeight) {
+        this.resize(this.options.width, this.options.height);
+      } else {
+        this._createOrUpdateLabelsSlot();
       }
-    });
-    return result;
-  }
-
-  /**
-   * Detect which options have changed
-   * @private
-   */
-  _detectChanges(oldOptions, newOptions) {
-    const changes = {};
-
-    // Dimensions
-    if (oldOptions.width !== newOptions.width) changes.width = newOptions.width;
-    if (oldOptions.height !== newOptions.height) changes.height = newOptions.height;
-    if (oldOptions.labelWidth !== newOptions.labelWidth) changes.labelWidth = newOptions.labelWidth;
-    if (oldOptions.labelPosition !== newOptions.labelPosition) changes.labelPosition = newOptions.labelPosition;
-    if (oldOptions.roundRadius !== newOptions.roundRadius) changes.roundRadius = newOptions.roundRadius;
-
-    // Time axis related
-    if (this._hasDomainChanged(oldOptions.timeDomain, newOptions.timeDomain)) {
-      changes.timeDomain = newOptions.timeDomain;
     }
-    if (oldOptions.axises !== newOptions.axises) {
-      changes.axises = newOptions.axises;
+
+    // Update time domain or zoom limits
+    if (
+      this._hasDomainChanged(oldOptions.timeDomain, this.options.timeDomain) ||
+      this._hasArrayChanged(oldOptions.zoomLimited, this.options.zoomLimited)
+    ) {
+      this.zoomManager.setOptions({
+        timeDomain: this.options.timeDomain,
+        zoomLimited: this.options.zoomLimited
+      });
+
+      // Update index axis
+      if (this.indexAxisManager) {
+        this.indexAxisManager.setOptions({
+          timeDomain: this.options.timeDomain,
+          zoomLimited: this.options.zoomLimited
+        });
+        this.indexAxisManager.updateFromZoom(this.getCurrentDomain());
+      }
     }
-    if (this._hasArrayChanged(oldOptions.zoomLimited, newOptions.zoomLimited)) {
-      changes.zoomLimited = newOptions.zoomLimited;
+
+    // Update axis area if axises changed
+    if (isObjectValueChanged(oldOptions.axises, this.options.axises)) {
+      this.axisManager.setOptions({ axises: this.options.axises });
+      const xScale = this.getScale();
+      this.axisManager.update(xScale, this.axisManager.getHeight());
+    }
+
+    // Round radius for all chart elements
+    if (
+      this.tooltipManager && 
+      (oldOptions.roundRadius !== this.options.roundRadius)
+    ) {
+      this.tooltipManager.setOptions({
+        roundRadius: this.options.roundRadius
+      });
+      // 传递到 Layer
     }
 
     // Index axis
-    if (oldOptions.hasIndexAxis !== newOptions.hasIndexAxis) {
-      changes.hasIndexAxis = newOptions.hasIndexAxis;
+    if (oldOptions.hasIndexAxis !== this.options.hasIndexAxis) {
+      if (this.options.hasIndexAxis && !this.indexAxisManager) {
+        // Create index axis manager
+        this._createIndexAxis();
+        this.indexAxisManager.updateFromZoom(this.getCurrentDomain());
+      } else if (!this.options.hasIndexAxis && this.indexAxisManager) {
+        this.indexAxisManager.destroy();
+        this.indexAxisManager = null;
+      }
+
+      // Update content area height
+      const bodyHeight = this._getBodyHeight();
+      this.contentContainer.style('height', `${bodyHeight}px`);
+      this.bodyContainer.style('height', `${bodyHeight}px`);
+      if (this.labelsSlot) {
+        this.labelsSlot.style('height', `${bodyHeight}px`);
+      }
     }
-    if (oldOptions.indexAxisHeight !== newOptions.indexAxisHeight) {
-      changes.indexAxisHeight = newOptions.indexAxisHeight;
+
+    // Features
+    if (oldOptions.hasActiveAxis !== this.options.hasActiveAxis) {
+      if (this.options.hasActiveAxis) {
+        this._createActiveAxis();
+      } else {
+        this._destroyActiveAxis();
+      }
+    }
+    if (oldOptions.hasTooltip !== this.options.hasTooltip) {
+      this.tooltipManager.setVisible(this.options.hasTooltip);
     }
 
     // Style
-    if (oldOptions.style !== newOptions.style) changes.style = newOptions.style;
-
-    // Layer-related options
-    const layerKeys = [
-      'rowHeight', 'mode', 'barStyleFn', 'pointStyleFn', 'linkStyleFn',
-      'barTextPosition', 'pointTextPosition', 'xPadding', 'yPadding',
-      'groupYPadding', 'pointSizeRatio', 'curve', 'headSize', 'minLinkLength'
-    ];
-    layerKeys.forEach(key => {
-      if (oldOptions[key] !== newOptions[key]) {
-        changes[key] = newOptions[key];
-      }
-    });
-
-    return changes;
+    if (
+      oldOptions.style !== this.options.style ||
+      oldOptions.accentScheme !== this.options.accentScheme
+    ) {
+      this.setStyle(this.options.style, this.options.accentScheme);
+    }
+    if (oldOptions.locale !== this.options.locale) {
+      this.axisManager.setOptions({
+        locale: this.options.locale
+      })
+      this.tooltipManager.setOptions({
+        locale: this.options.locale
+      })
+      this.layerManager.setOptions({
+        locale: this.options.locale
+      })
+    }
   }
 
   /**
@@ -798,88 +831,4 @@ export class HistoricalChart {
     return oldArr.some((v, i) => v !== newArr[i]);
   }
 
-  /**
-   * Apply time axis changes (timeDomain, axises, zoomLimited)
-   * @private
-   */
-  _applyTimeAxisChanges(oldOptions, changes) {
-    // Save current visible domain for restoration
-    const currentDomain = this.getCurrentDomain();
-
-    // Update zoom manager
-    if (changes.timeDomain || changes.zoomLimited) {
-      this.zoomManager.setTimeDomain(
-        this.options.timeDomain,
-        changes.zoomLimited ? this.options.zoomLimited : undefined
-      );
-    }
-
-    // Rebuild axis area if axises changed
-    if (changes.axises) {
-      this.axisManager.setAxises(changes.axises);
-    }
-
-    // Update index axis
-    if (this.indexAxisManager && (changes.timeDomain || changes.zoomLimited)) {
-      this.indexAxisManager.setOptions({
-        timeDomain: this.options.timeDomain,
-        zoomLimited: this.options.zoomLimited
-      });
-    }
-
-    if (this.tooltipManager && changes.roundRadius) {
-      this.tooltipManager.setOptions({
-        roundRadius: this.options.roundRadius
-      });
-    }
-
-    // Re-render layers
-    this.render();
-  }
-
-  /**
-   * Apply index axis visibility changes
-   * @private
-   */
-  _applyIndexAxisChanges(hasIndexAxis) {
-    if (hasIndexAxis && !this.indexAxisManager) {
-      // Create index axis slot and manager
-      this._createIndexSlot();
-      this.indexAxisManager = new IndexAxisManager({
-        timeDomain: this.options.timeDomain,
-        width: this.options.width,
-        height: this.options.indexAxisHeight,
-        zoomLimited: this.options.zoomLimited,
-        onBrush: (domain) => this._onBrushChange(domain)
-      });
-      this.indexAxisManager.create(this.indexSlot);
-      // Sync with current zoom
-      this.indexAxisManager.updateFromZoom(this.getCurrentDomain());
-    } else if (!hasIndexAxis && this.indexAxisManager) {
-      // Remove index axis
-      this.indexAxisManager.destroy();
-      this.indexAxisManager = null;
-      if (this.indexSlot) {
-        this.indexSlot.remove();
-        this.indexSlot = null;
-      }
-    }
-
-    // Update content area height
-    const bodyHeight = this._getBodyHeight();
-    this.contentContainer.style('height', `${bodyHeight}px`);
-    this.bodyContainer.style('height', `${bodyHeight}px`);
-    if (this.labelsSlot) {
-      this.labelsSlot.style('height', `${bodyHeight}px`);
-    }
-  }
-
-  /**
-   * Apply dimension changes (width, height, labelWidth, labelPosition)
-   * @private
-   */
-  _applyDimensionChanges(oldOptions) {
-    // Use existing resize method for dimension changes
-    this.resize(this.options.width, this.options.height);
-  }
 }

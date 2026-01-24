@@ -428,15 +428,6 @@
             <input type="number" id="endYear" value="2020" min="-722" max="2200">
           </div>
         </div>
-
-        <div class="control-group">
-          <label>显示索引轴 (IndexAxis)</label>
-          <select id="hasIndexAxis">
-            <option value="true" selected>显示</option>
-            <option value="false">隐藏</option>
-          </select>
-        </div>
-
         <div class="control-row">
           <div class="control-group">
             <label>最小缩放 (像素/小时)</label>
@@ -449,21 +440,26 @@
             <div class="field-info">-1 = 不限制</div>
           </div>
         </div>
+        <div class="control-row">
+          <div class="control-group">
+            <label>显示索引轴 (IndexAxis)</label>
+            <select id="hasIndexAxis">
+              <option value="true" selected>显示</option>
+              <option value="false">隐藏</option>
+            </select>
+          </div>
+          <div class="control-group">
+            <label>索引轴高度: <span class="range-value" id="indexAxisHeightValue">28</span>px</label>
+            <input type="range" id="indexAxisHeight" min="18" max="40" value="28" step="2">
+          </div>
+        </div>
       </div>
 
       <!-- 布局配置 -->
       <div class="config-section">
         <h2>📐 布局配置</h2>
-
         <div class="control-group">
-          <label>行高: <span class="range-value" id="rowHeightValue">25</span>px</label>
-          <div class="range-row">
-            <input type="range" id="rowHeight" min="15" max="50" value="25" step="1">
-          </div>
-        </div>
-
-        <div class="control-group">
-          <label>标签宽度: <span class="range-value" id="labelWidthValue">240</span>px</label>
+          <label>标签面板宽度: <span class="range-value" id="labelWidthValue">240</span>px</label>
           <div class="range-row">
             <input type="range" id="labelWidth" min="80" max="300" value="240" step="10">
           </div>
@@ -471,41 +467,29 @@
 
         <div class="control-row">
           <div class="control-group">
-            <label>标签位置</label>
-            <select id="labelPosition">
-              <option value="left" selected>左侧</option>
-              <option value="right">右侧</option>
-              <option value="none">不显示</option>
-            </select>
+              <label>标签面板位置</label>
+              <select id="labelPosition">
+                <option value="left" selected>左侧</option>
+                <option value="right">右侧</option>
+                <option value="none">不显示</option>
+              </select>
+            </div>
+          
+            <div class="control-group">
+              <label>标签距边框间距: <span class="range-value" id="labelXPaddingValue">6</span></label>
+              <input type="range" id="labelXPadding" min="0" max="20" value="6" step="1">
+            </div>
           </div>
-        
-          <div class="control-group">
-            <label>标签距边框间距: <span class="range-value" id="labelXPaddingValue">6</span></label>
-            <input type="range" id="labelXPadding" min="0" max="20" value="6" step="1">
-          </div>
-        </div>
 
-        <div class="control-row">
           <div class="control-group">
-            <label>水平间距: <span class="range-value" id="xPaddingValue">2</span>px</label>
-            <input type="range" id="xPadding" min="0" max="10" value="2" step="0.5">
-          </div>
-          <div class="control-group">
-            <label>垂直间距: <span class="range-value" id="yPaddingValue">2</span>px</label>
-            <input type="range" id="yPadding" min="0" max="10" value="2" step="0.5">
+            <label>圆角半径: <span class="range-value" id="roundRadiusValue">4</span>px</label>
+            <input type="range" id="roundRadius" min="0" max="15" value="4" step="1">
           </div>
         </div>
-
-        <div class="control-group">
-          <label>圆角半径: <span class="range-value" id="roundRadiusValue">4</span>px</label>
-          <input type="range" id="roundRadius" min="0" max="15" value="4" step="1">
-        </div>
-      </div>
 
       <!-- 样式配置 -->
       <div class="config-section">
         <h2>🎨 样式配置</h2>
-
         <div class="control-row">
           <div class="control-group">
             <label>主题</label>
@@ -535,18 +519,41 @@
 
         <div class="control-group">
           <label>功能开关</label>
-          <button class="toggle-btn active" id="toggleActiveAxis" onclick="toggleFeature('hasActiveAxis')">
+          <button class="toggle-btn active" id="toggleHasActiveAxis" onclick="toggleFeature('hasActiveAxis')">
             <span>ActiveAxis</span>
           </button>
-          <button class="toggle-btn active" id="toggleTooltip" onclick="toggleFeature('hasTooltip')">
+          <button class="toggle-btn active" id="toggleHasTooltip" onclick="toggleFeature('hasTooltip')">
             <span>Tooltip</span>
           </button>
         </div>
       </div>
 
+      <!-- 图层布局配置 -->
+      <div class="config-section">
+        <h2>📐 图层布局配置</h2>
+        <div class="control-group">
+          <label>数据条/分组条行高: <span class="range-value" id="rowHeightValue">25</span>px</label>
+          <div class="range-row">
+            <input type="range" id="rowHeight" min="15" max="50" value="25" step="1">
+          </div>
+        </div>
+
+        <div class="control-row">
+          <div class="control-group">
+            <label>数据条水平间距: <span class="range-value" id="xPaddingValue">2</span>px</label>
+            <input type="range" id="xPadding" min="0" max="10" value="2" step="0.5">
+          </div>
+          <div class="control-group">
+            <label>数据条垂直间距: <span class="range-value" id="yPaddingValue">2</span>px</label>
+            <input type="range" id="yPadding" min="0" max="10" value="2" step="0.5">
+          </div>
+        </div>
+
+      </div>
+
       <!-- 分组配置 -->
       <div class="config-section">
-        <h2>📊 泳道层级配置</h2>
+        <h2>📊 数据分组配置</h2>
         <div id="laneGroupsContainer"></div>
         <button class="btn-add-lane" onclick="addLaneGroup()">+ 添加层级</button>
 
@@ -568,10 +575,10 @@
 
       <!-- 颜色配置 -->
       <div class="config-section">
-        <h2>🎨 颜色配置</h2>
+        <h2>🎨 数据项颜色配置</h2>
 
         <div class="control-group">
-          <label>Bar 颜色依据</label>
+          <label>数据条颜色依据</label>
           <select id="barColorField">
             <option value="default" selected>默认 (css define)</option>
             <!-- 动态生成 -->
@@ -579,7 +586,7 @@
         </div>
 
         <div class="control-group">
-          <label>Group 颜色依据</label>
+          <label>分组条颜色依据</label>
           <select id="groupColorMode">
             <option value="level" selected>按层级 (默认)</option>
             <option value="field">按分组字段值</option>
@@ -955,156 +962,6 @@
       return date;
     }
 
-    // D3 颜色比例尺 - 按字段分别创建
-    const colorScales = {
-      country: d3.scaleOrdinal(d3.schemeTableau10),
-      countryCode: d3.scaleOrdinal(d3.schemeTableau10),
-      exit: d3.scaleOrdinal(d3.schemeSet2),
-      gender: d3.scaleOrdinal(d3.schemeSet1),
-      level: d3.scaleOrdinal(d3.schemeDark2)
-    };
-
-    // 获取字段值的颜色
-    function getFieldColor(field, value) {
-      if (!value) return '#95a5a6';
-      const scale = colorScales[field] || d3.scaleOrdinal(d3.schemeSet2);
-      return scale(value);
-    }
-    
-    // 形状回调函数 - 根据 exit 字段决定形状
-    function getFieldShape(ctx) {
-      const exit = ctx.data.exit;
-      // 根据 exit 类型返回不同形状
-      switch (exit) {
-        case 'Regular':
-          return 'square';
-        case 'Irregular':
-          return 'diamond';
-        case 'Natural Death':
-          return 'triangle';
-        case 'Still in Office':
-          return 'square';
-        default:
-          return 'circle';
-      }
-    }
-
-    // 统一颜色回调函数
-    function createStyleFn() {
-      const barColorField = document.getElementById('barColorField').value;
-      const groupColorMode = document.getElementById('groupColorMode').value;
-      const enableStyleFn = document.getElementById('enableStyleFn').checked;
-
-      if (!enableStyleFn) {
-        return null;
-      }
-
-      return function(type, ctx) {
-        if (type === 'bar') {
-          // Bar 颜色
-          if (barColorField === 'default') {
-            return null; // 使用默认 css
-          }
-          return {
-            stroke: null,
-            strokeWidth: null,
-            strokeDasharray: null,
-            fill: getFieldColor(barColorField, ctx.data[barColorField]),
-            fillOpacity: null 
-          }
-        }
-
-        if (type === 'point') {
-          // Point 颜色 - 使用与 bar 相同的逻辑
-          if (barColorField === 'default') {
-            return null;
-          }
-          return {
-            stroke: getFieldColor(barColorField, ctx.data[barColorField]),
-            strokeWidth: null,
-            fill: null,
-            fillOpacity: null,
-            marker: getFieldShape(ctx)
-          };
-        }
-
-        if (type === 'separate' || type === 'background') {
-          // Group 颜色
-          if (groupColorMode === 'level') {
-            return {
-              stroke: colorScales.level(ctx.node.level),
-              strokeWidth: 1.5,
-              strokeDasharray: null,
-              fill: colorScales.level(ctx.node.level),
-              fillOpacity: 0.4
-            };
-          }
-          // 按分组字段值着色
-          return {
-              stroke: getFieldColor(ctx.node.field, ctx.node.key),
-              strokeWidth: 1.5,
-              strokeDasharray: null,
-              fill: getFieldColor(ctx.node.field, ctx.node.key),
-              fillOpacity: 0.4
-            };
-        }
-
-        if (type === 'link') {
-          // Link 颜色 - 根据 link type 字段
-          const typeColors = {
-            'succession': '#2196F3',
-            'coup': '#F44336',
-            'election': '#4CAF50',
-            'death': '#9E9E9E',
-            'resignation': '#FF9800'
-          };
-          const type = ctx.type || 'succession';
-
-          // 根据不同类型返回不同样式
-          switch (type) {
-            case 'coup':
-              return {
-                stroke: typeColors.coup,
-                strokeWidth: 2.5,
-                strokeDasharray: '5,3',
-                headMarker: 'diamond'
-              };
-            case 'election':
-              return {
-                stroke: typeColors.election,
-                strokeWidth: 2,
-                strokeDasharray: null,
-                headMarker: 'circle'
-              };
-            case 'death':
-              return {
-                stroke: typeColors.death,
-                strokeWidth: 1.5,
-                strokeDasharray: '2,2',
-                headMarker: 'square'
-              };
-            case 'resignation':
-              return {
-                stroke: typeColors.resignation,
-                strokeWidth: 2,
-                strokeDasharray: '8,4',
-                headMarker: 'arrow'
-              };
-            case 'succession':
-            default:
-              return {
-                stroke: typeColors.succession,
-                strokeWidth: 1.5,
-                strokeDasharray: null,
-                headMarker: 'circle'
-              };
-          }
-        }
-
-        return null;
-      };
-    }
-
     // Fallback data if CSV load fails
     function generateFallbackData() {
       const data = [];
@@ -1265,84 +1122,31 @@
       return {
         width: chartEl.offsetWidth || 1000,
         height: chartEl.offsetHeight || 600,
-        labelWidth: parseInt(document.getElementById('labelWidth').value),
-        labelPosition: document.getElementById('labelPosition').value,
+
         timeDomain: [
           getDate(startYear, 1, 1),
           getDate(endYear, 12, 31)
         ],
-        axises: getAxises(axisType),
-        hasIndexAxis: document.getElementById('hasIndexAxis').value === 'true',
         zoomLimited: [
           parseFloat(document.getElementById('zoomMin').value),
           parseFloat(document.getElementById('zoomMax').value)
         ],
+        axises: getAxises(axisType),
+
+        labelWidth: parseInt(document.getElementById('labelWidth').value),
+        labelPosition: document.getElementById('labelPosition').value,
+        roundRadius: document.getElementById('roundRadius').value,
+        
+        hasIndexAxis: document.getElementById('hasIndexAxis').value === 'true',
+        indexAxisHeight: document.getElementById('indexAxisHeight').value,
+
+        hasActiveAxis: featureFlags.hasActiveAxis,
+        hasTooltip: featureFlags.hasTooltip,
+
         style: document.getElementById('theme').value,
         accentScheme: document.getElementById('accentScheme').value,
         locale: document.getElementById('locale').value,
-        hasActiveAxis: featureFlags.hasActiveAxis,
-        hasTooltip: featureFlags.hasTooltip,
       };
-    }
-
-    // Get current GroupBarLayer configuration
-    function getGroupBarLayerConfig() {
-      return {
-        // Rows
-        rowHeight: parseInt(document.getElementById('rowHeight').value),
-        minRowHeight: 12,         // Minimum row height
-        // Labels
-        labelWidth: parseInt(document.getElementById('labelWidth').value),
-        labelPosition: document.getElementById('labelPosition').value,
-        labelXPadding: parseFloat(document.getElementById('labelXPadding').value),
-        // Spacing
-        xPadding: parseFloat(document.getElementById('xPadding').value),
-        yPadding: parseFloat(document.getElementById('yPadding').value),
-        roundRadius: parseInt(document.getElementById('roundRadius').value),
-        // Groups
-        mode: document.getElementById('groupBarMode').value,
-        groupYPadding: parseInt(document.getElementById('groupYPadding').value),
-        // Bars
-        barTextPosition: 'center',  // 'none' | 'left' | 'center' | 'right'
-        //barStyleFn: createStyleFn(),
-        barStyleFn: null,
-        // Points
-        pointSizeRatio: 0.3,      // Point size relative to rowHeight (0-1)
-        pointTextPosition: 'none',// 'none' | 'right' | 'top'
-        //pointStyleFn: createStyleFn(),
-        pointStyleFn: null,
-        // Links
-        curve: 'curveBumpX',      // d3 curve type for links
-        minLinkLength: 20,        // Minimum link length to display
-        headSize: 5,
-        //linkStyleFn: createStyleFn(),
-        linkStyleFn: null,
-      }
-    }
-
-    // Filter data based on lane groups configuration
-    function getFilteredData() {
-      const groups = getLaneGroupsConfig();
-
-      // If no groups configured, return all data
-      if (groups.length === 0) {
-        return currentData;
-      }
-
-      // Filter data based on selectedValues in each group
-      return currentData.filter(d => {
-        for (const group of groups) {
-          // If selectedValues is null (all selected), skip this filter
-          if (group.selectedValues === null) continue;
-
-          // Check if the data item's field value is in the selected values
-          const fieldValue = d[group.field];
-          if (!group.selectedValues.includes(fieldValue)) {
-            return false;
-          }
-        }
-        return true;
-      });
     }
 
     // Update chart
@@ -1398,6 +1202,212 @@
       document.getElementById('infoDataCount').textContent = filteredData.length;
     }
 
+    // Get current GroupBarLayer configuration
+    function getGroupBarLayerConfig() {
+      return {
+        // Rows
+        rowHeight: parseInt(document.getElementById('rowHeight').value),
+        minRowHeight: 12,         // Minimum row height
+        // Labels
+        labelWidth: parseInt(document.getElementById('labelWidth').value),
+        labelPosition: document.getElementById('labelPosition').value,
+        labelXPadding: parseFloat(document.getElementById('labelXPadding').value),
+        // Spacing
+        xPadding: parseFloat(document.getElementById('xPadding').value),
+        yPadding: parseFloat(document.getElementById('yPadding').value),
+        roundRadius: parseInt(document.getElementById('roundRadius').value),
+        // Groups
+        mode: document.getElementById('groupBarMode').value,
+        groupYPadding: parseInt(document.getElementById('groupYPadding').value),
+        // Bars
+        barTextPosition: 'center',  // 'none' | 'left' | 'center' | 'right'
+        barStyleFn: createStyleFn(),
+        // Points
+        pointSizeRatio: 0.3,      // Point size relative to rowHeight (0-1)
+        pointTextPosition: 'none',// 'none' | 'right' | 'top'
+        pointStyleFn: createStyleFn(),
+        // Links
+        curve: 'curveBumpX',      // d3 curve type for links
+        minLinkLength: 20,        // Minimum link length to display
+        headSize: 5,
+        linkStyleFn: createStyleFn(),
+      }
+    }
+
+    // Filter data based on lane groups configuration
+    function getFilteredData() {
+      const groups = getLaneGroupsConfig();
+
+      // If no groups configured, return all data
+      if (groups.length === 0) {
+        return currentData;
+      }
+
+      // Filter data based on selectedValues in each group
+      return currentData.filter(d => {
+        for (const group of groups) {
+          // If selectedValues is null (all selected), skip this filter
+          if (group.selectedValues === null) continue;
+
+          // Check if the data item's field value is in the selected values
+          const fieldValue = d[group.field];
+          if (!group.selectedValues.includes(fieldValue)) {
+            return false;
+          }
+        }
+        return true;
+      });
+    }
+    // D3 颜色比例尺 - 按字段分别创建
+    const colorScales = {
+      country: d3.scaleOrdinal(d3.schemeTableau10),
+      countryCode: d3.scaleOrdinal(d3.schemeTableau10),
+      exit: d3.scaleOrdinal(d3.schemeSet2),
+      gender: d3.scaleOrdinal(d3.schemeSet1),
+      level: d3.scaleOrdinal(d3.schemeDark2)
+    };
+
+    // 获取字段值的颜色
+    function getFieldColor(field, value) {
+      if (!value) return '#95a5a6';
+      const scale = colorScales[field] || d3.scaleOrdinal(d3.schemeSet2);
+      return scale(value);
+    }
+    
+    // 形状回调函数 - 根据 exit 字段决定形状
+    function getFieldShape(ctx) {
+      const exit = ctx.data.exit;
+      // 根据 exit 类型返回不同形状
+      switch (exit) {
+        case 'Regular':
+          return 'square';
+        case 'Irregular':
+          return 'diamond';
+        case 'Natural Death':
+          return 'triangle';
+        case 'Still in Office':
+          return 'square';
+        default:
+          return 'circle';
+      }
+    }
+
+    // 统一颜色回调函数
+    function createStyleFn() {
+      const barColorField = document.getElementById('barColorField').value;
+      const groupColorMode = document.getElementById('groupColorMode').value;
+      const enableStyleFn = document.getElementById('enableStyleFn').checked;
+
+      if (!enableStyleFn) {
+        return null;
+      }
+
+      return function(type, ctx) {
+        if (type === 'bar') {
+          // Bar 颜色
+          if (barColorField === 'default') {
+            return null; // 使用默认 css
+          }
+          return {
+            stroke: null,
+            strokeWidth: null,
+            strokeDasharray: null,
+            fill: getFieldColor(barColorField, ctx.data[barColorField]),
+            fillOpacity: null 
+          }
+        }
+
+        if (type === 'point') {
+          // Point 颜色 - 使用与 bar 相同的逻辑
+          if (barColorField === 'default') {
+            return null;
+          }
+          return {
+            stroke: getFieldColor(barColorField, ctx.data[barColorField]),
+            strokeWidth: null,
+            fill: null,
+            fillOpacity: null,
+            marker: getFieldShape(ctx)
+          };
+        }
+        
+        if (type === 'groupBar') {
+          // Group 颜色
+          if (groupColorMode === 'level') {
+            return {
+              stroke: colorScales.level(ctx.data.level),
+              strokeWidth: 1.5,
+              strokeDasharray: null,
+              fill: colorScales.level(ctx.data.level),
+              fillOpacity: 0.4
+            };
+          }
+          // 按分组字段值着色
+          return {
+              stroke: getFieldColor(ctx.data.field, ctx.data.key),
+              strokeWidth: 1.5,
+              strokeDasharray: null,
+              fill: getFieldColor(ctx.data.field, ctx.data.key),
+              fillOpacity: 0.4
+            };
+        }
+
+        if (type === 'link') {
+          // Link 颜色 - 根据 link type 字段
+          const typeColors = {
+            'succession': '#2196F3',
+            'coup': '#F44336',
+            'election': '#4CAF50',
+            'death': '#9E9E9E',
+            'resignation': '#FF9800'
+          };
+          const type = ctx.data.type || 'succession';
+
+          // 根据不同类型返回不同样式
+          switch (type) {
+            case 'coup':
+              return {
+                stroke: typeColors.coup,
+                strokeWidth: 2.5,
+                strokeDasharray: '5,3',
+                headMarker: 'diamond'
+              };
+            case 'election':
+              return {
+                stroke: typeColors.election,
+                strokeWidth: 2,
+                strokeDasharray: null,
+                headMarker: 'circle'
+              };
+            case 'death':
+              return {
+                stroke: typeColors.death,
+                strokeWidth: 1.5,
+                strokeDasharray: '2,2',
+                headMarker: 'square'
+              };
+            case 'resignation':
+              return {
+                stroke: typeColors.resignation,
+                strokeWidth: 2,
+                strokeDasharray: '8,4',
+                headMarker: 'arrow'
+              };
+            case 'succession':
+            default:
+              return {
+                stroke: typeColors.succession,
+                strokeWidth: 1.5,
+                strokeDasharray: null,
+                headMarker: 'circle'
+              };
+          }
+        }
+
+        return null;
+      };
+    }
+
     function updateGroupBarLayer() {
       if (!chart) return;
 
@@ -1410,7 +1420,7 @@
         setGroupBarLayerData();
         chart.layerManager.addLayer(groupBarLayer, 1);
 
-        console.log('Chart created');
+        console.log('Layer created');
       } else {
         groupBarLayer.setOptions({
           ...config
@@ -1454,7 +1464,6 @@
         gridLayer = new GridLayer('grid', {
           axises: config.axises,
           locale: config.locale,
-          visible: true
         });
         chart.layerManager.addLayer(gridLayer, 0);
       } else {
@@ -1521,20 +1530,22 @@
       document.getElementById('axisType').value = 'western';
       document.getElementById('startYear').value = '1850';
       document.getElementById('endYear').value = '2020';
-      document.getElementById('hasIndexAxis').value = 'true';
       document.getElementById('zoomMin').value = '-1';
       document.getElementById('zoomMax').value = '-1';
-      document.getElementById('rowHeight').value = '25';
-      document.getElementById('rowHeightValue').textContent = '25';
       document.getElementById('labelWidth').value = '240';
       document.getElementById('labelWidthValue').textContent = '240';
       document.getElementById('labelPosition').value = 'left';
+      document.getElementById('roundRadius').value = '4';
+      document.getElementById('roundRadiusValue').textContent = '4';
+      document.getElementById('hasIndexAxis').value = 'true';
+      document.getElementById('indexAxisHeight').value = 28;
+      document.getElementById('indexAxisHeightValue').textContent = '28';
+      document.getElementById('rowHeight').value = '25';
+      document.getElementById('rowHeightValue').textContent = '25';
       document.getElementById('xPadding').value = '2';
       document.getElementById('xPaddingValue').textContent = '2';
       document.getElementById('yPadding').value = '2';
       document.getElementById('yPaddingValue').textContent = '2';
-      document.getElementById('roundRadius').value = '4';
-      document.getElementById('roundRadiusValue').textContent = '4';
       document.getElementById('groupBarMode').value = 'separate';
       document.getElementById('labelXPadding').value = '6';
       document.getElementById('labelXPaddingValue').textContent = '6';
@@ -1577,16 +1588,16 @@
     // Bind events
     function bindEvents() {
       // Range sliders
-      let rangeInputs = ['rowHeight', 'xPadding', 'yPadding', 'labelXPadding', 'groupYPadding', 'labelWidth', 'roundRadius'];
+      let rangeInputs = ['labelWidth', 'roundRadius', 'indexAxisHeight', 'rowHeight', 'xPadding', 'yPadding', 'labelXPadding', 'groupYPadding'];
       rangeInputs.forEach(id => {
         const input = document.getElementById(id);
         const valueSpan = document.getElementById(id + 'Value');
-        if (['rowHeight'].includes(id)) {
+        if (['rowHeight', 'xPadding', 'yPadding', 'labelXPadding', 'groupYPadding'].includes(id)) {
           input.addEventListener('input', function() {
             valueSpan.textContent = this.value;
-            updateChart();
+            updateGroupBarLayer();
           });
-        } else if (['xPadding', 'yPadding', 'labelXPadding', 'groupYPadding'].includes(id)) {
+        } else if (['indexAxisHeight'].includes(id)) {
           input.addEventListener('input', function() {
             valueSpan.textContent = this.value;
             updateChart();
@@ -1601,39 +1612,41 @@
       });
 
       // Select inputs
-      const selectInputs = ['axisType', 'locale', 'hasIndexAxis', 'labelPosition', 'theme', 'accentScheme', 'groupBarMode', 'barColorField', 'groupColorMode', 'labelPosition'];
+      const selectInputs = ['axisType', 'labelPosition', 'hasIndexAxis', 'groupBarMode', 'barColorField', 'groupColorMode', 'theme', 'accentScheme', 'locale'];
       selectInputs.forEach(id => {
         const input = document.getElementById(id);
-        if (['hasIndexAxis', 'labelPosition', 'theme', 'accentScheme'].includes(id)) {
-          input.addEventListener('change', updateChart);
+        if (['hasIndexAxis', 'theme', 'accentScheme'].includes(id)) {
+          input.addEventListener('change', function() {
+            updateChart();
+          });
         } else if (['groupBarMode', 'barColorField', 'groupColorMode'].includes(id)) {
-          input.addEventListener('change', updateChart);
-        } else if (['axisType', 'locale'].includes(id)) {
-          input.addEventListener(
-            'change',
-            ()=> {
-              updateChart();
-              updateGridLayer();
-            }
-          );
-        }  else {
-          input.addEventListener(
-            'change',
-            ()=> {
-              updateChart();
-              updateGroupBarLayer();
-            }
-          );
+          input.addEventListener('change', function() {
+            updateGroupBarLayer();
+          });
+        } else if(['axisType', 'locale'].includes(id)) {
+          input.addEventListener('change', function() {
+            updateChart();
+            updateGridLayer();
+          });
+        } else {
+          input.addEventListener('change',function() {
+            updateChart();
+            updateGroupBarLayer();
+          });
         }
       });
 
       // Checkbox inputs
-      document.getElementById('enableStyleFn').addEventListener('change', updateGroupBarLayer);
+      document.getElementById('enableStyleFn').addEventListener('change', function() {
+        updateGroupBarLayer();
+      });
 
       // Number inputs
       const numberInputs = ['startYear', 'endYear', 'zoomMin', 'zoomMax'];
       numberInputs.forEach(id => {
-        document.getElementById(id).addEventListener('change', updateChart);
+        document.getElementById(id).addEventListener('change', function() {
+          updateChart();
+        });
       });
     }
 

@@ -113,6 +113,9 @@ export class Layer {
    * Update layer options and trigger re-render if attached to chart
    * @param {Object} options - New options to merge
    * @param {boolean} [skipRender=false] - Skip re-render (useful when batch updating)
+   * @return {boolean} 是否需要手动渲染
+   * - false: 不需要重新渲染
+   * - true: 需要
    */
   setOptions(options, skipRender = false) {
     this.options = { ...this.options, ...options };
@@ -120,7 +123,10 @@ export class Layer {
     // Trigger re-render if layer is attached to chart and visible
     if (!skipRender && this.chart && this.visible) {
       this._triggerRender();
+      return false;
     }
+
+    return true;
   }
 
   /**
@@ -129,13 +135,11 @@ export class Layer {
    * @protected
    */
   _triggerRender() {
-    if (!this.chart || !this.chart.zoomManager) return;
+    if (!this.chart || !this.chart.isCreated()) return;
 
-    const xScale = this.chart.zoomManager.getScale();
-    const axisHeight = this.chart.axisManager ? this.chart.axisManager.getHeight() : 0;
-    const indexHeight = this.chart.options.hasIndexAxis ? this.chart.options.indexAxisHeight : 0
-    const bodyHeight = this.chart.options.height - axisHeight - indexHeight;
-    const contentHeight = this.chart.contentHeight || bodyHeight;
+    const xScale = this.chart.getScale();
+    const bodyHeight = this.chart.getContentHeight();
+    const contentHeight = this.chart.getContentHeight() || bodyHeight;
 
     this.render(xScale, bodyHeight, contentHeight);
   }

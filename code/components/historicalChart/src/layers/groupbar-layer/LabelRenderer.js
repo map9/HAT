@@ -104,6 +104,9 @@ export class LabelRenderer {
 
     // Clear existing labels
     this.clear();
+    this.labelsSvg
+      .attr('width', this.options.width);
+
 
     // Use different render strategies based on mode
     if (mode === 'background') {

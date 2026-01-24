@@ -26,7 +26,6 @@ export class GroupBarLayer extends Layer {
    * @param {number} options.yPadding - Vertical padding for bars, include row height
    * @param {number} options.roundRadius - Corner radius for bars and group bars and tooltips
    * @param {string} options.mode - 'separate' | 'background'
-   * @param {number} options.roundRadius - Corner radius for bars and group bars
    * @param {number} options.groupYPadding - Vertical padding for groups in background mode
    * @param {string} options.barTextPosition - 'none' | 'left' | 'center' | 'right'
    * @param {Function} options.barStyleFn - Style callback for bars
@@ -119,6 +118,18 @@ export class GroupBarLayer extends Layer {
     // Store injected dependencies (prefer createOptions over direct chart access)
     this.labelsSlot = createOptions.labelsSlot || chart.labelsSlot;
 
+    // Group bar renderer
+    this.groupBarRenderer = new GroupBarRenderer({
+      mode: this.options.mode,
+      roundRadius: this.options.roundRadius,
+      yPadding: this.options.yPadding,
+      styleFn: this.options.barStyleFn,
+      onClick: (d, event) => this.chart.dispatch.call('itemClick', this, { type: 'group', data: d }, event),
+      onHover: (d, event) => this._onItemHover({ type: 'group', data: d }, event),
+      onLeave: (d, event) => this._onItemLeave({ type: 'group', data: d }, event)
+    });
+    this.groupBarRenderer.create(this.group);
+
     // Bar renderer (for time range items)
     this.barRenderer = new BarRenderer({
       roundRadius: this.options.roundRadius,
@@ -152,18 +163,6 @@ export class GroupBarLayer extends Layer {
       onLeave: (d, event) => this._onItemLeave({ type: 'link', data: d }, event)
     });
     this.linkRenderer.create(this.group);
-
-    // Group bar renderer
-    this.groupBarRenderer = new GroupBarRenderer({
-      mode: this.options.mode,
-      roundRadius: this.options.roundRadius,
-      yPadding: this.options.yPadding,
-      styleFn: this.options.barStyleFn,
-      onClick: (d, event) => this.chart.dispatch.call('itemClick', this, { type: 'group', data: d }, event),
-      onHover: (d, event) => this._onItemHover({ type: 'group', data: d }, event),
-      onLeave: (d, event) => this._onItemLeave({ type: 'group', data: d }, event)
-    });
-    this.groupBarRenderer.create(this.group);
 
     // Label renderer - creates its own DOM inside labelsSlot
     this.labelRenderer = new LabelRenderer({
@@ -593,9 +592,7 @@ export class GroupBarLayer extends Layer {
 
     // Render labels
     if (this.laneTree && this.labelRenderer) {
-      this.labelRenderer.render(this.laneTree, this.options.rowHeight, {
-        mode: this.options.mode
-      });
+      this.labelRenderer.render(this.laneTree, this.options.rowHeight, this.options.mode);
     }
 
     this._prepareLinks(xScale);
@@ -664,73 +661,82 @@ export class GroupBarLayer extends Layer {
     const labelOptions = {};
 
     // groupBarRenderer and barRenderer options
-    if (options.mode !== undefined) {
+    if (options.mode && options.mode !== this.options.mode) {
       groupBarOptions.mode = options.mode;
+      labelOptions.mode = options.mode;
     }
-    if (options.roundRadius !== undefined) {
+    if (options.roundRadius && options.roundRadius !== this.options.roundRadius) {
       groupBarOptions.roundRadius = options.roundRadius;
       barOptions.roundRadius = options.roundRadius;
+      labelOptions.roundRadius = options.roundRadius;
     }
-    if (options.yPadding !== undefined) {
+    if (options.yPadding && options.yPadding !== this.options.yPadding) {
       groupBarOptions.yPadding = options.yPadding;
       barOptions.yPadding = options.yPadding;
     }
-    if (options.barTextPosition !== undefined) {
+    if (options.barTextPosition && options.barTextPosition !== this.options.barTextPosition) {
       barOptions.textPosition = options.barTextPosition;
     }
-    if (options.barStyleFn !== undefined) {
+    if (options.barStyleFn && options.barStyleFn !== this.options.barStyleFn) {
       groupBarOptions.styleFn = options.barStyleFn;
       barOptions.styleFn = options.barStyleFn;
     }
 
     // linkRenderer options
-    if (options.curve !== undefined) {
+    if (options.curve && options.curve !== this.options.curve) {
       linkOptions.curve = options.curve;
     }
-    if (options.headSize !== undefined) {
+    if (options.headSize && options.headSize !== this.options.headSize) {
       linkOptions.headSize = options.headSize;
     }
-    if (options.linkStyleFn !== undefined) {
+    if (options.linkStyleFn && options.linkStyleFn !== this.options.linkStyleFn) {
       linkOptions.styleFn = options.linkStyleFn;
     }
 
     // pointRenderer options
-    if (options.pointSizeRatio !== undefined) {
+    if (options.pointSizeRatio && options.pointSizeRatio !== this.options.pointSizeRatio) {
       pointOptions.sizeRatio = options.pointSizeRatio;
     }
-    if (options.pointTextPosition !== undefined) {
+    if (options.pointTextPosition && options.pointTextPosition !== this.options.pointTextPosition) {
       pointOptions.textPosition = options.pointTextPosition;
     }
-    if (options.pointStyleFn !== undefined) {
+    if (options.pointStyleFn && options.pointStyleFn !== this.options.pointStyleFn) {
       pointOptions.styleFn = options.pointStyleFn;
     }
 
     // labelRenderer options
-    if (options.labelPosition !== undefined) {
+    if (options.labelPosition && options.labelPosition !== this.options.labelPosition) {
       labelOptions.position = options.labelPosition;
     }
-    if (options.labelWidth !== undefined) {
+    if (options.labelWidth && options.labelWidth !== this.options.labelWidth) {
       labelOptions.width = options.labelWidth;
     }
-    if (options.labelXPadding !== undefined) {
+    if (options.labelXPadding && options.labelXPadding !== this.options.labelXPadding) {
       labelOptions.padding = options.labelXPadding;
     }
 
     // all sub-renderer message options (these don't require re-render)
-    if (options.onClick !== undefined) {
+    if (options.onClick && options.onClick !== this.options.onClick) {
       linkOptions.onClick = options.onClick;
       pointOptions.onClick = options.onClick;
     }
-    if (options.onHover !== undefined) {
+    if (options.onHover && options.onHover !== this.options.onHover) {
       linkOptions.onHover = options.onHover;
       pointOptions.onHover = options.onHover;
     }
-    if (options.onLeave !== undefined) {
+    if (options.onLeave && options.onLeave !== this.options.onLeave) {
       linkOptions.onLeave = options.onLeave;
       pointOptions.onLeave = options.onLeave;
     }
-    if (options.onLabelToggle !== undefined) {
+    if (options.onLabelToggle && options.onLabelToggle !== this.options.onLabelToggle) {
       labelOptions.onToggle = options.onLabelToggle;
+    }
+
+    // Clear cached data if structural changes
+    if (needsFullRebuild) {
+      this.laneTree = null;
+      this.enrichedData = null;
+      this.enrichedLinks = null;
     }
 
     // Propagate options to sub-renderers and collect render flags
@@ -752,22 +758,12 @@ export class GroupBarLayer extends Layer {
       needsRender = this.labelRenderer.setOptions(labelOptions) || needsRender;
     }
 
-    // Clear cached data if structural changes
-    if (needsFullRebuild) {
-      this.laneTree = null;
-      this.enrichedData = null;
-      this.enrichedLinks = null;
+    if (needsRender === false) {
+      super.setOptions(options, true); // 只要 skipRender = false，默认重新渲染
+      return false;
+    } else {
+      return super.setOptions(options, skipRender);
     }
-
-    // Update own options
-    Object.assign(this.options, options);
-
-    // Trigger render if needed and not skipped
-    if (needsRender && !skipRender) {
-      this._triggerRender();
-    }
-
-    return needsRender;
   }
 
   /**

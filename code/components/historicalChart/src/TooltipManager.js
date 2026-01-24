@@ -30,6 +30,7 @@ export class TooltipManager {
     this.itemTooltip = null;
     this.axisTooltip = null;
     this.itemTooltipBoundBox = null;
+    this.visible = true;
 
     // Timers for delayed show/hide
     this._axisShowTimer = null;
@@ -87,7 +88,7 @@ export class TooltipManager {
    * @param {boolean} visible
    */
   showAxisTooltip(visible) {
-    if (!this.axisTooltip) return;
+    if (!this.axisTooltip || !this.visible) return;
 
     if (visible) {
       // Clear any pending hide timer
@@ -124,7 +125,7 @@ export class TooltipManager {
    * @param {Object} customContent - Optional custom content {value: string}
    */
   updateAxisTooltip(date, x, y, customContent = null) {
-    if (!this.axisTooltip) return;
+    if (!this.axisTooltip || !this.visible) return;
 
     this.axisTooltip.attr('transform', `translate(${x + 2 * this.options.gap}, ${y})`);
 
@@ -216,7 +217,7 @@ export class TooltipManager {
    * @private
    */
   _positionItemTooltip(x, y) {
-    if (!this.itemTooltip || !this.itemTooltipContainer) return;
+    if (!this.itemTooltip || !this.itemTooltipContainer || !this.visible) return;
 
     const box = this.itemTooltipBoundBox || {
       left: 0,
@@ -257,7 +258,7 @@ export class TooltipManager {
    * @param {number} y - Y position (relative to container)
    */
   showItemTooltip(html, x, y) {
-    if (!this.itemTooltip || !this.itemTooltipContainer) return;
+    if (!this.itemTooltip || !this.itemTooltipContainer || !this.visible) return;
 
     // Clear any pending hide timer
     clearTimeout(this._itemHideTimer);
@@ -301,8 +302,16 @@ export class TooltipManager {
    * @param {number} y - Y position
    */
   updateItemTooltipPosition(x, y) {
-    if (!this.itemTooltip) return;
+    if (!this.itemTooltip || !this.visible) return;
     this._positionItemTooltip(x, y);
+  }
+
+  setVisible(visible = true) {
+    this.visible = visible;
+    if (this.visible === false) {
+      this.hideItemTooltip();
+      this.axisTooltip.attr('visibility', 'hidden');
+    }
   }
 
   destroy() {

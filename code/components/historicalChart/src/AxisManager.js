@@ -31,7 +31,8 @@ export class AxisManager {
     }
 
     // DOM elements (owned by this manager)
-    this.slot = null;           // External mounting point (not owned)
+    this.slot = null;           // External mounting point (not owned) - Slot mode
+    this.parentGroup = null;    // External mounting point (not owned) - Group mode
     this.axisContainer = null;  // div.hc-axis-container (owned)
     this.axisSvg = null;        // svg.hc-axis-svg (owned)
     this.axisGroup = null;      // g - root group for all content (owned)
@@ -186,6 +187,7 @@ export class AxisManager {
     if (isGroupMode) {
       // Group mode: render directly into the svg g element (for GridLayer)
       this.slot = null;
+      this.parentGroup = slotOrGroup;  // Save parent group for recreation in setAxises()
       this.axisContainer = null;
       this.axisSvg = null;
       this.axisGroup = slotOrGroup;
@@ -332,13 +334,19 @@ export class AxisManager {
    * @param {Array} axises - Axis configurations to set
    */
   setAxises(axises) {
+    // Save parent references before destroy (supports both Slot and Group modes)
     const slot = this.slot;
+    const parentGroup = this.parentGroup;
+
     this.destroy();
 
     this.options.axises = axises.slice();
 
+    // Recreate based on mode
     if (slot) {
       this.create(slot);
+    } else if (parentGroup) {
+      this.create(parentGroup);
     }
   }
 
@@ -360,7 +368,7 @@ export class AxisManager {
     this.axisSvg = null;
     this.axisGroup = null;
     this.axisesGroup = null;
-    // Keep slot reference for potential recreation
+    // Keep slot and parentGroup references for potential recreation
   }
 
   setOptions(options) {
