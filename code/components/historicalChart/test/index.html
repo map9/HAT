@@ -1323,9 +1323,9 @@
             return null;
           }
           return {
-            stroke: getFieldColor(barColorField, ctx.data[barColorField]),
+            stroke: null,
             strokeWidth: null,
-            fill: null,
+            fill: getFieldColor(barColorField, ctx.data[barColorField]),
             fillOpacity: null,
             marker: getFieldShape(ctx)
           };
