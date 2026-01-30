@@ -20,7 +20,7 @@ var html =
 //html += calendar(2, -102, undefined, undefined, 'html');
 let cc = new ChineseCalendar({lng: 'zh-Hans'});
 //let cc = new ChineseCalendar({lng: 'en'});
-html += cc.exportYear(-103, null, 'html');
+html += cc.exportYear(1645, null, 'html');
 //html += cc.exportYear(264, 'Tki.Wu', 'html');
 
 html += 

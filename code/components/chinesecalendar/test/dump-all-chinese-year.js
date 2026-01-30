@@ -229,5 +229,18 @@ testChineseYearMonthInfo(date);
 */
 
 //dumpAllChineseYearMonthInfo();
-const monthsInfo = calendar.getChineseYearMonthInfo(-710, DEFAULT_REGION);
-console.log(JSON.stringify(monthsInfo, null, 2));
+//const monthsInfo = calendar.getChineseYearMonthInfo(-710, DEFAULT_REGION);
+//console.log(JSON.stringify(monthsInfo, null, 2));
+
+function getDate(gYear, gMonth, gDay) {
+  const date = new Date(2000, 0, 1, 0, 0, 0, 0, 0); // 临时初始化为2000年1月1日
+  date.setFullYear(gYear);
+  date.setMonth(gMonth - 1);
+  date.setDate(gDay);
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+const date = getDate(-106, 10, 20)
+const lunar = calendar.getChineseDateFromGregorian(date)
+console.log(lunar)

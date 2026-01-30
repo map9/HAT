@@ -177,13 +177,13 @@ export function getCalendarRegionsByYear(year) {
   // QingSouthernMing
   if (year > 1644.5 && year < 1683.5) {
     // default: Qing
-    regions.push({id: "Qing.Qing", name: "Qing", cname: "清", sname: "清"});
+    regions = [{id: "Qing.Qing", name: "Qing", cname: "清", sname: "清"}];
 
     // SouthernMing
     if (year < 1661.5) {
-      regions = [{id: "Qing.SouthernMing", name: "SouthernMing", cname: "南明", sname: "南明"}];
+      regions.push({id: "Qing.SouthernMing", name: "SouthernMing", cname: "南明", sname: "南明"});
     } else {
-      regions = [{id: "Qing.Zheng", name: "Zheng", cname: "明鄭", sname: "明郑"}];
+      regions.push({id: "Qing.Zheng", name: "Zheng", cname: "明鄭", sname: "明郑"});
     }
   }
 
@@ -253,7 +253,7 @@ export function correctCalendarRegionByYear(year, id) {
     id = null;
   }
   
-  // 缺省为第一本历书
+  // 缺省为第一个区域
   if (id == null ) {
     id = regions[0].id;
   }
