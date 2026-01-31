@@ -984,8 +984,13 @@ export class ChineseCalendar {
       return this.i18n.t('errors:INVALID_INPUT_YEAR');
     }
 
+    console.log('region', calender)
+
     // 纠正输入的calender。
     calender = correctCalendarByYear(year, calender);
+
+    console.log('region', calender)
+
 
     // 获取公历年这一年的农历年数据，包含月和日等信息。
     let calVars = calDataYear(year, calender);
@@ -2251,7 +2256,7 @@ function calendarNotesBefore618(y, m, lang, region) {
       warn = "《三千五百年历日天象》的正文与其附表3的资料不一致，正文记這年闰五月，附表3则为闰四月。";
     }
   }
-
+  
   if (y == 575 && m == 9 && isDefaultRegionCalendar(region, y)) {
     if (lang == 0) {
       warn =
