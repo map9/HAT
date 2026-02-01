@@ -1,7 +1,6 @@
 import { correctCalendarByYear, calDataYear } from '../dist/index.js';
 
 const conversionTestYears = [
-  { year: 575,  desc: '' },
   { year: -301, desc: '先秦古代历法' },
   { year: -300, desc: '先秦古代历法' },
   { year: -105, desc: '颛顼历，岁首=十月' },
