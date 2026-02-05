@@ -37,13 +37,13 @@ export const zhHant: LocaleData = {
     '20': '廿一', '21': '廿二', '22': '廿三', '23': '廿四', '24': '廿五',
     '25': '廿六', '26': '廿七', '27': '廿八', '28': '廿九', '29': '三十'
   },
-  moonStatuses: {
+  moonPhases: {
     '0': '朔', '1': '上弦', '2': '望', '3': '下弦'
   },
   monthSizes: {
     '0': '小', '1': '大'
   },
-  soltermNames: {
+  solarTermNames: {
     '0': '小寒', '1': '大寒', '2': '立春', '3': '雨水', '4': '驚蟄', '5': '春分',
     '6': '清明', '7': '穀雨', '8': '立夏', '9': '小滿', '10': '芒種', '11': '夏至',
     '12': '小暑', '13': '大暑', '14': '立秋', '15': '處暑', '16': '白露', '17': '秋分',
@@ -57,10 +57,54 @@ export const zhHant: LocaleData = {
   leap: {
     'leap': '閏', 'post': '後', 'post9': '後九'
   },
-  years: {
-    'ce': '{{year}}', 'bce': '前{{year}}'
+  westernCalendar: {
+    'prolepticJulian': '逆推儒略曆',
+    'julian': '儒略曆',
+    'reform': '儒略曆/格里曆',
+    'gregorian': '格里曆'
   },
+  chineseCalendar: {
+    'Huangdi': '黃帝',
+    'Zhuanxu': '顓頊',
+    'Spring.Xia': '夏',
+    'Yin': '殷',
+    'Zhou': '周',
+    'Chunqiu': '春秋',
+    'Lu': '鲁',
+    'Warring.Xia': '夏',
+    'HanZhuanxu': '漢顓頊',
+    "Tki.Wei": '魏',
+    "Tki.Shu": '蜀',
+    "Tki.Wu": '吳',
+    "Jin": '晋',
+    "SouthNorth.South.Jin": '东晋',
+    "SouthNorth.South.Song": '宋',
+    "SouthNorth.South.Qi": '齊',
+    "SouthNorth.South.Liang": '梁',
+    "SouthNorth.South.Chen": '陳',
+    "SouthNorth.North.LaterQin": '後秦',
+    "SouthNorth.North.NorthernLiang": '北凉',
+    "SouthNorth.North.NorthernWei": '北魏',
+    "SouthNorth.North.WesternWei": '西魏',
+    "SouthNorth.North.NorthernZhou": '北周',
+    "SouthNorth.North.Sui": '隋',
+    "SouthNorth.North.EasternWei": '東魏',
+    "SouthNorth.North.NorthernQi": '北齊',
+    "SongLiaoJinYuan.LaterHan": '後漢',
+    "SongLiaoJinYuan.LaterZhou": '後周',
+    "SongLiaoJinYuan.Song": '宋',
+    "SongLiaoJinYuan.Liao": '遼/契丹',
+    "SongLiaoJinYuan.Jin": '金',
+    "SongLiaoJinYuan.Mongol": '蒙古',
+    "SongLiaoJinYuan.Yuan": '元',
+    "Qing.Qing": '清',
+    "Qing.SouthernMing": '南明',
+    "Qing.Zheng": '明鄭'
+  },
+
   yearExpressions: {
+    'ce': '{{year}}',
+    'bce': '前{{year}}',
     'short': '{{year}}年',
     'short.ganZhi': '{{heaven}}{{earth}}年',
     'normal': '{{year}}（{{shengxiao}}）年',
@@ -86,43 +130,25 @@ export const zhHant: LocaleData = {
     'normal': '{{month}}{{day}}',
     'full': '{{year}}{{month}}{{day}}'
   },
-  westernCalendar: {
-    'early': '逆推儒略曆',
-    '7': '儒略曆',
-    '1582': '儒略曆/格里曆',
-    'now': '格里曆'
+
+  pingqi: {
+    'pingqi': '平氣', 'dingqi': '定氣'
   },
-  yearInfos: {
-    'qinEarlyHan': '秦朝及漢初(公元前221年 &ndash; 前104年)的曆法沿用顓頊曆的月序。',
-    'xin': '公元9年，王莽建立新朝，改正朔以殷正建丑(即現在的十二月)為年首。',
-    'xin24': '<br />地皇四年和更始元年有十一個月重疊。',
-    'wei': '魏青龍五年（丁巳年，公元237年），魏明帝改正朔。',
-    'wuZhou': '公元689年12月，武則天改正朔，以周正建子(即現在的十一月)為年首。',
-    'tang': '公元761年12月，唐肅宗改正朔，以周正建子(即現在的十一月)為年首。',
-    'gCalenderReform': '格里高里曆改:公曆在10月4日及之前用儒略曆，之後用格里高里曆。為使春分的日期回復到3月21日(公元325年時的春分日期)，10月4日的下一日改為10月15日，跳了10日。',
-    'qing': '康熙六年至八年清政府因曆獄廢除西洋新法，復用明朝《大統曆》，二十四節氣改回平氣。'
+  calenderNames: {
+    'calendrical': '曆書',
+    'xinfa': '新法',
+    'datong': '大統曆',
   },
-  notes: {
-    'early': '朔的時刻接近午夜零時，初一或會提早一天。',
-    'later': '朔的時刻接近午夜零時，初一或會推遲一天。',
-    '1914': '',
-    '1929': ''
-  },
-  htmlLabels: {
-    'moonPhases': '月相',
-    'solarTerms': '24節氣',
-    'calSolTermsPingqi': '曆書節氣(平氣)',
-    'calSolTermsDingqi': '曆書節氣(定氣)',
-    'xinfa': '新法節氣(定氣)',
-    'datong': '大統曆節氣(平氣)',
-    'yearLabel': '公曆年',
-    'lunarYearLabel': '農曆年'
+  mixedExpressions: {
+    'moonPhases': '月相{{type}}',
+    'solarTerms': '二十四節氣{{type}}',
+    'calendricalSolarTerms': '{{name}}節氣{{type}}',
   },
   yearHtmls: {
-    'gregorian': '<h1>{{yearLabel}}（{{gcal}}）: {{yearc}}</h1>',
-    'lunarOne': '<h1>{{lunarLabel}}:</h1><h2>{{name0}}</h2><br/>',
-    'lunarTwo': '<h1>{{lunarLabel}}:</h1><h2>{{month0}}{{day0}}日前: {{name0}},<br/>{{month0}}{{day0}}日及以后：{{name1}}</h2><br/>',
-    'lunarThree': '<h1>{{lunarLabel}}:</h1><h2>{{month0}}{{day0}}日前: {{name0}},<br/>{{month0}}{{day0}}日至{{month1}}{{day1l}}日: {{name1}},<br/>{{month1}}{{day1}}日及以后: {{name2}}</h2><br/>',
-    'lunar24': '<h1>{{lunarLabel}}:</h1><h2>{{month0}}{{day0}}日前: 癸未(羊)漢更始元年,<br/>{{month0}}{{day0}}日及以后：{{name1}}</h2><br/>'
+    'gregorian': '<h1>公曆年（{{gcal}}）：{{yearc}}</h1>',
+    'lunarSpan0': '<h1>公曆年：</h1><h2>{{eraNameString0}}</h2>',
+    'lunarSpan1': '<h1>公曆年：</h1><h2>{{spanMonth0}}{{spanDay0}}日前: {{eraNameString0}},<br/>{{spanMonth0}}{{spanDay0}}日及以后：{{eraNameString1}}</h2>',
+    'lunarSpan2': '<h1>公曆年：</h1><h2>{{spanMonth0}}{{spanDay0}}日前: {{eraNameString0}},<br/>{{spanMonth0}}{{spanDay0}}日至{{spanMonth1}}{{day1l}}日: {{eraNameString1}},<br/>{{spanMonth1}}{{spanDay1}}日及以后: {{eraNameString2}}</h2>',
+    'lunarSpan@24': '<h1>公曆年：</h1><h2>{{spanMonth0}}{{spanDay0}}日前: 癸未(羊)漢更始元年,<br/>{{spanMonth0}}{{spanDay0}}日及以后：{{eraNameString1}}</h2>'
   }
 };

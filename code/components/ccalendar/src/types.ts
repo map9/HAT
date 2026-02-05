@@ -7,8 +7,73 @@
 export const CALENDAR_RANGE_MAX_YEAR = 2200;
 export const CALENDAR_RANGE_MIN_YEAR = -721;
 
-/** 支持的语言 */
-export type SupportedLocale = 'zh-Hans' | 'zh-Hant' | 'en';
+/** 中国农历历书或者政权 */
+export enum ChineseCalendarType {
+  DEFAULT = 'default',
+  // 三皇五帝/夏商
+  HUANGDI = 'Huangdi',
+  ZHUANXU = 'ZhuanXu',
+  SPRING_XIA = 'Spring.Xia',
+  YIN = 'Yin',
+  // 周/春秋/鲁
+  ZHOU = 'Zhou',
+  CHUNQIU = 'Chunqiu',
+  LU = 'Lu',
+  // 战国
+  WARRING_XIA = 'Warring.Xia',
+  HAN_ZHUANXU = 'HanZhuanXu',
+  // 三国
+  TKI_WEI = 'Tki.Wei',
+  TKI_SHU = 'Tki.Shu',
+  TKI_WU = 'Tki.Wu',
+  // 晋
+  JIN = 'Jin',
+  // 南北朝 - 南朝
+  SOUTHNORTH_SOUTH_JIN = 'SouthNorth.South.Jin',
+  SOUTHNORTH_SOUTH_SONG = 'SouthNorth.South.Song',
+  SOUTHNORTH_SOUTH_QI = 'SouthNorth.South.Qi',
+  SOUTHNORTH_SOUTH_LIANG = 'SouthNorth.South.Liang',
+  SOUTHNORTH_SOUTH_CHEN = 'SouthNorth.South.Chen',
+  // 南北朝 - 北朝
+  SOUTHNORTH_NORTH_LATERQIN = 'SouthNorth.North.LaterQin',
+  SOUTHNORTH_NORTH_NORTHERNLIANG = 'SouthNorth.North.NorthernLiang',
+  SOUTHNORTH_NORTH_NORTHERNWEI = 'SouthNorth.North.NorthernWei',
+  SOUTHNORTH_NORTH_WESTERNWEI = 'SouthNorth.North.WesternWei',
+  SOUTHNORTH_NORTH_NORTHERNZHOU = 'SouthNorth.North.NorthernZhou',
+  SOUTHNORTH_NORTH_SUI = 'SouthNorth.North.Sui',
+  SOUTHNORTH_NORTH_EASTERNWEI = 'SouthNorth.North.EasternWei',
+  SOUTHNORTH_NORTH_NORTHERNQI = 'SouthNorth.North.NorthernQi',
+  // 宋辽金元
+  SONGLIAOJINYUAN_LATERHAN = 'SongLiaoJinYuan.LaterHan',
+  SONGLIAOJINYUAN_LATERZHOU = 'SongLiaoJinYuan.LaterZhou',
+  SONGLIAOJINYUAN_SONG = 'SongLiaoJinYuan.Song',
+  SONGLIAOJINYUAN_LIAO = 'SongLiaoJinYuan.Liao',
+  SONGLIAOJINYUAN_JIN = 'SongLiaoJinYuan.Jin',
+  SONGLIAOJINYUAN_MONGOL = 'SongLiaoJinYuan.Mongol',
+  SONGLIAOJINYUAN_YUAN = 'SongLiaoJinYuan.Yuan',
+  // 清
+  QING_QING = 'Qing.Qing',
+  QING_SOUTHERNMING = 'Qing.SouthernMing',
+  QING_ZHENG = 'Qing.Zheng',
+}
+
+export enum WesternCalendarType {
+  DEFAULT = 'default',
+  GREGORIAN = 'gregorian',
+  REFORM = 'reform',
+  JULIAN = 'julian',
+  PROLEPTIC_JULIAN = 'prolepticJulian'
+}
+
+export enum SolarTermsType {
+  DE441 = 'DE441',
+  DE431 = 'DE431'
+}
+
+export enum CalendricalSolarTermType {
+  PINGQI = 'pingqi',
+  DINGQI = 'dingqi',
+}
 
 /** 干支数组类型: [天干索引, 地支索引] */
 export type GanZhi = [number, number];
@@ -19,59 +84,46 @@ export type MonthGanZhi = GanZhi | 'noZhong' | null;
 /** 农历日期对象 */
 export interface LunarDate {
   /** 农历年份（负数表示公元前） */
-  year: number;
+  cYear: number;
   /** 农历月份（1-12） */
-  month: number;
+  cMonth: number;
+  /** 月大小：0=小月(29天), 1=大月(30天) */
+  cMonthSize: number;
   /** 农历日期（1-30） */
-  day: number;
+  cDay: number;
   /** 是否闰月 */
-  isLeap: boolean;
+  isLeap: boolean | string;
   /** 是否岁首月份 */
   isFirstMonth: boolean;
   /** 年干支 */
-  ganzhiYear: GanZhi;
+  heYear: GanZhi;
   /** 月干支 */
-  ganzhiMonth: MonthGanZhi;
+  heMonth: MonthGanZhi;
   /** 日干支 */
-  ganzhiDay: GanZhi;
-  /** 月大小：0=小月(29天), 1=大月(30天) */
-  monthSize: number;
-  /** 旧闰月标志（用于古代历法） */
-  oldLeap: string;
+  heDay: GanZhi;
   /** 儒略日 */
   jd: number;
 }
 
 /** 农历月份信息 */
-export interface LunarMonthInfo {
-  /** 农历月数（1-12） */
-  monthNum: number;
-  /** 是否闰月 */
-  isLeap: boolean;
-  /** 农历月描述（如"正月"） */
-  month: string;
+export interface LunarMonth {
   /** 月初一对应的公历日期 */
   date: Date;
+  /** 对应的公历年 */
+  cMonth: number,
+  cMonthSize: number,
+  isLeap: boolean | string,
+  isFirstMonth: boolean,
+  heMonth: MonthGanZhi,
   /** 本月天数 */
   nDays: number;
-  /** 对应的公历年 */
-  gYear: number;
-}
-
-/** 日期格式化配置 */
-export interface DateFormatConfig {
-  /** 年份格式 */
-  year?: 'none' | 'short' | 'short.ganZhi' | 'normal' | 'normal.ganZhi' | 'full';
-  /** 月份格式 */
-  month?: 'none' | 'short' | 'short.ganZhi' | 'normal' | 'normal.ganZhi' | 'full';
-  /** 日期格式 */
-  day?: 'none' | 'short' | 'short.ganZhi' | 'normal' | 'normal.ganZhi' | 'full';
 }
 
 /**
  * 日历计算变量
  */
 export interface CalVars {
+  calendar: ChineseCalendarType;
   /**
    * 公历年
    * like Year: -300
@@ -131,13 +183,6 @@ export interface CalVars {
    */
   cmonthLong: number[];
   /**
-   * 24节气时间
-   * 中国农历的24节气时间，从'小寒'开始到'小寒'结束，单位: 天数，从距离Gregorian/Julian的1月1日零点零分(UTC+8)开始计算
-   * 一共24个数据项
-   * like [8.35625, 23.20347222222222, 38.15486111111111, ...],
-   */
-  solar: number[];
-  /**
    * 无中气月索引（可选）
    * -1为无无中气月索引
    */
@@ -157,6 +202,10 @@ export interface CalVars {
    * 'leap' or 'post 9'
    */
   leap?: string;
+}
+
+/** 月相数据 */
+export interface MoonPhases {
   /**
    * 新月时间
    * 单位: 天数，从距离Gregorian/Julian的1月1日零点零分(UTC+8)开始计算
@@ -179,158 +228,113 @@ export interface CalVars {
    * 一共12～13个数据项
    */
   Q3: number[];
-  /** 日食数据 */
-  sol_eclipse: number[][];
-  /** 月食数据 */
-  lun_eclipse: number[][];
 }
 
 /** 月相数据 */
-export interface MoonPhase {
+export interface MoonPhaseDetails {
   /** 月相类型：0=新月, 1=上弦, 2=满月, 3=下弦 */
   phase: number;
-  /** 月相名称 */
-  phaseName: string;
   /** 在月中的天数 */
   day: number;
   /** 小时数 */
   hours: number;
-  /** 格式化时间 */
-  time: { hour: string; minute: string };
   /** 日月食信息（可选） */
   eclipse?: {
+    /** 日月食类型 */
     type: number;
-    typeName: string;
+    /** 日月食发生的年份 */
     ybeg: number;
+    /** 日月食序号 */
     ind: number;
   };
 }
 
 /** 节气数据 */
-export interface SolarTerm {
+export interface SolarTermDetails {
   /** 节气ID (0-23) */
   id: number;
-  /** 节气名称 */
-  name: string;
   /** 在月中的天数 */
   day: number;
   /** 小时数 */
   hours: number;
-  /** 格式化时间 */
-  time: { hour: string; minute: string };
 }
 
-/** 每日数据 */
-export interface DayData {
+/** 历书节气数据 */
+export interface CalendricalSolarTermDetails {
+  calendarBook?: string;
+  type: CalendricalSolarTermType;
+  solarTermsDetails: SolarTermDetails[];
+}
+
+/** 日导出数据 */
+export interface DayExportData {
   /** 公历日期 */
   day: number;
   /** 星期几（0=日, 6=六） */
   dayOfWeek: number;
   /** 农历日期信息 */
   chineseDate: {
-    monthOrder: number;
-    monthNum: number;
-    /** 完整月份描述（如"正月大（建戊寅）"） */
-    month: string;
-    /** 简短月份名（如"正月"、"闰八月"），用于初一显示 */
-    monthShort: string;
-    day: number;
-    /** 农历日文字（如"初四"、"十五"） */
-    dayText: string;
-    isFirstMonth: boolean;
-    isMonthStart: boolean;
-  };
-  /** 干支信息 */
-  sexagenary: {
-    day: GanZhi;
-    /** 日干支文字（如"庚寅"） */
-    dayText: string;
-    month: MonthGanZhi;
+    cMonthIndex: number;
+    heDay: GanZhi;
+    cDay: number;
   };
 }
 
-/** 历书节气组 */
-export interface CalendricalSolarTermGroup {
-  /** 标题（如"历书节气(平气)"） */
-  label: string;
-  /** 节气列表 */
-  terms: Array<{ name: string; day: number }>;
-}
-
-/** 月份导出数据 */
+/** 月导出数据 */
 export interface MonthExportData {
   /** 公历年 */
   year: number;
   /** 公历月（0-11） */
   month: number;
-  /** 月份名称 */
-  monthName: string;
   /** 包含的农历月 */
-  chineseMonths: Array<{
-    yearIndex: number;
-    year: string;
-    month: string;
-    monthNum: number;
-    isLeap: boolean;
+  cSpanMonths: Array<{
+    cYearIndex: number,
+    cMonth: number,
+    cMonthSize: number,
+    isLeap: boolean | string,
+    isFirstMonth: boolean,
+    heMonth: MonthGanZhi,
   }>;
   /** 每日数据 */
-  days: DayData[];
+  cDays: DayExportData[];
   /** 月相数据 */
-  moonPhases: MoonPhase[];
+  moonPhasesDetails?: MoonPhaseDetails[];
+  /** 节气数据来源类型 */
+  solarTermsType?: 'DE441';
   /** 节气数据 */
-  solarTerms: SolarTerm[];
-  /** 历书节气（可选，用于HTML输出） */
-  calendricalSolarTerms?: CalendricalSolarTermGroup[];
-  /** 警告/注释消息（可选，用于HTML输出） */
-  warningMessage?: string;
+  solarTermsDetails?: SolarTermDetails[];
+  /** 历书平气数据 */
+  calendricalSolarTermDetails?: CalendricalSolarTermDetails[];
 }
 
-/** HTML输出所需的本地化标签 */
-export interface HtmlLocaleLabels {
-  /** 星期名称 [星期日, ..., 星期六] */
-  weeks: string[];
-  /** 公历月份名称 ["1 月", "2 月", ...] */
-  monthNames: string[];
-  /** 月相标签（如"月相"） */
-  moonPhasesLabel: string;
-  /** 24节气标签（如"24节气"） */
-  solarTermsLabel: string;
-  /** 西历名称（如"儒略历"） */
-  westernCalendar: string;
-  /** 公历年标签（如"公历年"） */
-  yearLabel: string;
-  /** 农历年标签（如"农历年"） */
-  lunarYearLabel: string;
-  /** 是否需要DE441后缀（year < 1734） */
-  de441: boolean;
-}
-
-/** 年份导出数据 */
+/** 年份导出数据（纯数据，不包含格式化内容） */
 export interface YearExportData {
+  calendar: ChineseCalendarType,
   /** 公历年 */
   year: number;
-  /** 格式化的公历年文字（如"575年"、"前722年"） */
-  yearText: string;
-  /** 包含的农历年干支 */
-  cyears: GanZhi[];
-  /** 格式化的农历年全名（含干支、生肖、帝王纪年） */
-  lunarYearNames: string[];
-  /** 农历年分界日期 */
-  cdates: Array<{ month: number; day: number }>;
-  /** 额外信息（历史年代说明） */
-  additionalInfo?: string;
-  /** 帝王/政权纪年名称（每个农历年一个） */
-  eraNames?: string[];
-  /** HTML输出所需的本地化标签 */
-  locale?: HtmlLocaleLabels;
-  /** 预格式化的HTML年份头部（公历年+农历年信息） */
-  yearHeaderHtml?: string;
-  /** 格式化的干支年字符串（3个：year-1, year, year+1） */
-  cyearStrings?: string[];
-  /** 农历月的年份索引映射（calVars.cmonthYear 原始数组） */
-  cmonthYearMap?: number[];
+  /** 包含的农历年 */
+  cSpanYears: Array<{
+    /** 农历年 */
+    cYear: number;
+    /** 农历年干支 */
+    heYear: GanZhi,
+    /** 岁首公历日期 */
+    date?: { month: number; day: number };
+    /** 帝王/政权纪年名称（每个农历年一个） */
+    eraNames?: string;
+  }>;
   /** 12个月的数据 */
-  months: MonthExportData[];
+  cMonths: MonthExportData[];
+}
+
+/** 日期格式化配置 */
+export interface ChineseDateFormatConfig {
+  /** 年份格式 */
+  year?: 'none' | 'short' | 'short.ganZhi' | 'normal' | 'normal.ganZhi' | 'full';
+  /** 月份格式 */
+  month?: 'none' | 'short' | 'short.ganZhi' | 'normal' | 'normal.ganZhi' | 'full';
+  /** 日期格式 */
+  day?: 'none' | 'short' | 'short.ganZhi' | 'normal' | 'normal.ganZhi' | 'full';
 }
 
 /** 语言包结构 */
@@ -342,32 +346,23 @@ export interface LocaleData {
   animals: Record<string, string>;
   monthNumbers: Record<string, string>;
   dayNumbers: Record<string, string>;
-  moonStatuses: Record<string, string>;
+  moonPhases: Record<string, string>;
   monthSizes: Record<string, string>;
-  soltermNames: Record<string, string>;
+  solarTermNames: Record<string, string>;
   eclipseNames: Record<string, string>;
   leap: Record<string, string>;
-  years: Record<string, string>;
+  calenderNames: Record<string, string>;
+  pingqi: Record<string, string>;
+  /** 西历名称 */
+  westernCalendar: Record<string, string>;
+  /** 农历名称 */
+  chineseCalendar: Record<string, string>;
   yearExpressions: Record<string, string>;
   monthExpressions: Record<string, string>;
   dayExpressions: Record<string, string>;
   dateExpressions: Record<string, string>;
-  /** 西历名称 */
-  westernCalendar: Record<string, string>;
-  /** 年份历史信息 */
-  yearInfos: Record<string, string>;
-  /** 历史注释 */
-  notes: Record<string, string>;
-  /** HTML标签 */
-  htmlLabels: Record<string, string>;
+  mixedExpressions: Record<string, string>;
+  
   /** 年份HTML模板 */
   yearHtmls: Record<string, string>;
-}
-
-/** ChineseCalendar 构造函数配置 */
-export interface CalendarConfig {
-  /** 语言 */
-  locale?: SupportedLocale;
-  /** 调试模式 */
-  debug?: boolean;
 }

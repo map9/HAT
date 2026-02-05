@@ -1,5 +1,5 @@
 "use strict";
-import { isDefaultRegionCalendar } from "./split.js";
+import { isDefaultRegionCalendar } from './core/index.js';
 
 function getEra(year, eras, nian) {
   let chineseNumbers = ["一", "二", "三", "四", "五", "六", "七", "八", "九", "十"];

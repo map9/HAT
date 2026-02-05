@@ -3,6 +3,7 @@
  * 从 chinesecalendar 项目移植
  */
 import { isDefaultRegionCalendar } from './core/index.js';
+import { ChineseCalendarType } from './types.js';
 
 interface EraEntry {
   y: number;
@@ -49,7 +50,7 @@ function getEra(year: number, eras: EraEntry[], nian: string): string {
 }
 
 // Insert era name (年號) if appropriate
-function eraNameHant(year: number, calender: string | null = null): string {
+function eraNameHant(year: number, calendar: ChineseCalendarType | null = null): string {
   // set up an array of objects to store era name information
   let eras: EraEntry[] = [
     {y: 1912, e: ""},
@@ -59,12 +60,9 @@ function eraNameHant(year: number, calender: string | null = null): string {
 
   //Spring and Autumn period
   if (year >= -722 && year <= -480) {
-    if (calender == null || calender == undefined || calender == 'default') {
-      calender = "Chunqiu";
-    }
 
     // Zhou calendar
-    if (calender == "Chunqiu") {
+    if (calendar === ChineseCalendarType.ZHOU) {
       eras = [
         {y: 1912, e: ""},
         {y: -518, e: "周敬王"},
@@ -85,7 +83,7 @@ function eraNameHant(year: number, calender: string | null = null): string {
     }
 
     // Chunqiu calendar
-    if (calender == "Zhou") {
+    if (calendar === ChineseCalendarType.CHUNQIU || isDefaultRegionCalendar(calendar, year)) {
       eras = [
         {y: 1912, e: ""},
         {y: -493, e: "魯哀公"},
@@ -108,12 +106,8 @@ function eraNameHant(year: number, calender: string | null = null): string {
 
   //Warring States period
   if (year >= -479 && year <= -221) {
-    if (calender == null || calender == undefined || calender == 'default') {
-      calender = "Zhou";
-    }
-
     // Zhou calendar
-    if (calender == "Zhou") {
+    if (calendar === ChineseCalendarType.ZHOU || isDefaultRegionCalendar(calendar, year)) {
       eras = [
         {y: -254, e: ""},
         {y: -313, e: "周赧王"},
@@ -131,7 +125,7 @@ function eraNameHant(year: number, calender: string | null = null): string {
     }
 
     // Lu calendar
-    if (calender == "Lu") {
+    if (calendar === ChineseCalendarType.LU) {
       eras = [
         {y: -247, e: ""},
         {y: -271, e: "魯頃公"},
@@ -149,7 +143,7 @@ function eraNameHant(year: number, calender: string | null = null): string {
     }
 
     // Zhuanxu calendar
-    if (calender == "zhuanxu") {
+    if (calendar === ChineseCalendarType.ZHUANXU) {
       eras = [
         {y: 1912, e: ""},
         {y: -245, e: "秦王政"},
@@ -284,7 +278,7 @@ function eraNameHant(year: number, calender: string | null = null): string {
   }
 
   // Wei and Jin dynasties
-  if (year > 220 && year <= 420 && isDefaultRegionCalendar(calender, year)) {
+  if (year > 220 && year <= 420 && isDefaultRegionCalendar(calendar, year)) {
     eras = [
       {y: 1912, e: ""},
       {y: 420, e: "晋恭帝元熙二年/[南北朝]宋武帝永初元年", offset: -1},
@@ -352,7 +346,7 @@ function eraNameHant(year: number, calender: string | null = null): string {
   }
 
   // Shu dynasty
-  if (calender == "Tki.Shu" && year >= 221 && year <= 263) {
+  if (calendar === ChineseCalendarType.TKI_SHU && year >= 221 && year <= 263) {
     eras = [
       {y: 1912, e: ""},
       {y: 264, e: "魏元帝景元五年/咸熙元年", offset: -1},
@@ -367,7 +361,7 @@ function eraNameHant(year: number, calender: string | null = null): string {
   }
 
   // Wu dynasty
-  if (calender == "Tki.Wu" && year >= 222 && year <= 280) {
+  if (calendar === ChineseCalendarType.TKI_WU && year >= 222 && year <= 280) {
     eras = [
       {y: 1912, e: ""},
       {y: 281, e: "晋武帝太康", offset: 1},
@@ -400,7 +394,7 @@ function eraNameHant(year: number, calender: string | null = null): string {
   }
 
   // Later Qin
-  if (year > 383.5 && year < 417.5 && calender == "SouthNorth.North.LaterQin") {
+  if (year > 383.5 && year < 417.5 && calendar === ChineseCalendarType.SOUTHNORTH_NORTH_LATERQIN) {
     eras = [
       {y: 1912, e: ""},
       {y: 417, e: "後秦永和二年", offset: -1},
@@ -417,7 +411,7 @@ function eraNameHant(year: number, calender: string | null = null): string {
   }
 
   // Northern Liang
-  if (year > 410.5 && year < 439.5 && calender == "SouthNorth.North.NorthernLiang") {
+  if (year > 410.5 && year < 439.5 && calendar === ChineseCalendarType.SOUTHNORTH_NORTH_NORTHERNLIANG) {
     eras = [
       {y: 1912, e: ""},
       {y: 434, e: "北涼承和", offset: 1},
@@ -438,7 +432,16 @@ function eraNameHant(year: number, calender: string | null = null): string {
   }
 
   // Northern Wei, Western Wei, Northern Zhou and Sui
-  if (year > 385.5 && year < 590.5 && (calender == "SouthNorth.North.NorthernWei" || calender == "SouthNorth.North.WesternWei" || calender == "SouthNorth.North.NorthernZhou" || calender == "SouthNorth.North.Sui")) {
+  if (
+    year > 385.5 &&
+    year < 590.5 && 
+    (
+      calendar === ChineseCalendarType.SOUTHNORTH_NORTH_NORTHERNWEI || 
+      calendar === ChineseCalendarType.SOUTHNORTH_NORTH_WESTERNWEI ||
+      calendar === ChineseCalendarType.SOUTHNORTH_NORTH_NORTHERNZHOU ||
+      calendar === ChineseCalendarType.SOUTHNORTH_NORTH_SUI
+    )
+  ) {
     eras = [
       {y: 1912, e: ""},
       {y: 581, e: "隋文帝開皇"},
@@ -508,7 +511,14 @@ function eraNameHant(year: number, calender: string | null = null): string {
   }
 
   // Eastern Wei and Northern Qi
-  if (year > 533.5 && year < 577.5 && (calender == "SouthNorth.North.EasternWei" || calender == "SouthNorth.North.NorthernQi")) {
+  if (
+    year > 533.5 &&
+    year < 577.5 &&
+    (
+      calendar === ChineseCalendarType.SOUTHNORTH_NORTH_EASTERNWEI ||
+      calendar === ChineseCalendarType.SOUTHNORTH_NORTH_NORTHERNQI
+    )
+  ) {
     eras = [
       {y: 1912, e: ""},
       {y: 577, e: "北齊承光"},
@@ -531,7 +541,7 @@ function eraNameHant(year: number, calender: string | null = null): string {
   }
 
   // Southern dynasties, Sui dynasty
-  if (year > 420 && year < 618 && isDefaultRegionCalendar(calender, year)) {
+  if (year > 420 && year < 618 && isDefaultRegionCalendar(calendar, year)) {
     eras = [
       {y: 1912, e: ""},
       {y: 617, e: "隋煬帝大業十三年/恭帝義寧元年", offset: -1},
@@ -694,7 +704,7 @@ function eraNameHant(year: number, calender: string | null = null): string {
   }
 
   // Five dynasties
-  if (year >= 907 && year <= 959 && isDefaultRegionCalendar(calender, year)) {
+  if (year >= 907 && year <= 959 && isDefaultRegionCalendar(calendar, year)) {
     eras = [
       {y: 1912, e: ""},
       {y: 959, e: "[五代]後周世宗/恭帝顯德六年", offset: -1},
@@ -732,7 +742,7 @@ function eraNameHant(year: number, calender: string | null = null): string {
   }
 
   // Northern Song dynasty
-  if (year >= 960 && year <= 1126 && isDefaultRegionCalendar(calender, year)) {
+  if (year >= 960 && year <= 1126 && isDefaultRegionCalendar(calendar, year)) {
     eras = [
       {y: 1912, e: ""},
       {y: 1126, e: "宋欽宗靖康元年", offset: -1},
@@ -788,7 +798,7 @@ function eraNameHant(year: number, calender: string | null = null): string {
   }
 
   // Southern Song dynasty
-  if (year >= 1127 && year <= 1279 && isDefaultRegionCalendar(calender, year)) {
+  if (year >= 1127 && year <= 1279 && isDefaultRegionCalendar(calendar, year)) {
     eras = [
       {y: 1912, e: ""},
       {y: 1279, e: "宋帝昺祥興二年/元世祖至元十六年", offset: -1},
@@ -821,7 +831,16 @@ function eraNameHant(year: number, calender: string | null = null): string {
   }
 
   // Liao, Jin and Yuan dynasty (946-1280)
-  if (year > 945.5 && year < 1280.5 && (calender == "SongLiaoJinYuan.Liao" || calender == "SongLiaoJinYuan.Jin" || calender == "SongLiaoJinYuan.Mongol" || calender == "SongLiaoJinYuan.Yuan")) {
+  if (
+    year > 945.5 && 
+    year < 1280.5 && 
+    (
+      calendar === ChineseCalendarType.SONGLIAOJINYUAN_LIAO || 
+      calendar === ChineseCalendarType.SONGLIAOJINYUAN_JIN || 
+      calendar === ChineseCalendarType.SONGLIAOJINYUAN_MONGOL || 
+      calendar === ChineseCalendarType.SONGLIAOJINYUAN_YUAN
+    )
+  ) {
     eras = [
       {y: 1912, e: ""},
       {y: 1265, e: "元世祖至元", offset: 1},
@@ -966,7 +985,14 @@ function eraNameHant(year: number, calender: string | null = null): string {
   }
 
   // Southern Ming and Zheng dynasty
-  if (year >= 1644 && year <= 1685 && (calender == "Qing.SouthernMing" || calender == "Qing.Zheng")) {
+  if (
+    year >= 1644 && 
+    year <= 1685 && 
+    (
+      calendar === ChineseCalendarType.QING_SOUTHERNMING || 
+      calendar === ChineseCalendarType.QING_ZHENG
+    )
+  ) {
     eras = [
       {y: 1912, e: ""},
       {y: 1662, e: "明鄭永曆", offset: 15},
@@ -987,7 +1013,7 @@ function eraNameHant(year: number, calender: string | null = null): string {
   return getEra(year, eras, nian);
 }
 
-function eraNameHans(year: number, calender: string | null = null): string {
+function eraNameHans(year: number, calendar: ChineseCalendarType | null = null): string {
   // set up an array of objects to store era name information
   let eras: EraEntry[] = [
     {y: 1912, e: ""},
@@ -997,12 +1023,8 @@ function eraNameHans(year: number, calender: string | null = null): string {
 
   //Spring and Autumn period
   if (year >= -722 && year <= -480) {
-    if (calender == null || calender == undefined || calender == 'default') {
-      calender = "Chunqiu";
-    }
-    
     // Zhou calendar
-    if (calender == "Zhou") {
+    if (calendar === ChineseCalendarType.ZHOU) {
       eras = [
         {y: 1912, e: ""},
         {y: -518, e: "周敬王"},
@@ -1023,7 +1045,7 @@ function eraNameHans(year: number, calender: string | null = null): string {
     }
 
     // Chunqiu calendar
-    if (calender == "Chunqiu") {
+    if (calendar === ChineseCalendarType.CHUNQIU || isDefaultRegionCalendar(calendar, year)) {
       eras = [
         {y: 1912, e: ""},
         {y: -493, e: "鲁哀公"},
@@ -1046,12 +1068,8 @@ function eraNameHans(year: number, calender: string | null = null): string {
 
   //Warring States period
   if (year >= -479 && year <= -221) {
-    if (calender == null || calender == undefined || calender == 'default') {
-      calender = "Zhou";
-    }
-
     // Zhou calendar
-    if (calender == "Zhou") {
+    if (calendar === ChineseCalendarType.ZHOU) {
       eras = [
         {y: -254, e: ""},
         {y: -313, e: "周赧王"},
@@ -1069,7 +1087,7 @@ function eraNameHans(year: number, calender: string | null = null): string {
     }
 
     // Lu calendar
-    if (calender == "Lu") {
+    if (calendar === ChineseCalendarType.LU) {
       eras = [
         {y: -247, e: ""},
         {y: -271, e: "鲁顷公"},
@@ -1087,7 +1105,7 @@ function eraNameHans(year: number, calender: string | null = null): string {
     }
 
     // Zhuanxu calendar
-    if (calender == "Zhuanxu") {
+    if (calendar === ChineseCalendarType.ZHUANXU) {
       eras = [
         {y: 1912, e: ""},
         {y: -245, e: "秦王政"},
@@ -1222,7 +1240,7 @@ function eraNameHans(year: number, calender: string | null = null): string {
   }
 
   // Wei and Jin dynasties
-  if (year > 220 && year <= 420 && isDefaultRegionCalendar(calender, year)) {
+  if (year > 220 && year <= 420 && isDefaultRegionCalendar(calendar, year)) {
     eras = [
       {y: 1912, e: ""},
       {y: 420, e: "晋恭帝元熙二年/[南北朝]宋武帝永初元年", offset: -1},
@@ -1290,7 +1308,7 @@ function eraNameHans(year: number, calender: string | null = null): string {
   }
 
   // Shu dynasty
-  if (calender == "Tki.Shu" && year >= 221 && year <= 263) {
+  if (calendar === ChineseCalendarType.TKI_SHU && year >= 221 && year <= 263) {
     eras = [
       {y: 1912, e: ""},
       {y: 264, e: "魏元帝景元五年/咸熙元年", offset: -1},
@@ -1305,7 +1323,7 @@ function eraNameHans(year: number, calender: string | null = null): string {
   }
 
   // Wu dynasty
-  if (calender == "Tki.Wu" && year >= 222 && year <= 280) {
+  if (calendar === ChineseCalendarType.TKI_WU && year >= 222 && year <= 280) {
     eras = [
       {y: 1912, e: ""},
       {y: 281, e: "晋武帝太康", offset: 1},
@@ -1338,7 +1356,7 @@ function eraNameHans(year: number, calender: string | null = null): string {
   }
 
   // Later Qin
-  if (year > 383.5 && year < 417.5 && calender == "SouthNorth.North.LaterQin") {
+  if (year > 383.5 && year < 417.5 && calendar === ChineseCalendarType.SOUTHNORTH_NORTH_LATERQIN) {
     eras = [
       {y: 1912, e: ""},
       {y: 417, e: "后秦永和二年", offset: -1},
@@ -1355,7 +1373,7 @@ function eraNameHans(year: number, calender: string | null = null): string {
   }
 
   // Northern Liang
-  if (year > 410.5 && year < 439.5 && calender == "SouthNorth.North.NorthernLiang") {
+  if (year > 410.5 && year < 439.5 && calendar === ChineseCalendarType.SOUTHNORTH_NORTH_NORTHERNLIANG) {
     eras = [
       {y: 1912, e: ""},
       {y: 434, e: "北凉承和", offset: 1},
@@ -1376,7 +1394,16 @@ function eraNameHans(year: number, calender: string | null = null): string {
   }
 
   // Northern Wei, Western Wei, Northern Zhou and Sui
-  if (year > 385.5 && year < 590.5 && (calender == "SouthNorth.North.NorthernWei" || calender == "SouthNorth.North.WesternWei" || calender == "SouthNorth.North.NorthernZhou" || calender == "SouthNorth.North.Sui")) {
+  if (
+    year > 385.5 &&
+    year < 590.5 &&
+    (
+      calendar === ChineseCalendarType.SOUTHNORTH_NORTH_NORTHERNWEI ||
+      calendar === ChineseCalendarType.SOUTHNORTH_NORTH_WESTERNWEI ||
+      calendar === ChineseCalendarType.SOUTHNORTH_NORTH_NORTHERNZHOU ||
+      calendar === ChineseCalendarType.SOUTHNORTH_NORTH_SUI
+    )
+  ) {
       eras = [
       {y: 1912, e: ""},
       {y: 581, e: "隋文帝开皇"},
@@ -1446,7 +1473,14 @@ function eraNameHans(year: number, calender: string | null = null): string {
   }
 
   // Eastern Wei and Northern Qi
-  if (year > 533.5 && year < 577.5 && (calender == "SouthNorth.North.EasternWei" || calender == "SouthNorth.North.NorthernQi")) {
+  if (
+    year > 533.5 && 
+    year < 577.5 && 
+    (
+      calendar === ChineseCalendarType.SOUTHNORTH_NORTH_EASTERNWEI || 
+      calendar === ChineseCalendarType.SOUTHNORTH_NORTH_NORTHERNQI
+    )
+  ) {
     eras = [
       {y: 1912, e: ""},
       {y: 577, e: "北齐承光"},
@@ -1469,7 +1503,7 @@ function eraNameHans(year: number, calender: string | null = null): string {
   }
 
   // Southern dynasties, Sui dynasty
-  if (year > 420 && year < 618 && isDefaultRegionCalendar(calender, year)) {
+  if (year > 420 && year < 618 && isDefaultRegionCalendar(calendar, year)) {
     eras = [
       {y: 1912, e: ""},
       {y: 617, e: "隋炀帝大业十三年/恭帝义宁元年", offset: -1},
@@ -1758,7 +1792,16 @@ function eraNameHans(year: number, calender: string | null = null): string {
     ];
   }
 
-  if (year > 945.5 && year < 1280.5 && (calender == "SongLiaoJinYuan.Liao" || calender == "SongLiaoJinYuan.Jin" || calender == "SongLiaoJinYuan.Mongol" || calender == "SongLiaoJinYuan.Yuan")) {
+  if (
+    year > 945.5 && 
+    year < 1280.5 && 
+    (
+      calendar === ChineseCalendarType.SONGLIAOJINYUAN_LIAO || 
+      calendar === ChineseCalendarType.SONGLIAOJINYUAN_JIN || 
+      calendar === ChineseCalendarType.SONGLIAOJINYUAN_MONGOL || 
+      calendar === ChineseCalendarType.SONGLIAOJINYUAN_YUAN
+    )
+  ) {
     eras = [
       {y: 1912, e: ""},
       {y: 1265, e: "元世祖至元", offset: 1},
@@ -1903,7 +1946,14 @@ function eraNameHans(year: number, calender: string | null = null): string {
   }
 
   // Southern Ming and Zheng dynasty
-  if (year >= 1644 && year <= 1685 && (calender == "Qing.SouthernMing" || calender == "Qing.Zheng")) {
+  if (
+    year >= 1644 &&
+    year <= 1685 &&
+    (
+      calendar === ChineseCalendarType.QING_SOUTHERNMING ||
+      calendar === ChineseCalendarType.QING_ZHENG
+    )
+  ) {
     eras = [
       {y: 1912, e: ""},
       {y: 1662, e: "明郑永历", offset: 15},
@@ -1929,14 +1979,14 @@ function eraNameHans(year: number, calender: string | null = null): string {
  * @param {string} lang - 语言代码，遵循 ISO 639-1 标准（语言代码）和 ISO 3166-1 标准（国家/地区代码）。
  * 考虑到只有中文地区才需要中国农历的年号，lang只能为：zh-Hant 繁体中文和zh-Hans 简体中文。
  * @param {*} year - 公历年
- * @param {*} calender - 指定历书或者政权名称。
+ * @param {*} calendar - 指定历书或者政权名称。
  * @returns 年号。
  */
-export function eraName(lang: string, year: number, calender: string | null = null): string {
+export function eraName(lang: string, year: number, calendar: ChineseCalendarType | null = null): string {
   if (lang == 'zh-Hans') {
-    return eraNameHans(year, calender);
+    return eraNameHans(year, calendar);
   } else if (lang == 'zh-Hant') {
-    return eraNameHant(year, calender);
+    return eraNameHant(year, calendar);
   } else {
     return '';
   }

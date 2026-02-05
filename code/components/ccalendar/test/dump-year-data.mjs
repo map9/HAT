@@ -1,4 +1,8 @@
-import { correctCalendarByYear, calDataYear } from '../dist/index.js';
+import {
+  correctCalendarByYear,
+  calYearData,
+  ChineseCalendarType
+} from '../dist/index.js';
 
 const conversionTestYears = [
   { year: -301, desc: '先秦古代历法' },
@@ -28,8 +32,8 @@ function dumpYearData() {
   console.log('dump calDataYear');
 
   for (const { year, desc } of conversionTestYears) {
-    const correctedRegion = correctCalendarByYear(year, null);
-    const calVars = calDataYear(year, correctedRegion);
+    const correctedRegion = correctCalendarByYear(year, ChineseCalendarType.DEFAULT);
+    const calVars = calYearData(correctedRegion, year);
 
     console.log(`Year: ${year}, ${desc}.`);
     console.log(calVars);
@@ -37,6 +41,5 @@ function dumpYearData() {
 
   console.log('='.repeat(80));
 }
-
 
 dumpYearData();

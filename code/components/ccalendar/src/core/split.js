@@ -1,5 +1,7 @@
 "use strict";
 
+import { ChineseCalendarType } from "../types.js";
+
 // Set up calendar data for the calendar page
 export function setupRegionCalendar(region, y, calc_pingqi) {
   // Julian date number at noon on Dec 31, y-1
@@ -8,41 +10,41 @@ export function setupRegionCalendar(region, y, calc_pingqi) {
 
   let i, cmonthDate;
   switch (region) {
-    case "Tki.Shu":
+    case ChineseCalendarType.TKI_SHU:
       cmonthDate = cmonthDate_Shu(y, jdc, calc_pingqi);
       break;
-    case "Tki.Wu":
+    case ChineseCalendarType.TKI_WU:
       cmonthDate = cmonthDate_Wu(y, jdc, calc_pingqi);
       break;
     // LaterQin
-    case "SouthNorth.North.LaterQin":
+    case ChineseCalendarType.SOUTHNORTH_NORTH_LATERQIN:
       cmonthDate = cmonthDate_LaterQin(y, jdc, calc_pingqi);
       break;
     // NorthernLiang
-    case "SouthNorth.North.NorthernLiang":
+    case ChineseCalendarType.SOUTHNORTH_NORTH_NORTHERNLIANG:
       cmonthDate = cmonthDate_NorthernLiang(y, jdc, calc_pingqi);
       break;
     // WeiZhouSui
-    case "SouthNorth.North.NorthernWei":
-    case "SouthNorth.North.WesternWei":
-    case "SouthNorth.North.NorthernZhou":
-    case "SouthNorth.North.Sui":
+    case ChineseCalendarType.SOUTHNORTH_NORTH_NORTHERNWEI:
+    case ChineseCalendarType.SOUTHNORTH_NORTH_WESTERNWEI:
+    case ChineseCalendarType.SOUTHNORTH_NORTH_NORTHERNZHOU:
+    case ChineseCalendarType.SOUTHNORTH_NORTH_SUI:
       cmonthDate = cmonthDate_WeiZhouSui(y, jdc, calc_pingqi);
       break;
     // WeiQi
-    case "SouthNorth.North.EasternWei":
-    case "SouthNorth.North.NorthernQi":
+    case ChineseCalendarType.SOUTHNORTH_NORTH_EASTERNWEI:
+    case ChineseCalendarType.SOUTHNORTH_NORTH_NORTHERNQI:
       cmonthDate = cmonthDate_WeiQi(y, jdc, calc_pingqi);
       break;
     // LiaoJinYuan
-    case "SongLiaoJinYuan.Liao":
-    case "SongLiaoJinYuan.Jin":
-    case "SongLiaoJinYuan.Mongol":
-    case "SongLiaoJinYuan.Yuan":
+    case ChineseCalendarType.SONGLIAOJINYUAN_LIAO:
+    case ChineseCalendarType.SONGLIAOJINYUAN_JIN:
+    case ChineseCalendarType.SONGLIAOJINYUAN_MONGOL:
+    case ChineseCalendarType.SONGLIAOJINYUAN_YUAN:
       return cmonthDate_LiaoJinYuan(y, jdc, calc_pingqi);
     // SouthernMing
-    case "Qing.SouthernMing":
-    case "Qing.Zheng":
+    case ChineseCalendarType.QING_SOUTHERNMING:
+    case ChineseCalendarType.QING_ZHENG:
       // use jdc-10 for Gregorian calendar
       return cmonthDate_southernMing(y, jdc - 10, calc_pingqi);
   }
@@ -60,28 +62,6 @@ export function setupRegionCalendar(region, y, calc_pingqi) {
     out = cm;
   }
   return out;
-}
-
-export function isDefaultRegionCalendar(region, y) {
-  if (
-    region == undefined || 
-    region == null ||
-    region == 'Tki.Wei' ||
-    region == 'Jin' ||
-    region == 'SouthNorth.South.Jin' ||
-    region == 'SouthNorth.South.Song' ||
-    region == 'SouthNorth.South.Qi' ||
-    region == 'SouthNorth.South.Liang' ||
-    region == 'SouthNorth.South.Chen' ||
-    region == 'SongLiaoJinYuan.LaterHan' ||
-    region == 'SongLiaoJinYuan.LaterZhou' ||
-    region == 'SongLiaoJinYuan.Song' ||
-    region == 'Qing.Qing'
-  ) {
-    return true;
-  }
-
-  return false;
 }
 
 // Almanac parameters

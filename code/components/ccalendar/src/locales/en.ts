@@ -37,13 +37,13 @@ export const en: LocaleData = {
     '20': '21', '21': '22', '22': '23', '23': '24', '24': '25',
     '25': '26', '26': '27', '27': '28', '28': '29', '29': '30'
   },
-  moonStatuses: {
+  moonPhases: {
     '0': 'New Moon', '1': 'First Quarter', '2': 'Full Moon', '3': 'Third Quarter'
   },
   monthSizes: {
     '0': 'S', '1': 'L'
   },
-  soltermNames: {
+  solarTermNames: {
     '0': 'Minor Cold', '1': 'Major Cold', '2': 'Start of Spring', '3': 'Rain Water',
     '4': 'Awakening of Insects', '5': 'Spring Equinox', '6': 'Clear and Bright', '7': 'Grain Rain',
     '8': 'Start of Summer', '9': 'Grain Buds', '10': 'Grain in Ear', '11': 'Summer Solstice',
@@ -59,10 +59,54 @@ export const en: LocaleData = {
   leap: {
     'leap': 'leap ', 'post': 'post ', 'post9': 'post 9 '
   },
-  years: {
-    'ce': '{{year}}', 'bce': '{{year}} BCE'
+  westernCalendar: {
+    'prolepticJulian': '(Proleptic) Julian',
+    'julian': 'Julian',
+    'reform': 'Julian/Gregorian',
+    'gregorian': 'Gregorian'
   },
+  chineseCalendar: {
+    'Huangdi': 'HuangDi',
+    'Zhuanxu': 'ZhuanXu',
+    'Spring.Xia': 'Spring.Xia',
+    'Yin': 'Yin',
+    'Zhou': 'Zhou',
+    'Chunqiu': 'ChunQiu',
+    'Lu': 'Lu',
+    'Warring.Xia': 'Warring.Xia',
+    'HanZhuanxu': 'Han.Zhuanxu',
+    "Tki.Wei": 'Wei',
+    "Tki.Shu": 'Shu',
+    "Tki.Wu": 'Wu',
+    "Jin": 'Jin',
+    "SouthNorth.South.Jin": 'Jin',
+    "SouthNorth.South.Song": 'Song',
+    "SouthNorth.South.Qi": 'Qi',
+    "SouthNorth.South.Liang": 'Liang',
+    "SouthNorth.South.Chen": 'Chen',
+    "SouthNorth.North.LaterQin": 'LaterQin',
+    "SouthNorth.North.NorthernLiang": 'NorthernLiang',
+    "SouthNorth.North.NorthernWei": 'NorthernWei',
+    "SouthNorth.North.WesternWei": 'WesternWei',
+    "SouthNorth.North.NorthernZhou": 'NorthernZhou',
+    "SouthNorth.North.Sui": 'Sui',
+    "SouthNorth.North.EasternWei": 'EasternWei',
+    "SouthNorth.North.NorthernQi": 'NorthernQi',
+    "SongLiaoJinYuan.LaterHan": 'LaterHan',
+    "SongLiaoJinYuan.LaterZhou": 'LaterZhou',
+    "SongLiaoJinYuan.Song": 'Song',
+    "SongLiaoJinYuan.Liao": 'Liao',
+    "SongLiaoJinYuan.Jin": 'Jin',
+    "SongLiaoJinYuan.Mongol": 'Mongol',
+    "SongLiaoJinYuan.Yuan": 'Yuan',
+    "Qing.Qing": 'Qing',
+    "Qing.SouthernMing": 'SouthernMing',
+    "Qing.Zheng": 'Zheng'
+  },
+
   yearExpressions: {
+    'ce': '{{year}}',
+    'bce': '{{year}} BCE',
     'short': '{{year}}',
     'short.ganZhi': '{{heaven}} {{earth}}',
     'normal': '{{year}} ({{shengxiao}})',
@@ -88,43 +132,25 @@ export const en: LocaleData = {
     'normal': '{{month}}-{{day}}',
     'full': '{{year}}-{{month}}-{{day}}'
   },
-  westernCalendar: {
-    'early': 'Proleptic Julian Calendar',
-    '7': 'Julian Calendar',
-    '1582': 'Julian/Gregorian Calendar',
-    'now': 'Gregorian Calendar'
+
+  pingqi: {
+    'pingqi': 'píngqì', 'dingqi': 'dìngqì'
   },
-  yearInfos: {
-    'qinEarlyHan': '',
-    'xin': '',
-    'xin24': '',
-    'wei': '',
-    'wuZhou': '',
-    'tang': '',
-    'gCalenderReform': '',
-    'qing': ''
+  calenderNames: {
+    'calendrical': 'Calendrical',
+    'xinfa': 'Xīnfǎ',
+    'datong': 'Dàtǒng',
   },
-  notes: {
-    'early': '',
-    'later': '',
-    '1914': '',
-    '1929': ''
-  },
-  htmlLabels: {
-    'moonPhases': 'Moon Phases',
-    'solarTerms': '24 Solar Terms',
-    'calSolTermsPingqi': 'Calendrical solar terms (píngqì)',
-    'calSolTermsDingqi': 'Calendrical solar terms (dìngqì)',
-    'xinfa': 'Xīnfǎ solar terms (dìngqì)',
-    'datong': 'Dàtǒng solar terms (píngqì)',
-    'yearLabel': 'Gregorian Year',
-    'lunarYearLabel': 'Chinese year'
+  mixedExpressions: {
+    'moonPhases': 'Moon Phases{{type}}',
+    'solarTerms': '24 Solar Terms{{type}}',
+    'calendricalSolarTerms': '{{name}} solar terms {{type}}',
   },
   yearHtmls: {
-    'gregorian': '<h1>{{gcal}}: {{yearc}}</h1>',
-    'lunarOne': '<h1>{{lunarLabel}}:</h1><h2>{{name0}}</h2><br/>',
-    'lunarTwo': '<h1>{{lunarLabel}}:</h1><h2>{{name0}} before {{month0}} {{day0}},<br/>{{name1}} on and after {{month0}} {{day0}}</h2><br/>',
-    'lunarThree': '<h2>{{name0}} before {{month0}} {{day0}},<br/>{{name1}} between {{month0}} {{day0}} and {{month1}} {{day1l}},<br/>{{name2}} on and after {{month1}} {{day1}}</h2><br/>',
-    'lunar24': '<h1>{{lunarLabel}}:</h1><h2>{{name0}} before {{month0}} {{day0}},<br/>{{name1}} on and after {{month0}} {{day0}}</h2><br/>'
+    'gregorian': '<h1>{{gCalendar}} Year: {{yearString}}</h1>',
+    'lunarSpan0': '<h1>Chinese Year:</h1><h2>{{eraNameString0}}</h2>',
+    'lunarSpan1': '<h1>Chinese Year:</h1><h2>{{eraNameString0}} before {{spanMonth0}} {{spanDay0}},<br/>{{eraNameString1}} on and after {{spanMonth0}} {{spanDay0}}</h2>',
+    'lunarSpan1@24': '<h1>Chinese Year:</h1><h2>{{eraNameString0}} before {{spanMonth0}} {{spanDay0}},<br/>{{eraNameString1}} on and after {{spanMonth0}} {{spanDay0}}</h2>',
+    'lunarSpan2': '<h1>Chinese Year:</h1><h2>{{eraNameString0}} before {{spanMonth0}} {{spanDay0}},<br/>{{eraNameString1}} between {{spanMonth0}} {{spanDay0}} and {{spanMonth1}} {{day1l}},<br/>{{eraNameString2}} on and after {{spanMonth1}} {{spanDay1}}</h2>'
   }
 };

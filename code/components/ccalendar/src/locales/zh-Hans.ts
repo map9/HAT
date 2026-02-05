@@ -37,13 +37,13 @@ export const zhHans: LocaleData = {
     '20': '廿一', '21': '廿二', '22': '廿三', '23': '廿四', '24': '廿五',
     '25': '廿六', '26': '廿七', '27': '廿八', '28': '廿九', '29': '三十'
   },
-  moonStatuses: {
+  moonPhases: {
     '0': '朔', '1': '上弦', '2': '望', '3': '下弦'
   },
   monthSizes: {
     '0': '小', '1': '大'
   },
-  soltermNames: {
+  solarTermNames: {
     '0': '小寒', '1': '大寒', '2': '立春', '3': '雨水', '4': '惊蛰', '5': '春分',
     '6': '清明', '7': '谷雨', '8': '立夏', '9': '小满', '10': '芒种', '11': '夏至',
     '12': '小暑', '13': '大暑', '14': '立秋', '15': '处暑', '16': '白露', '17': '秋分',
@@ -57,10 +57,54 @@ export const zhHans: LocaleData = {
   leap: {
     'leap': '闰', 'post': '后', 'post9': '后九'
   },
-  years: {
-    'ce': '{{year}}', 'bce': '前{{year}}'
+  westernCalendar: {
+    'prolepticJulian': '逆推儒略历',
+    'julian': '儒略历',
+    'reform': '儒略历/格里历',
+    'gregorian': '格里历'
   },
+  chineseCalendar: {
+    'Huangdi': '黃帝',
+    'Zhuanxu': '颛顼',
+    'Spring.Xia': '夏',
+    'Yin': '殷',
+    'Zhou': '周',
+    'Chunqiu': '春秋',
+    'Lu': '鲁',
+    'Warring.Xia': '夏',
+    "HanZhuanxu": '汉颛顼',
+    "Tki.Wei": '魏',
+    "Tki.Shu": '蜀',
+    "Tki.Wu": '吳',
+    "Jin": '晋',
+    "SouthNorth.South.Jin": '东晋',
+    "SouthNorth.South.Song": '宋',
+    "SouthNorth.South.Qi": '齐',
+    "SouthNorth.South.Liang": '梁',
+    "SouthNorth.South.Chen": '陈',
+    "SouthNorth.North.LaterQin": '后秦',
+    "SouthNorth.North.NorthernLiang": '北凉',
+    "SouthNorth.North.NorthernWei": '北魏',
+    "SouthNorth.North.WesternWei": '西魏',
+    "SouthNorth.North.NorthernZhou": '北周',
+    "SouthNorth.North.Sui": '隋',
+    "SouthNorth.North.EasternWei": '东魏',
+    "SouthNorth.North.NorthernQi": '北齐',
+    "SongLiaoJinYuan.LaterHan": '后汉',
+    "SongLiaoJinYuan.LaterZhou": '后周',
+    "SongLiaoJinYuan.Song": '宋',
+    "SongLiaoJinYuan.Liao": '辽/契丹',
+    "SongLiaoJinYuan.Jin": '金',
+    "SongLiaoJinYuan.Mongol": '蒙古',
+    "SongLiaoJinYuan.Yuan": '元',
+    "Qing.Qing": '清',
+    "Qing.SouthernMing": '南明',
+    "Qing.Zheng": '明郑'
+  },
+
   yearExpressions: {
+    'ce': '{{year}}',
+    'bce': '前{{year}}',
     'short': '{{year}}年',
     'short.ganZhi': '{{heaven}}{{earth}}年',
     'normal': '{{year}}（{{shengxiao}}）年',
@@ -86,43 +130,25 @@ export const zhHans: LocaleData = {
     'normal': '{{month}}{{day}}',
     'full': '{{year}}{{month}}{{day}}'
   },
-  westernCalendar: {
-    'early': '逆推儒略历',
-    '7': '儒略历',
-    '1582': '儒略历/格里历',
-    'now': '格里历'
+
+  pingqi: {
+    'pingqi': '平气', 'dingqi': '定气'
   },
-  yearInfos: {
-    'qinEarlyHan': '秦朝及汉初(公元前221年 &ndash; 前104年)的历法沿用颛顼历的月序。颛顼历是古六历之一，据说战国后期在秦国使用。颛顼历以建亥(即今天的十月)为年首，但仍称建亥为十月。月的数序是十月、十一月、十二月、正月、二月……九月，闰月置于年终，称为后九月。秦朝的历法与颛顼历稍有不同。汉朝建立后基本上沿用秦历，一百年间只作了少许修改，直到汉武帝太初元年(公元前104年)才颁行新历法，以建寅(正月)为年首，并把闰月置于无中气的月份，这使公元前104年的农历年有十五个农历月。秦朝为了避秦始皇名讳(正、政同音)，把正月改称「端月」，到汉朝又改回正月。这里没有跟从历史，在秦朝仍称建寅为正月。<br />本网页这时期的复原日历是根据李忠林的文章「秦至汉初(前246至前104)历法研究&mdash;以出土历简为中心」，发表于《中国史研究》2012年第2期第17&ndash;69页。具体计算方法在<a href=\'QinHanCalendars_simp.html\'>秦与汉初历法网页</a>阐述。',
-    'xin': '公元9年，王莽建立新朝，改正朔以殷正建丑(即现在的十二月)为年首，故公元8年的农历年(戊辰年)只有十一个月。农历月的数序是:建丑为正月、建寅为二月等等，与现在通用的月序相差一个月。新朝于地皇四年(癸未年，公元23年)亡，绿林军拥立汉淮南王刘玄为帝，改元更始元年，恢复以建寅(即现在的正月)为年首。',
-    'xin24': '<br />地皇四年和更始元年有十一个月重叠。地皇四年用丑正、更始元年用寅正，所以地皇四年二至十二月相当于更始元年正至十一月。',
-    'wei': '魏青龙五年（丁巳年，公元237年），魏明帝改正朔，以殷正建丑(即现在的十二月)为年首，二月后实施，并改元景初元年。所以丁巳年没有三月份，二月后的月份是四月。农历月的数序是:建丑为正月、建寅为二月等等，与现在通用的月序相差一个月。景初三年（公元239年）明帝驾崩,次年恢复以建寅(即现在的正月)为年首。景初三年有两个十二月。',
-    'wuZhou': '公元689年12月，武则天改正朔，以周正建子(即现在的十一月)为年首，建子改称正月，建寅（即现在的正月）改称一月，其他农历月的数序不变（即正月、十二月、一月、二月__十月）。公元701年2月又改回以建寅为年首。公元689年的农历年（己丑年）只有十一个月（其中一个月是闰月），而公元700年的农历年（庚子年）有十五个月（其中一个月是闰月）。',
-    'tang': '公元761年12月，唐肃宗改正朔，以周正建子(即现在的十一月)为年首，建子改称正月、建丑（即现在的十二月）改称二月、建寅（即现在的正月）改称三月等等，与现在通用的月序相差二个月。公元762年4月又把农历月的数序改回以建寅为正月、建卯为二月等。公元761年的农历年（辛丑年）只有十个月,而公元762年的农历年（壬寅年）则有十四个月，其中有两个四月和两个五月。',
-    'gCalenderReform': '格里高里历改:公历在10月4日及之前用儒略历，之后用格里高里历。为使春分的日期回复到3月21日(公元325年时的春分日期)，10月4日的下一日改为10月15日，跳了10日。',
-    'qing': '康熙六年至八年清政府因历狱废除西洋新法，复用明朝《大统历》，二十四节气改回平气。这里提供两套历书节气:「新法节气」根据《三千五百年历日天象》，此乃以后的钦天监依西洋新法追推的定气;「大统历节气」根据明朝《大统历》推算。至于朔日，依明朝《大统历》和依《西洋新法历书》计算结果在这几年的日期完全一致。'
+  calenderNames: {
+    'calendrical': '历书',
+    'xinfa': '新法',
+    'datong': '大统历',
   },
-  notes: {
-    'early': '朔的时刻接近午夜零时，初一或会提早一天。',
-    'later': '朔的时刻接近午夜零时，初一或会推迟一天。',
-    '1914': '注意合朔时刻不在初一日，这是由两个因数造成。其一是1929年以前的朔日计算是用北京地方时(东经116&deg;24\')，而本网页列出的时间却是用现时全国通行的东经120&deg;标准时， 东经120&deg;标准时比北京地方时迟约14分钟。其二是1914年前用的合朔计算方法不是很准确。',
-    '1929': '注意朔的时刻稍稍过了初二的零时。这是因为1929年以前的朔日计算是用北京地方时(东经116&deg;24\')，而本网页列出的时间却是用现时全国通行的东经120&deg;标准时。 东经120&deg;标准时比北京地方时迟约14分钟，这就是朔的时刻过了初二零时的缘故。'
-  },
-  htmlLabels: {
-    'moonPhases': '月相',
-    'solarTerms': '24节气',
-    'calSolTermsPingqi': '历书节气(平气)',
-    'calSolTermsDingqi': '历书节气(定气)',
-    'xinfa': '新法节气(定气)',
-    'datong': '大统历节气(平气)',
-    'yearLabel': '公历年',
-    'lunarYearLabel': '农历年'
+  mixedExpressions: {
+    'moonPhases': '月相{{type}}',
+    'solarTerms': '二十四节气{{type}}',
+    'calendricalSolarTerms': '{{name}}节气{{type}}',
   },
   yearHtmls: {
-    'gregorian': '<h1>{{yearLabel}}（{{gcal}}）: {{yearc}}</h1>',
-    'lunarOne': '<h1>{{lunarLabel}}:</h1><h2>{{name0}}</h2><br/>',
-    'lunarTwo': '<h1>{{lunarLabel}}:</h1><h2>{{month0}}{{day0}}日前: {{name0}},<br/>{{month0}}{{day0}}日及以后：{{name1}}</h2><br/>',
-    'lunarThree': '<h1>{{lunarLabel}}:</h1><h2>{{month0}}{{day0}}日前: {{name0}},<br/>{{month0}}{{day0}}日至{{month1}}{{day1l}}日: {{name1}},<br/>{{month1}}{{day1}}日及以后: {{name2}}</h2><br/>',
-    'lunar24': '<h1>{{lunarLabel}}:</h1><h2>{{month0}}{{day0}}日前: 癸未(羊)汉更始元年,<br/>{{month0}}{{day0}}日及以后：{{name1}}</h2><br/>'
+    'gregorian': '<h1>公历年（{{gcal}}）：{{yearc}}</h1>',
+    'lunarSpan0': '<h1>农历年：</h1><h2>{{eraNameString0}}</h2>',
+    'lunarSpan1': '<h1>农历年：</h1><h2>{{spanMonth0}}{{spanDay0}}日前: {{eraNameString0}},<br/>{{spanMonth0}}{{spanDay0}}日及以后：{{eraNameString1}}</h2>',
+    'lunarSpan2': '<h1>农历年：</h1><h2>{{spanMonth0}}{{spanDay0}}日前: {{eraNameString0}},<br/>{{spanMonth0}}{{spanDay0}}日至{{spanMonth1}}{{day1l}}日: {{eraNameString1}},<br/>{{spanMonth1}}{{spanDay1}}日及以后: {{eraNameString2}}</h2>',
+    'lunarSpan@24': '<h1>农历年：</h1><h2>{{spanMonth0}}{{spanDay0}}日前: 癸未(羊)汉更始元年,<br/>{{spanMonth0}}{{spanDay0}}日及以后：{{eraNameString1}}</h2>'
   }
 };
