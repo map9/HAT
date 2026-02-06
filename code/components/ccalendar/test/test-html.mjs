@@ -24,7 +24,7 @@ console.log('=== 1. 精确比对测试：575年 北齐 ===\n');
 const cc = new ChineseCalendar();
 const ccRender = new ChineseCalendarHtmlRender({ locale: 'zh-Hans' });
 
-const html_body = ccRender.render(ChineseCalendarType.DEFAULT, -721, cc);
+const html_body = ccRender.render(ChineseCalendarType.DEFAULT, -104, cc);
 const html =
 `<!DOCTYPE html>
 <html lang="zh">

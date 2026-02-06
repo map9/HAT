@@ -50,6 +50,7 @@ export {
   getSexagenaryYear,
   getSexagenaryDay,
   getFirstMonthNum,
+  getLeapPrefix,
   makeDate,
 
   // from ./core/calendar-id

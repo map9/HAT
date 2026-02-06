@@ -57,7 +57,7 @@ export const en: LocaleData = {
     '4': 'Penumbral Lunar Eclipse', '5': 'Partial Lunar Eclipse', '6': 'Total Lunar Eclipse'
   },
   leap: {
-    'leap': 'leap ', 'post': 'post ', 'post9': 'post 9 '
+    'leap': 'leap ', 'post': 'post ', 'post 9': 'post 9 '
   },
   westernCalendar: {
     'prolepticJulian': '(Proleptic) Julian',

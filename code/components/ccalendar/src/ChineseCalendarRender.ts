@@ -5,9 +5,10 @@
 import {
   LocaleData,
   MonthGanZhi,
+  LeapPrefixType,
   LunarDate,
   ChineseDateFormatConfig,
-} from './types'
+} from './types.js'
 import { getLocale } from './locales/index.js';
 
 /**
@@ -66,41 +67,29 @@ export class ChineseCalendarRender {
    * 格式化农历月份
    */
   lunarMonthToString(
+    monthExpressions: string,
     cYear: number,
     cMonth: number,
     heMonth: MonthGanZhi,
     cMonthSize: number,
-    isLeap: boolean | string,
-    isFirstMonth: boolean,
-    monthExpressions: string
+    isFirstMonth?: boolean,
+    leap?: LeapPrefixType,
   ): string {
     if (!monthExpressions) return '';
 
-    // 获取leap在不同时期的叫法
-    let leap = this.localeData.leap['leap'];
-    if (cYear === -104) {
-      leap = this.localeData.leap['post'];
-    } else if (cYear < -104) {
-      if (isLeap === 'post 9') {
-        leap = this.localeData.leap['post9'];
-      }
+    let cMonthName = this.localeData.monthNumbers[String(Math.abs(cMonth) - 1)];
+    if (cYear > 688 && cYear < 700 && Math.abs(cMonth) === 11) {
+      cMonthName = this.localeData.monthNumbers['0'];
+    }
+    if (cYear > 689 && cYear < 701 && Math.abs(cMonth) === 1) {
+      cMonthName = this.localeData.monthNumbers['-1'];
     }
 
-    let cMonthName = this.localeData.monthNumbers[String(Math.abs(cMonth) - 1)];
-    if (cYear >= -104) {
-      if (cMonth < 0) {
-        cMonthName = leap + cMonthName;
-      }
-
-      if (cYear > 688 && cYear < 700 && Math.abs(cMonth) === 11) {
-        cMonthName = this.localeData.monthNumbers['0'];
-      }
-      if (cYear > 689 && cYear < 701 && Math.abs(cMonth) === 1) {
-        cMonthName = this.localeData.monthNumbers['-1'];
-      }
-    } else {
-      if (cMonth < 0) {
-        cMonthName = leap;
+    if (cMonth < 0 && leap) {
+      if (leap === LeapPrefixType.LEAPX)
+        cMonthName = this.localeData.leap['leap'] + cMonthName;
+      else {
+        cMonthName = this.localeData.leap[String(leap)];
       }
     }
 
@@ -202,13 +191,13 @@ export class ChineseCalendarRender {
     const month = monthFormat === 'none'
       ? ''
       : this.lunarMonthToString(
+          monthFormat,
           lunarDate.cYear,
           lunarDate.cMonth,
           lunarDate.heMonth,
           lunarDate.cMonthSize,
-          lunarDate.isLeap,
           lunarDate.isFirstMonth,
-          monthFormat
+          lunarDate.leap,
         );
 
     let day = '';

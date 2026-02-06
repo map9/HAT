@@ -70,8 +70,8 @@ export class ChineseCalendarHtmlRender extends ChineseCalendarRender {
     });
 
     html += interpolate(this.localeData.yearHtmls['gregorian'], {
-      gcal: this.localeData.westernCalendar[String(gCalendar)],
-      yearc: (yearExportData.year > 0) ? yearString : `${yearExportData.year}（${yearString}）`
+      gCalendar: this.localeData.westernCalendar[String(gCalendar)],
+      yearString: (yearExportData.year > 0) ? yearString : `${yearExportData.year}（${yearString}）`
     });
     
     // 公历中包含的农历年序号，最多包含三个。
@@ -120,7 +120,6 @@ export class ChineseCalendarHtmlRender extends ChineseCalendarRender {
     const cSpanMonths = yearExportData.cMonths[month].cSpanMonths;
     // 1. 格式化月表头
     const cSpanMonthCount = cSpanMonths.length;
-    const cSpanYear = yearExportData.cSpanYears[cSpanMonths[0].cYearIndex];
     html += `<tr>`;
     // 1.1 表头公历年月
     const yearString = interpolate(this.localeData.yearExpressions['short'], {
@@ -129,18 +128,21 @@ export class ChineseCalendarHtmlRender extends ChineseCalendarRender {
     html += `<th colspan="2"${cSpanMonthCount !== 1 ? ' rowspan=' + cSpanMonthCount : ''} ><h2>${yearString}<br/>${this.localeData.monthNames[month]}</h2></th>`;
     // 1.2 表头农历年月
     for (let i = 0; i < cSpanMonthCount; i ++) {
+      const cSpanMonth = cSpanMonths[i];
+      const cSpanYear = yearExportData.cSpanYears[cSpanMonth.cYearIndex];
+
       const cYearString = interpolate(this.localeData.yearExpressions['short.ganZhi'], {
         heaven: this.localeData.heavens[String(cSpanYear.heYear[0])],
         earth: this.localeData.earths[String(cSpanYear.heYear[1])]
       });
       const cMonthString = this.lunarMonthToString(
+        'full',
         cSpanYear.cYear,
-        cSpanMonths[i].cMonth,
-        cSpanMonths[i].heMonth, 
-        cSpanMonths[i].cMonthSize,
-        cSpanMonths[i].isLeap,
-        cSpanMonths[i].isFirstMonth,
-        'normal'
+        cSpanMonth.cMonth,
+        cSpanMonth.heMonth, 
+        cSpanMonth.cMonthSize,
+        cSpanMonth.isFirstMonth,
+        cSpanMonth.leap,
       );
       
       if (cSpanMonthCount > 1 && i > 0) html += "</tr>";
@@ -181,18 +183,20 @@ export class ChineseCalendarHtmlRender extends ChineseCalendarRender {
         }
       }
 
+      const cSpanMonth = cSpanMonths[cDay.chineseDate.cMonthIndex];
+      const cSpanYear = yearExportData.cSpanYears[cSpanMonth.cYearIndex];
       const cMonthString = this.lunarMonthToString(
+        'short',
         cSpanYear.cYear,
-        cSpanMonths[cDay.chineseDate.cMonthIndex].cMonth,
-        cSpanMonths[cDay.chineseDate.cMonthIndex].heMonth, 
-        cSpanMonths[cDay.chineseDate.cMonthIndex].cMonthSize,
-        cSpanMonths[cDay.chineseDate.cMonthIndex].isLeap,
-        cSpanMonths[cDay.chineseDate.cMonthIndex].isFirstMonth,
-        'short'
+        cSpanMonth.cMonth,
+        cSpanMonth.heMonth, 
+        cSpanMonth.cMonthSize,
+        cSpanMonth.isFirstMonth,
+        cSpanMonth.leap,
       );
       // 农历每月的初一
       if (cDay.chineseDate.cDay === 1) { 
-        html += `<p style="color:${cSpanMonths[cDay.chineseDate.cMonthIndex].isFirstMonth? 'red' : 'brown'};"><b>${cMonthString}${isNewMoonCloseToMidnight(yearExportData.year, month)? '<sup>*</sup>' : ''}</b></p>`;
+        html += `<p style="color:${cSpanMonth.isFirstMonth? 'red' : 'brown'};"><b>${cMonthString}${isNewMoonCloseToMidnight(yearExportData.year, month)? '<sup>*</sup>' : ''}</b></p>`;
       } else {
         let cDateString = '';
         // 公历每月的 1 号

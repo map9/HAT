@@ -17,15 +17,17 @@ import type {
 
 import {
   ChineseCalendarType,
+  SolarTermsType,
+  LeapPrefixType,
   CALENDAR_RANGE_MIN_YEAR,
   CALENDAR_RANGE_MAX_YEAR,
-  SolarTermsType,
 } from './types.js';
 
 import {
   getSexagenaryYear,
   getSexagenaryDay,
   getFirstMonthNum,
+  getLeapPrefix,
   makeDate,
   correctCalendarByYear,
   calYearData,
@@ -220,22 +222,26 @@ export class ChineseCalendar {
       const heDay = getSexagenaryDay(calVars.jd0 + calVars.mday[month] + day + 1);
       const jd = calVars.jd0 + daysInYear;
 
+      if (cYear !== year) {
+        console.log(`getChineseDateFromGregorian: year ${year} !== cYear ${cYear}.`);
+      }
+
       return {
         cYear: cYear,
         cMonth: cMonthNum,
         cMonthSize: calVars.cmonthLong[cMonthOrder],
         cDay: cDay,
-        isLeap: cMonthNum < 0 ? calVars.leap ?? true : false,
+        heYear,
+        heMonth: heMonth,
+        heDay,
+        jd,
+        leap: getLeapPrefix(cYear, cMonthNum, calVars),
         // 改元年（如-103年颛顼历→太初历、700年武周）公历年内没有岁首，
         // 老历法岁首在前一年，新历法岁首在后一年，因此该年所有月份 isFirstMonth 均为 false
         isFirstMonth:
           (year === -103 || year === 700)
             ? false
             : Math.abs(cMonthNum) === (getFirstMonthNum(cYear) ?? calVars.firstMonthNum ?? 1) && (cMonthNum > 0),
-        heYear,
-        heMonth: heMonth,
-        heDay,
-        jd
       };
     } catch (e) {
       console.error('getChineseDateFromGregorian error:', e, date);
@@ -249,7 +255,6 @@ export class ChineseCalendar {
    * @param cYear - 农历年份
    * @param cMonth - 农历月份，按照夏历来确定的月份，也就是建寅为一月。
    * @param cDay - 农历日期
-   * @param isLeap - 是否为闰月
    * @param heMonth - 月份干支数组，用于区分重复月份
    * @param jd - 儒略日，用于精确匹配唯一的公历日期
    * @returns 当 jd 不为 null 时返回单个 Date 对象；当 jd 为 null 时返回 Date 数组
@@ -259,7 +264,6 @@ export class ChineseCalendar {
     cYear: number,
     cMonth: number,
     cDay: number,
-    isLeap?: boolean,
     heMonth?: MonthGanZhi,
     jd?: number
   ): Date | Date[] | null {
@@ -281,14 +285,14 @@ export class ChineseCalendar {
           const curCMonthNum = Math.abs(calVars.cmonthNum[i]);
 
           if (curCYear === cYear && curCMonthNum === cMonth) {
-            // 如果包含 isLeap/闰年 信息
-            if (isLeap !== undefined) {
-              if (isLeap !== (calVars.cmonthNum[i] < 0)) {
-                continue;
-              }
+            
+            if (cYear !== year) {
+              console.log(`getGregorianFromChineseDate: year ${year} !== cYear ${cYear}.`);
             }
+
             // 如果包含 heMonth/干支月 信息
             if (heMonth !== undefined) {
+              // year or curCYear??
               const curHeMonth = this.getSexagenaryMonth(year, i, calVars);
               if (curHeMonth && Array.isArray(curHeMonth) && heMonth && Array.isArray(heMonth)) {
                 if (curHeMonth[0] !== heMonth[0] || curHeMonth[1] !== heMonth[1]) {
@@ -459,19 +463,24 @@ export class ChineseCalendar {
               continue;
             }
 
+            if (curCYear !== year) {
+              console.log(`getChineseYearMonthInfo: year ${year} !== curCYear ${curCYear}.`);
+            }
+
             lunarMonths.push({
               date: date,
               cMonth: Math.abs(cMonthNum),
+              heMonth: heMonth,
               cMonthSize: calVars.cmonthLong[i],
-              isLeap: cMonthNum < 0 ? calVars.leap ?? true : false,
+              nDays,
               // 改元年（如-103年颛顼历→太初历、700年武周）公历年内没有岁首，
               // 老历法岁首在前一年，新历法岁首在后一年，因此该年所有月份 isFirstMonth 均为 false
               isFirstMonth:
                 (year === -103 || year === 700)
                   ? false
                   : Math.abs(cMonthNum) === (getFirstMonthNum(cYear) ?? calVars.firstMonthNum ?? 1) && (cMonthNum > 0),
-              heMonth: heMonth,
-              nDays,
+              // curCYear ? year ?
+              leap: getLeapPrefix(curCYear, cMonthNum, calVars),
             });
           }
         }
@@ -524,9 +533,8 @@ export class ChineseCalendar {
         heMonth: heMonth,
         cMonth: cMonthNum,
         cMonthSize: calVars.cmonthLong[orders[i]],
-        // 需要注意无中气时的 leap 标签
-        isLeap: cMonthNum < 0 ? calVars.leap ?? true : false,
-        isFirstMonth: isFirstMonth
+        isFirstMonth: isFirstMonth,
+        leap: getLeapPrefix(year, cMonthNum, calVars),
       });
     }
 

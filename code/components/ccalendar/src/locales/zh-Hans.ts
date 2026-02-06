@@ -55,7 +55,7 @@ export const zhHans: LocaleData = {
     '4': '半影月食', '5': '月偏食', '6': '月全食'
   },
   leap: {
-    'leap': '闰', 'post': '后', 'post9': '后九'
+    'leap': '闰', 'post': '后', 'post 9': '后九'
   },
   westernCalendar: {
     'prolepticJulian': '逆推儒略历',
@@ -145,7 +145,7 @@ export const zhHans: LocaleData = {
     'calendricalSolarTerms': '{{name}}节气{{type}}',
   },
   yearHtmls: {
-    'gregorian': '<h1>公历年（{{gcal}}）：{{yearc}}</h1>',
+    'gregorian': '<h1>公历年（{{gCalendar}}）：{{yearString}}</h1>',
     'lunarSpan0': '<h1>农历年：</h1><h2>{{eraNameString0}}</h2>',
     'lunarSpan1': '<h1>农历年：</h1><h2>{{spanMonth0}}{{spanDay0}}日前: {{eraNameString0}},<br/>{{spanMonth0}}{{spanDay0}}日及以后：{{eraNameString1}}</h2>',
     'lunarSpan2': '<h1>农历年：</h1><h2>{{spanMonth0}}{{spanDay0}}日前: {{eraNameString0}},<br/>{{spanMonth0}}{{spanDay0}}日至{{spanMonth1}}{{day1l}}日: {{eraNameString1}},<br/>{{spanMonth1}}{{spanDay1}}日及以后: {{eraNameString2}}</h2>',

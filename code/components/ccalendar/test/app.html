@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="keywords" content="農曆, 公曆, Chinese Calendar, Lunar Calendar">
+  <title>公曆和農曆日期對照</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="wrapper">
+    <!-- Language Switch -->
+    <div class="lang-switch">
+      <a data-lang="en">English</a>
+      <a data-lang="zh-Hant">傳統中文</a>
+      <a data-lang="zh-Hans" class="active">简体中文</a>
+    </div>
+
+    <!-- Title -->
+    <h1 id="app-title">公历和农历日期对照 (公元前722年—公元2200年)</h1>
+
+    <!-- Input Section -->
+    <div class="input-section">
+      <span id="input-label">输入 -721 和 2200 之间的公历年:</span>
+      <input type="number" id="year-input" value="-721" min="-721" max="2200">
+      <button id="submit-btn">输入</button>
+    </div>
+    <p class="hint" id="year-hint">(0=公元前1年、-1=公元前2年、-2=公元前3年、余类推。)</p>
+
+    <hr>
+
+    <!-- Calendar Selection -->
+    <div class="calendar-buttons">
+      <div class="calendar-buttons-label" id="calendar-label">选择历法:</div>
+      <div class="calendar-btn-group" id="calendar-btn-group">
+        <!-- Buttons will be generated dynamically -->
+      </div>
+    </div>
+
+    <!-- Calendar Output -->
+    <div id="calendar">
+      <!-- Calendar HTML will be rendered here -->
+    </div>
+  </div>
+
+  <script type="module">
+    import {
+      ChineseCalendar,
+      ChineseCalendarHtmlRender,
+      ChineseCalendarType,
+      getAncientCalendarBooksByYear,
+      getCalendarRegionsByYear,
+      correctCalendarByYear,
+      isDefaultRegionCalendar,
+      zhHans,
+      zhHant,
+      en,
+      CALENDAR_RANGE_MIN_YEAR,
+      CALENDAR_RANGE_MAX_YEAR
+    } from '../dist/index.js';
+
+    // UI text translations
+    const uiTexts = {
+      'zh-Hans': {
+        title: '公历和农历日期对照 (公元前722年—公元2200年)',
+        inputLabel: '输入 -721 和 2200 之间的公历年:',
+        submitBtn: '输入',
+        yearHint: '(0=公元前1年、-1=公元前2年、-2=公元前3年、余类推。)',
+        calendarLabel: '选择历法:',
+        errorRange: '年份必须在 -721 到 2200 之间',
+        errorInvalid: '请输入有效的年份'
+      },
+      'zh-Hant': {
+        title: '公曆和農曆日期對照 (公元前722年—公元2200年)',
+        inputLabel: '輸入 -721 和 2200 之間的公曆年:',
+        submitBtn: '輸入',
+        yearHint: '(0=公元前1年、-1=公元前2年、-2=公元前3年、餘類推。)',
+        calendarLabel: '選擇曆法:',
+        errorRange: '年份必須在 -721 到 2200 之間',
+        errorInvalid: '請輸入有效的年份'
+      },
+      'en': {
+        title: 'Gregorian and Chinese Calendar Conversion (722 BCE - 2200 CE)',
+        inputLabel: 'Enter a year between -721 and 2200:',
+        submitBtn: 'Submit',
+        yearHint: '(0 = 1 BCE, -1 = 2 BCE, -2 = 3 BCE, and so on.)',
+        calendarLabel: 'Select Calendar:',
+        errorRange: 'Year must be between -721 and 2200',
+        errorInvalid: 'Please enter a valid year'
+      }
+    };
+
+    // State
+    let currentLocale = 'zh-Hans';
+    let currentYear = -721;
+    let currentCalendar = null;
+    let cc = new ChineseCalendar();
+
+    // Get locale data
+    function getLocaleData(locale) {
+      switch (locale) {
+        case 'en': return en;
+        case 'zh-Hant': return zhHant;
+        default: return zhHans;
+      }
+    }
+
+    // Get available calendars for a year
+    function getAvailableCalendars(year) {
+      if (year < -104) {
+        return getAncientCalendarBooksByYear(year);
+      } else {
+        return getCalendarRegionsByYear(year);
+      }
+    }
+
+    // Get calendar display name
+    function getCalendarDisplayName(calendarType, locale) {
+      const localeData = getLocaleData(locale);
+      return localeData.chineseCalendar[String(calendarType)] || calendarType;
+    }
+
+    // Update UI text based on locale
+    function updateUIText() {
+      const texts = uiTexts[currentLocale];
+      document.getElementById('app-title').textContent = texts.title;
+      document.getElementById('input-label').textContent = texts.inputLabel;
+      document.getElementById('submit-btn').textContent = texts.submitBtn;
+      document.getElementById('year-hint').textContent = texts.yearHint;
+      document.getElementById('calendar-label').textContent = texts.calendarLabel;
+
+      // Update language switch active state
+      document.querySelectorAll('.lang-switch a').forEach(a => {
+        a.classList.toggle('active', a.dataset.lang === currentLocale);
+      });
+    }
+
+    // Render calendar buttons
+    function renderCalendarButtons() {
+      const btnGroup = document.getElementById('calendar-btn-group');
+      btnGroup.innerHTML = '';
+
+      const calendars = getAvailableCalendars(currentYear);
+
+      if (calendars.length === 0) {
+        // No special calendars, use default
+        currentCalendar = ChineseCalendarType.DEFAULT;
+        renderCalendar();
+        return;
+      }
+
+      // Set current calendar to first one if not set or not in list
+      if (!currentCalendar || !calendars.includes(currentCalendar)) {
+        currentCalendar = calendars[0];
+      }
+
+      calendars.forEach(cal => {
+        const btn = document.createElement('button');
+        btn.className = 'calendar-btn';
+        btn.textContent = getCalendarDisplayName(cal, currentLocale);
+        btn.dataset.calendar = cal;
+
+        // Mark default region with different background
+        if (isDefaultRegionCalendar(cal, currentYear)) {
+          btn.classList.add('default-region');
+        }
+
+        if (cal === currentCalendar) {
+          btn.classList.add('active');
+        }
+
+        btn.addEventListener('click', () => {
+          currentCalendar = cal;
+          // Update active state
+          document.querySelectorAll('.calendar-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          renderCalendar();
+        });
+
+        btnGroup.appendChild(btn);
+      });
+
+      renderCalendar();
+    }
+
+    // Render calendar
+    function renderCalendar() {
+      const output = document.getElementById('calendar');
+
+      try {
+        const render = new ChineseCalendarHtmlRender({ locale: currentLocale });
+        const calendarToUse = currentCalendar || ChineseCalendarType.DEFAULT;
+        const html = render.render(calendarToUse, currentYear, cc);
+        output.innerHTML = html;
+      } catch (e) {
+        output.innerHTML = `<p class="error-message">Error: ${e.message}</p>`;
+        console.error(e);
+      }
+    }
+
+    // Handle year input
+    function handleYearSubmit() {
+      const input = document.getElementById('year-input');
+      const year = parseInt(input.value, 10);
+      const texts = uiTexts[currentLocale];
+
+      if (isNaN(year)) {
+        alert(texts.errorInvalid);
+        return;
+      }
+
+      if (year < CALENDAR_RANGE_MIN_YEAR || year > CALENDAR_RANGE_MAX_YEAR) {
+        alert(texts.errorRange);
+        return;
+      }
+
+      currentYear = year;
+      currentCalendar = null; // Reset calendar selection
+      renderCalendarButtons();
+    }
+
+    // Initialize
+    function init() {
+      // Language switch
+      document.querySelectorAll('.lang-switch a').forEach(a => {
+        a.addEventListener('click', () => {
+          currentLocale = a.dataset.lang;
+          updateUIText();
+          renderCalendarButtons();
+        });
+      });
+
+      // Submit button
+      document.getElementById('submit-btn').addEventListener('click', handleYearSubmit);
+
+      // Enter key on input
+      document.getElementById('year-input').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          handleYearSubmit();
+        }
+      });
+
+      // Initial render
+      updateUIText();
+      renderCalendarButtons();
+    }
+
+    init();
+  </script>
+</body>
+</html>

@@ -1,5 +1,5 @@
 
-import { GanZhi } from "../types";
+import { LeapPrefixType, CalVars, GanZhi } from "../types.js";
 
 /**
  * Compute JD at midnight UT
@@ -110,6 +110,20 @@ export function getFirstMonthNum(year: number): number | null {
   // 武周事情，采用
   if (year > 689 && year < 701) return 11;
   return 1;
+}
+
+export function getLeapPrefix(cYear: number, cMonth: number, calVars: CalVars): LeapPrefixType | undefined {
+  let leapPrefix: LeapPrefixType | undefined;
+  if (cMonth < 0) {
+    if (cYear === -104) {
+      leapPrefix = LeapPrefixType.POST9;
+    } else if (cYear > -104) {
+      leapPrefix = LeapPrefixType.LEAPX;
+    } else {
+      leapPrefix = calVars.leap as LeapPrefixType;
+    }
+  }
+  return leapPrefix;
 }
 
 /**

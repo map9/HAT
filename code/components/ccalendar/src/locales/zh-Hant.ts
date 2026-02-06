@@ -55,7 +55,7 @@ export const zhHant: LocaleData = {
     '4': '半影月食', '5': '月偏食', '6': '月全食'
   },
   leap: {
-    'leap': '閏', 'post': '後', 'post9': '後九'
+    'leap': '閏', 'post': '後', 'post 9': '後九'
   },
   westernCalendar: {
     'prolepticJulian': '逆推儒略曆',
@@ -145,10 +145,10 @@ export const zhHant: LocaleData = {
     'calendricalSolarTerms': '{{name}}節氣{{type}}',
   },
   yearHtmls: {
-    'gregorian': '<h1>公曆年（{{gcal}}）：{{yearc}}</h1>',
-    'lunarSpan0': '<h1>公曆年：</h1><h2>{{eraNameString0}}</h2>',
-    'lunarSpan1': '<h1>公曆年：</h1><h2>{{spanMonth0}}{{spanDay0}}日前: {{eraNameString0}},<br/>{{spanMonth0}}{{spanDay0}}日及以后：{{eraNameString1}}</h2>',
-    'lunarSpan2': '<h1>公曆年：</h1><h2>{{spanMonth0}}{{spanDay0}}日前: {{eraNameString0}},<br/>{{spanMonth0}}{{spanDay0}}日至{{spanMonth1}}{{day1l}}日: {{eraNameString1}},<br/>{{spanMonth1}}{{spanDay1}}日及以后: {{eraNameString2}}</h2>',
-    'lunarSpan@24': '<h1>公曆年：</h1><h2>{{spanMonth0}}{{spanDay0}}日前: 癸未(羊)漢更始元年,<br/>{{spanMonth0}}{{spanDay0}}日及以后：{{eraNameString1}}</h2>'
+    'gregorian': '<h1>公曆年（{{gCalendar}}）：{{yearString}}</h1>',
+    'lunarSpan0': '<h1>農曆年：</h1><h2>{{eraNameString0}}</h2>',
+    'lunarSpan1': '<h1>農曆年：</h1><h2>{{spanMonth0}}{{spanDay0}}日前: {{eraNameString0}},<br/>{{spanMonth0}}{{spanDay0}}日及以后：{{eraNameString1}}</h2>',
+    'lunarSpan2': '<h1>農曆年：</h1><h2>{{spanMonth0}}{{spanDay0}}日前: {{eraNameString0}},<br/>{{spanMonth0}}{{spanDay0}}日至{{spanMonth1}}{{day1l}}日: {{eraNameString1}},<br/>{{spanMonth1}}{{spanDay1}}日及以后: {{eraNameString2}}</h2>',
+    'lunarSpan@24': '<h1>農曆年：</h1><h2>{{spanMonth0}}{{spanDay0}}日前: 癸未(羊)漢更始元年,<br/>{{spanMonth0}}{{spanDay0}}日及以后：{{eraNameString1}}</h2>'
   }
 };

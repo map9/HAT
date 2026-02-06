@@ -13,6 +13,104 @@ div#wrapper {
   max-width: 800px;
 }
 
+.lang-switch {
+  font-size: 20px;
+  text-align: right;
+  margin-bottom: 10px;
+}
+.lang-switch a {
+  margin-left: 15px;
+  text-decoration: underline;
+  cursor: pointer;
+  color: #0000EE;
+}
+.lang-switch a:hover {
+  color: #551A8B;
+}
+.lang-switch a.active {
+  font-weight: bold;
+  text-decoration: none;
+  color: #333;
+}
+
+.input-section {
+  margin: 20px 0;
+  font-size: 20px;
+  font-weight: bold;
+}
+.input-section input[type="number"] {
+  width: 80px;
+  padding: 5px 10px;
+  font-size: 16px;
+  border: 1px solid #333;
+}
+.input-section button {
+  padding: 4px 20px;
+  font-size: 16px;
+  background-color: #6666FF;
+  color: white;
+  border: none;
+  cursor: pointer;
+  margin-left: 8px;
+}
+.input-section button:hover {
+  background-color: #4444DD;
+}
+
+.hint {
+  color: #666;
+  margin: 5px 0;
+}
+
+.calendar-buttons {
+  margin: 20px 0;
+}
+.calendar-buttons-label {
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+.calendar-btn-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.calendar-btn {
+  padding: 10px 20px;
+  font-size: 16px;
+  border: none;
+  cursor: pointer;
+  background-color: #f0f0f0;
+  min-width: 100px;
+}
+.calendar-btn:hover {
+  background-color: #d2d2d2;
+}
+.calendar-btn.active {
+  background-color: #ADFF2F;
+  font-weight: bold;
+}
+.calendar-btn.default-region {
+  background-color: #FFB6C1;
+}
+.calendar-btn.default-region.active {
+  background-color: #ADFF2F;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid #333;
+  margin: 15px 0;
+}
+
+#calendar-output {
+  margin-top: 20px;
+}
+
+.error-message {
+  color: red;
+  font-weight: bold;
+}
+
 table {
   font: 16px/20px arial, verdana, helvetica, sans-serif;
   color: #333;
@@ -54,7 +152,7 @@ th,
 td {
   padding: 10px;
   text-align: center;
-  letter-spacing: 2px;
+  letter-spacing: 0px;
 }
 
 h1 {
@@ -81,7 +179,7 @@ h3 {
 
 h3.info {
   color: brown;
-  letter-spacing: 4px;
+  letter-spacing: 0px;
   line-height: 30px;
 }
 
@@ -94,7 +192,7 @@ h4 {
 p {
   font: 16px/20px arial, verdana, helvetica, sans-serif;
   margin: 0px 0px 5px 0px;
-  letter-spacing: 4px;
+  letter-spacing: 0px;
   line-height: 22px;
 }
 

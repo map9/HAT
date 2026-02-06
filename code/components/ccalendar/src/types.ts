@@ -12,7 +12,7 @@ export enum ChineseCalendarType {
   DEFAULT = 'default',
   // 三皇五帝/夏商
   HUANGDI = 'Huangdi',
-  ZHUANXU = 'ZhuanXu',
+  ZHUANXU = 'Zhuanxu',
   SPRING_XIA = 'Spring.Xia',
   YIN = 'Yin',
   // 周/春秋/鲁
@@ -21,7 +21,7 @@ export enum ChineseCalendarType {
   LU = 'Lu',
   // 战国
   WARRING_XIA = 'Warring.Xia',
-  HAN_ZHUANXU = 'HanZhuanXu',
+  HAN_ZHUANXU = 'HanZhuanxu',
   // 三国
   TKI_WEI = 'Tki.Wei',
   TKI_SHU = 'Tki.Shu',
@@ -75,6 +75,16 @@ export enum CalendricalSolarTermType {
   DINGQI = 'dingqi',
 }
 
+export enum LeapPrefixType {
+  /** 闰月 */
+  LEAP = 'leap',
+  /** 后九月 */
+  POST9 = 'post 9',
+  /** 闰某月 */
+  LEAPX = 'leapx',
+}
+
+
 /** 干支数组类型: [天干索引, 地支索引] */
 export type GanZhi = [number, number];
 
@@ -91,10 +101,6 @@ export interface LunarDate {
   cMonthSize: number;
   /** 农历日期（1-30） */
   cDay: number;
-  /** 是否闰月 */
-  isLeap: boolean | string;
-  /** 是否岁首月份 */
-  isFirstMonth: boolean;
   /** 年干支 */
   heYear: GanZhi;
   /** 月干支 */
@@ -103,6 +109,10 @@ export interface LunarDate {
   heDay: GanZhi;
   /** 儒略日 */
   jd: number;
+  /** 是否岁首月份 */
+  isFirstMonth?: boolean;
+  /** 如果是闰月，闰月的前缀类型 */
+  leap?: LeapPrefixType;
 }
 
 /** 农历月份信息 */
@@ -111,12 +121,14 @@ export interface LunarMonth {
   date: Date;
   /** 对应的公历年 */
   cMonth: number,
-  cMonthSize: number,
-  isLeap: boolean | string,
-  isFirstMonth: boolean,
   heMonth: MonthGanZhi,
+  cMonthSize: number,
   /** 本月天数 */
-  nDays: number;
+  nDays: number,
+  /** 是否岁首月份 */
+  isFirstMonth?: boolean,
+  /** 如果是闰月，闰月的前缀类型 */
+  leap?: LeapPrefixType;
 }
 
 /**
@@ -290,10 +302,10 @@ export interface MonthExportData {
   cSpanMonths: Array<{
     cYearIndex: number,
     cMonth: number,
-    cMonthSize: number,
-    isLeap: boolean | string,
-    isFirstMonth: boolean,
     heMonth: MonthGanZhi,
+    cMonthSize: number,
+    isFirstMonth?: boolean,
+    leap?: LeapPrefixType,
   }>;
   /** 每日数据 */
   cDays: DayExportData[];
