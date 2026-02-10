@@ -1655,14 +1655,9 @@
       // Try to load Chinese calendar libraries
       console.log('Attempting to load Chinese calendar libraries...');
       
-      // Try to load ChineseCalendar (722 BCE - 2200 CE)
-      try {
-        const chineseCalendarModule = await import('../../chinesecalendar/src/calendar.js');
-        await initChineseCalendar(chineseCalendarModule);
-        console.log('ChineseCalendar loaded successfully');
-      } catch (e) {
-        console.warn('ChineseCalendar not available:', e.message);
-      }
+      // Initialize ChineseCalendar (722 BCE - 2200 CE, via @hat/ccalendar)
+      await initChineseCalendar();
+      console.log('ChineseCalendar loaded successfully');
 
       // Try to load lunar-javascript (1 CE - 9999 CE)
       try {

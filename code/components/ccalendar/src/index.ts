@@ -7,6 +7,9 @@
 // 导出主类
 export { ChineseCalendar } from './ChineseCalendar.js';
 
+// 导出文本输出函数
+export { ChineseCalendarRender } from './ChineseCalendarRender.js';
+
 // 导出HTML输出函数
 export { ChineseCalendarHtmlRender } from './ChineseCalendarHtmlRender.js';
 

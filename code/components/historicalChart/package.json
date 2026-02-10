@@ -21,6 +21,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@hat/ccalendar": "file:../ccalendar",
     "d3": "^7.0.0",
     "lunar-javascript": "^1.7.7"
   },
