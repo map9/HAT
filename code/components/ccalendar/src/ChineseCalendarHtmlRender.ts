@@ -89,12 +89,12 @@ export class ChineseCalendarHtmlRender extends ChineseCalendarRender {
       });
     } else {
       html += interpolate(this.localeData.yearHtmls['lunarSpan2'], {
-        spanMonth0: this.localeData.monthNames[String(yearExportData.cSpanYears[0].date?.month! - 1)],
+        spanMonth0: this.localeData.monthNames[String(yearExportData.cSpanYears[1].date?.month! - 1)],
         spanDay0: yearExportData.cSpanYears[1].date?.day!,
-        eraNameString0: eraNameStrings[1],
-        spanMonth1: this.localeData.monthNames[String(yearExportData.cSpanYears[1].date?.month! - 1)],
-        day1l: yearExportData.cSpanYears[2].date?.day! - 1,
-        eraNameString1: eraNameStrings[2],
+        eraNameString0: eraNameStrings[0],
+        spanMonth1: this.localeData.monthNames[String(yearExportData.cSpanYears[2].date?.month! - 1)],
+        spanDay1Last: yearExportData.cSpanYears[2].date?.day! - 1,
+        eraNameString1: eraNameStrings[1],
         spanDay1: yearExportData.cSpanYears[2].date?.day!,
         eraNameString2: eraNameStrings[2]
       });

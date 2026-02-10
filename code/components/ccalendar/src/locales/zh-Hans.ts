@@ -64,15 +64,15 @@ export const zhHans: LocaleData = {
     'gregorian': '格里历'
   },
   chineseCalendar: {
-    'Huangdi': '黃帝',
-    'Zhuanxu': '颛顼',
-    'Spring.Xia': '夏',
-    'Yin': '殷',
-    'Zhou': '周',
-    'Chunqiu': '春秋',
-    'Lu': '鲁',
-    'Warring.Xia': '夏',
-    "HanZhuanxu": '汉颛顼',
+    'Huangdi': '黃帝历',
+    'Zhuanxu': '颛顼历',
+    'Spring.Xia': '夏历',
+    'Yin': '殷历',
+    'Zhou': '周历',
+    'Chunqiu': '春秋历',
+    'Lu': '鲁历',
+    'Warring.Xia': '夏历',
+    "HanZhuanxu": '汉颛顼历',
     "Tki.Wei": '魏',
     "Tki.Shu": '蜀',
     "Tki.Wu": '吳',
@@ -148,7 +148,7 @@ export const zhHans: LocaleData = {
     'gregorian': '<h1>公历年（{{gCalendar}}）：{{yearString}}</h1>',
     'lunarSpan0': '<h1>农历年：</h1><h2>{{eraNameString0}}</h2>',
     'lunarSpan1': '<h1>农历年：</h1><h2>{{spanMonth0}}{{spanDay0}}日前: {{eraNameString0}},<br/>{{spanMonth0}}{{spanDay0}}日及以后：{{eraNameString1}}</h2>',
-    'lunarSpan2': '<h1>农历年：</h1><h2>{{spanMonth0}}{{spanDay0}}日前: {{eraNameString0}},<br/>{{spanMonth0}}{{spanDay0}}日至{{spanMonth1}}{{day1l}}日: {{eraNameString1}},<br/>{{spanMonth1}}{{spanDay1}}日及以后: {{eraNameString2}}</h2>',
+    'lunarSpan2': '<h1>农历年：</h1><h2>{{spanMonth0}}{{spanDay0}}日前: {{eraNameString0}},<br/>{{spanMonth0}}{{spanDay0}}日至{{spanMonth1}}{{spanDay1Last}}日: {{eraNameString1}},<br/>{{spanMonth1}}{{spanDay1}}日及以后: {{eraNameString2}}</h2>',
     'lunarSpan@24': '<h1>农历年：</h1><h2>{{spanMonth0}}{{spanDay0}}日前: 癸未(羊)汉更始元年,<br/>{{spanMonth0}}{{spanDay0}}日及以后：{{eraNameString1}}</h2>'
   }
 };

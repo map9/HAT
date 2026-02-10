@@ -78,11 +78,17 @@ export class ChineseCalendarRender {
     if (!monthExpressions) return '';
 
     let cMonthName = this.localeData.monthNumbers[String(Math.abs(cMonth) - 1)];
-    if (cYear > 688 && cYear < 700 && Math.abs(cMonth) === 11) {
-      cMonthName = this.localeData.monthNumbers['0'];
-    }
-    if (cYear > 689 && cYear < 701 && Math.abs(cMonth) === 1) {
-      cMonthName = this.localeData.monthNumbers['-1'];
+    // 公元689年12月，改十一月为岁首，称正月，改建寅为一月；
+    // 公元701年2月，改回以建寅为年首，称正月，十一月为十一月。
+    if (cYear >= 690 && cYear <= 700) {
+      if ( Math.abs(cMonth) === 11 && isFirstMonth === true) {
+        cMonthName = this.localeData.monthNumbers['0'];
+        console.log(`cYear: ${cYear}, cMonth: ${cMonth}, isFirstMonth: ${isFirstMonth}.`)
+      }
+      if (Math.abs(cMonth) === 1 && isFirstMonth === false) {
+        cMonthName = this.localeData.monthNumbers['-1'];
+        console.log(`cYear: ${cYear}, cMonth: ${cMonth}, isFirstMonth: ${isFirstMonth}.`)
+      }
     }
 
     if (cMonth < 0 && leap) {

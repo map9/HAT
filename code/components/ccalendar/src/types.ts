@@ -91,6 +91,15 @@ export type GanZhi = [number, number];
 /** 月干支类型：可能为干支数组、'noZhong'（无中气）或 null（无法计算） */
 export type MonthGanZhi = GanZhi | 'noZhong' | null;
 
+export interface WesternDate {
+  /** 西历年份（负数表示公元前） */
+  year: number;
+  /** 西历月份（0-11） */
+  month: number;
+  /** 西历日期（1-31） */
+  day: number;
+}
+
 /** 农历日期对象 */
 export interface LunarDate {
   /** 农历年份（负数表示公元前） */
@@ -118,7 +127,7 @@ export interface LunarDate {
 /** 农历月份信息 */
 export interface LunarMonth {
   /** 月初一对应的公历日期 */
-  date: Date;
+  date: WesternDate;
   /** 对应的公历年 */
   cMonth: number,
   heMonth: MonthGanZhi,

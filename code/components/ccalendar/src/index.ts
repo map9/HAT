@@ -49,9 +49,9 @@ export {
   isNewMoonCloseToMidnight,
   getSexagenaryYear,
   getSexagenaryDay,
-  getFirstMonthNum,
   getLeapPrefix,
   makeDate,
+  isSameDate,
 
   // from ./core/calendar-id
   getWesternCalendarBookByYear,
@@ -80,12 +80,3 @@ export {
   getCalendricalSolarTermsByMonth,
 
 } from './core/index.js';
-/*
-// 导出平气计算模块
-export {
-  getCalendricalSolarTermGroups,
-  getCalendricalSolarTermsForMonth,
-  getPingqiFromLookupTable,
-  computePingqiDatong
-} from './core/pingqi.js';
-*/

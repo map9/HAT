@@ -151,6 +151,6 @@ export const en: LocaleData = {
     'lunarSpan0': '<h1>Chinese Year:</h1><h2>{{eraNameString0}}</h2>',
     'lunarSpan1': '<h1>Chinese Year:</h1><h2>{{eraNameString0}} before {{spanMonth0}} {{spanDay0}},<br/>{{eraNameString1}} on and after {{spanMonth0}} {{spanDay0}}</h2>',
     'lunarSpan1@24': '<h1>Chinese Year:</h1><h2>{{eraNameString0}} before {{spanMonth0}} {{spanDay0}},<br/>{{eraNameString1}} on and after {{spanMonth0}} {{spanDay0}}</h2>',
-    'lunarSpan2': '<h1>Chinese Year:</h1><h2>{{eraNameString0}} before {{spanMonth0}} {{spanDay0}},<br/>{{eraNameString1}} between {{spanMonth0}} {{spanDay0}} and {{spanMonth1}} {{day1l}},<br/>{{eraNameString2}} on and after {{spanMonth1}} {{spanDay1}}</h2>'
+    'lunarSpan2': '<h1>Chinese Year:</h1><h2>{{eraNameString0}} before {{spanMonth0}} {{spanDay0}},<br/>{{eraNameString1}} between {{spanMonth0}} {{spanDay0}} and {{spanMonth1}} {{spanDay1Last}},<br/>{{eraNameString2}} on and after {{spanMonth1}} {{spanDay1}}</h2>'
   }
 };

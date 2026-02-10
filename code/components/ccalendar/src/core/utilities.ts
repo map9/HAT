@@ -112,6 +112,26 @@ export function getFirstMonthNum(year: number): number | null {
   return 1;
 }
 
+export function isFirstMonthPlus(cYear: number, cMonth: number, calVars: CalVars): boolean {
+  if (cMonth < 0) return false;
+
+  // 先秦时期，按照古六历 / 颛顼历来确定岁首
+  if (cYear > -110) {
+    if (cYear < -102) {
+      return Math.abs(cMonth) === 10;
+    }
+
+    // 武周时期，改岁首为：子正
+    if (cYear > 689 && cYear < 701) {
+      return Math.abs(cMonth) === 11;
+    }
+
+    return Math.abs(cMonth) === 1;
+  } else {
+    return Math.abs(cMonth) === calVars.firstMonthNum!;
+  }
+}
+
 export function getLeapPrefix(cYear: number, cMonth: number, calVars: CalVars): LeapPrefixType | undefined {
   let leapPrefix: LeapPrefixType | undefined;
   if (cMonth < 0) {
@@ -130,7 +150,7 @@ export function getLeapPrefix(cYear: number, cMonth: number, calVars: CalVars): 
  * 给定公历年年、月、日，返回一个 javascript Date 对象。
  * 主要解决 Date 在表达公元前后 100 年的创建的 bug 问题。
  * @param year 公历年，负数表示公元前
- * @param month 月份（1～12）
+ * @param month 月份（0～11）
  * @param day 日期（1～31）
  * @returns javascript Date
  */
@@ -138,10 +158,30 @@ export function makeDate(year: number, month: number, day: number) {
   const date = new Date(2000, 0, 1, 0, 0, 0, 0);
 
   date.setFullYear(year);
-  date.setMonth(month - 1);
+  date.setMonth(month);
   date.setDate(day);
   date.setHours(0, 0, 0, 0);
 
   return date;
 }
+
+/**
+ * 判断两个Date对象是否为同一时间点（毫秒级精准）
+ * @param {Date} date1 - 第一个日期对象
+ * @param {Date} date2 - 第二个日期对象
+ * @returns {boolean} 是否一致
+ */
+export function isSameDate(date1: Date, date2: Date): boolean {
+  // 先校验是否为有效的Date对象（避免传入非日期值导致错误）
+  if (!(date1 instanceof Date) || !(date2 instanceof Date)) {
+    return false;
+  }
+  // 校验是否为有效日期（比如new Date('无效字符串')会返回Invalid Date）
+  if (isNaN(date1.getTime()) || isNaN(date2.getTime())) {
+    return false;
+  }
+  // 核心：比较毫秒级时间戳
+  return date1.getTime() === date2.getTime();
+}
+
 

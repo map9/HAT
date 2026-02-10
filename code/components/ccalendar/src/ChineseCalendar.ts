@@ -7,6 +7,7 @@
 
 import type {
   MonthGanZhi,
+  WesternDate,
   LunarDate,
   LunarMonth,
   CalVars,
@@ -18,7 +19,6 @@ import type {
 import {
   ChineseCalendarType,
   SolarTermsType,
-  LeapPrefixType,
   CALENDAR_RANGE_MIN_YEAR,
   CALENDAR_RANGE_MAX_YEAR,
 } from './types.js';
@@ -26,7 +26,6 @@ import {
 import {
   getSexagenaryYear,
   getSexagenaryDay,
-  getFirstMonthNum,
   getLeapPrefix,
   makeDate,
   correctCalendarByYear,
@@ -66,6 +65,32 @@ export class ChineseCalendar {
     }
 
     return null;
+  }
+   /**
+   * 获取月份是否是岁首
+   * 用 cmonthYear 的变化来判断岁首的变化
+   */
+  private isFirstMonth(year: number, month: number, order: number, calVars: CalVars): boolean {
+    let isFirstMonth = false;
+    
+    if (order > 0) {
+      isFirstMonth = calVars.cmonthYear[order] !== calVars.cmonthYear[order - 1];
+    } else {
+      // 如果后一个月是岁首，就不在向前计算，否则向前计算
+      if (calVars.cmonthYear[order] === calVars.cmonthYear[order + 1]) {
+        const calVarsLast = calYearData(calVars.calendar, year - 1);
+
+        let cLastYearMonthOrder = calVarsLast.cmonthYear.length - 2;
+        // 月首也重叠
+        if (calVars.cmonthDate[order] === calVars.mday[month] + 1) {
+          cLastYearMonthOrder = calVarsLast.cmonthYear.length - 1;
+        }
+        const cYear = year + calVars.cmonthYear[order] - 1;
+        const cYearLast = year - 1 + calVarsLast.cmonthYear[cLastYearMonthOrder] - 1;
+        isFirstMonth = cYear !== cYearLast;
+      }
+    }
+    return isFirstMonth;
   }
 
   /**
@@ -145,43 +170,57 @@ export class ChineseCalendar {
    * -300年2月29日在逆推格里历中不存在的问题。同样，
    *  700年2月29日也有类似的问题。
    */
-  private _computeGregorianDateFromDays(
+  private _computeWesternDateFromDays(
     year: number,
     daysFromYearStart: number,
     calVars: CalVars
-  ): Date {
+  ): WesternDate {
     let month = 0;
     for (let j = 0; j < 12; j++) {
       if (daysFromYearStart > calVars.mday[j]) {
-        month = j + 1;
+        month = j;
       } else {
         break;
       }
     }
 
-    let day = daysFromYearStart - calVars.mday[month - 1];
+    let day = daysFromYearStart - calVars.mday[month];
 
-    if (year === 1582 && month === 10 && day >= 5) {
+    if (year === 1582 && month === 9 && day >= 5) {
       day = day + 10;
     }
 
-    return makeDate(year, month, day);
+    return { year, month, day};
   }
 
   /**
    * 将公历日期转换为农历日期
    * @param calendar - 历书或者政权名称
-   * @param date - 公历日期对象
+   * @param date - js日期对象
    * @returns 农历日期对象
    */
-  getChineseDateFromGregorian(
+  getChineseDateFromDate(
     calendar: ChineseCalendarType | null = ChineseCalendarType.DEFAULT,
     date: Date
   ): LunarDate | null {
+    return this.getChineseDateFromWesternDate(calendar, {
+      year: date.getFullYear(),
+      month: date.getMonth(),
+      day: date.getDate()
+    });
+  } 
+  /**
+   * 将公历日期转换为农历日期
+   * @param calendar - 历书或者政权名称
+   * @param wDate - 公历日期对象
+   * @returns 农历日期对象
+   */
+  getChineseDateFromWesternDate(
+    calendar: ChineseCalendarType | null = ChineseCalendarType.DEFAULT,
+    wDate: WesternDate
+  ): LunarDate | null {
     try {
-      const year = date.getFullYear();
-      const month = date.getMonth();
-      let day = date.getDate();
+      let { year, month, day } = wDate;
 
       if (isNaN(year) || year < CALENDAR_RANGE_MIN_YEAR || year > CALENDAR_RANGE_MAX_YEAR) {
         throw new Error('Year out of range or invalid year');
@@ -222,10 +261,6 @@ export class ChineseCalendar {
       const heDay = getSexagenaryDay(calVars.jd0 + calVars.mday[month] + day + 1);
       const jd = calVars.jd0 + daysInYear;
 
-      if (cYear !== year) {
-        console.log(`getChineseDateFromGregorian: year ${year} !== cYear ${cYear}.`);
-      }
-
       return {
         cYear: cYear,
         cMonth: cMonthNum,
@@ -236,30 +271,25 @@ export class ChineseCalendar {
         heDay,
         jd,
         leap: getLeapPrefix(cYear, cMonthNum, calVars),
-        // 改元年（如-103年颛顼历→太初历、700年武周）公历年内没有岁首，
-        // 老历法岁首在前一年，新历法岁首在后一年，因此该年所有月份 isFirstMonth 均为 false
-        isFirstMonth:
-          (year === -103 || year === 700)
-            ? false
-            : Math.abs(cMonthNum) === (getFirstMonthNum(cYear) ?? calVars.firstMonthNum ?? 1) && (cMonthNum > 0),
+        isFirstMonth: this.isFirstMonth(year, month, cMonthOrder, calVars)
       };
     } catch (e) {
-      console.error('getChineseDateFromGregorian error:', e, date);
+      console.error('getChineseDateFromWesternDate error:', e, wDate);
       return null;
     }
   }
 
   /**
-   * 将农历日期转换为公历日期
+   * 将农历日期转换为js Date日期
    * @param calendar - 历书或者政权名称
    * @param cYear - 农历年份
    * @param cMonth - 农历月份，按照夏历来确定的月份，也就是建寅为一月。
    * @param cDay - 农历日期
    * @param heMonth - 月份干支数组，用于区分重复月份
    * @param jd - 儒略日，用于精确匹配唯一的公历日期
-   * @returns 当 jd 不为 null 时返回单个 Date 对象；当 jd 为 null 时返回 Date 数组
+   * @returns 当 jd 不为 null 时返回单个 js Date 对象；当 jd 为 null 时返回 js Date 数组
    */
-  getGregorianFromChineseDate(
+  getDateFromChineseDate(
     calendar: ChineseCalendarType | null = ChineseCalendarType.DEFAULT, 
     cYear: number,
     cMonth: number,
@@ -267,6 +297,57 @@ export class ChineseCalendar {
     heMonth?: MonthGanZhi,
     jd?: number
   ): Date | Date[] | null {
+    const wDates = this.getWesternDateFromChineseDate(calendar, cYear, cMonth, cDay, heMonth, jd);
+    
+    if (wDates) {
+      if (Array.isArray(wDates)) {
+        let dates =  wDates.map( wDate => makeDate(wDate.year, wDate.month, wDate.day));
+        if ( dates.length > 1) {
+          const timestampSet = new Set();
+          const uniqueDates = [];
+
+          for (const date of dates) {
+            const timestamp = date.getTime();
+            if (!timestampSet.has(timestamp)) {
+              timestampSet.add(timestamp);
+              uniqueDates.push(date);
+            }
+          }
+          
+          dates = uniqueDates;
+        }
+        if ( dates.length > 1) {
+          return dates;
+        } else {
+          return dates[0];
+        }
+      } else {
+        return makeDate(wDates.year, wDates.month, wDates.day);
+      }
+    } else {
+      return null;
+    }
+  }
+
+  /**
+   * 将农历日期转换为公历日期
+   * 跨历书的农历年可能会出现多个公历日期，这个不是错误
+   * @param calendar - 历书或者政权名称
+   * @param cYear - 农历年份
+   * @param cMonth - 农历月份，按照夏历来确定的月份，也就是建寅为一月。
+   * @param cDay - 农历日期
+   * @param heMonth - 月份干支数组，用于区分重复月份
+   * @param jd - 儒略日，用于精确匹配唯一的公历日期
+   * @returns 当 jd 不为 null 时返回单个 WesternDate 对象；当 jd 为 null 时返回 WesternDate 数组
+   */
+  getWesternDateFromChineseDate(
+    calendar: ChineseCalendarType | null = ChineseCalendarType.DEFAULT, 
+    cYear: number,
+    cMonth: number,
+    cDay: number,
+    heMonth?: MonthGanZhi,
+    jd?: number
+  ): WesternDate | WesternDate[] | null {
     try {
       let matches: Array<{
         year: number;
@@ -276,30 +357,33 @@ export class ChineseCalendar {
         index: number;
       }> = [];
 
-      for (let year = cYear - 1; year <= cYear + 1; year ++) {
+      let startYear = cYear - 1;
+      if (startYear < CALENDAR_RANGE_MIN_YEAR) {
+        startYear = CALENDAR_RANGE_MIN_YEAR;
+      }
+      let endYear = cYear + 1;
+      if (endYear > CALENDAR_RANGE_MAX_YEAR) {
+        endYear = CALENDAR_RANGE_MAX_YEAR;
+      }
+
+      for (let year = startYear; year <= endYear; year ++) {
         const correctedCalendarOrRegion = correctCalendarByYear(year, calendar);
         const calVars = calYearData(correctedCalendarOrRegion, year);
 
-        for (let i = 0; i < calVars.cmonthNum.length; i++) {
+        for (let i = 0; i < calVars.cmonthNum.length; i ++) {
           const curCYear = year + calVars.cmonthYear[i] - 1;
-          const curCMonthNum = Math.abs(calVars.cmonthNum[i]);
+          const curCMonthNum = calVars.cmonthNum[i];
 
           if (curCYear === cYear && curCMonthNum === cMonth) {
-            
-            if (cYear !== year) {
-              console.log(`getGregorianFromChineseDate: year ${year} !== cYear ${cYear}.`);
-            }
-
             // 如果包含 heMonth/干支月 信息
             if (heMonth !== undefined) {
-              // year or curCYear??
               const curHeMonth = this.getSexagenaryMonth(year, i, calVars);
               if (curHeMonth && Array.isArray(curHeMonth) && heMonth && Array.isArray(heMonth)) {
                 if (curHeMonth[0] !== heMonth[0] || curHeMonth[1] !== heMonth[1]) {
                   continue;
                 }
               }
-              if (curHeMonth !== heMonth) {
+              else if (curHeMonth !== heMonth) {
                 continue;
               }
             }
@@ -344,23 +428,30 @@ export class ChineseCalendar {
           throw new Error('No matching date found within 0.5 days of the given jd');
         }
 
-        return this._computeGregorianDateFromDays(bestMatch.year, bestMatch.daysFromYearStart, bestMatch.calVars);
+        return this._computeWesternDateFromDays(bestMatch.year, bestMatch.daysFromYearStart, bestMatch.calVars);
       }
 
-      return matches.map((match) => this._computeGregorianDateFromDays(match.year, match.daysFromYearStart, match.calVars));
+      return matches.map((match) => this._computeWesternDateFromDays(match.year, match.daysFromYearStart, match.calVars));
     } catch (e) {
-      console.error('getGregorianFromChineseDate error:', e);
+      console.error('getWesternDateFromChineseDate error:', e);
       return null;
     }
   }
 
   /**
    * 获取指定农历年的岁首（公历日期）
+   * 跨历书的农历年可能会出现不同的历书，岁首不一致的情况
+   * 如果测试采用：ChineseCalendarType.DEFAULT，典型的是：
+   * -480年 / -479年，春秋历跨越到周历
+   * -221年 / -220年，周历跨越到颛顼历
+   * 为了避免这种情况，需要明确指定统一的历书
    * @param calendar - 历书或者政权名称
    * @param cYear - 农历年份
    * @returns 岁首的公历日期
    */
-  getChineseYearStart(calendar: ChineseCalendarType | null = ChineseCalendarType.DEFAULT, cYear: number): Date | null {
+  getChineseYearStart(
+    calendar: ChineseCalendarType | null = ChineseCalendarType.DEFAULT,
+    cYear: number): WesternDate | null {
     try {
       if (isNaN(cYear) || cYear < CALENDAR_RANGE_MIN_YEAR || cYear > CALENDAR_RANGE_MAX_YEAR) {
         throw new Error('Year out of range or invalid year');
@@ -378,27 +469,24 @@ export class ChineseCalendar {
       for (let year = startYear; year <= endYear; year ++) {
         const correctedCalendarOrRegion = correctCalendarByYear(year, calendar);
         const calVars = calYearData(correctedCalendarOrRegion, year);
-        const firstMonthNum = getFirstMonthNum(cYear) ?? calVars.firstMonthNum ?? 1;
-
+        
         for (let i = 0; i < calVars.cmonthNum.length; i ++) {
           const curCYear = year + calVars.cmonthYear[i] - 1;
-          const monthNum = Math.abs(calVars.cmonthNum[i]);
 
-          if (curCYear === cYear && monthNum === firstMonthNum) {
+          if (curCYear === cYear) {
             const daysFromYearStart = calVars.cmonthDate[i];
 
             let month = 0;
             for (let j = 0; j < 12; j++) {
               if (daysFromYearStart > calVars.mday[j]) {
-                month = j + 1;
+                month = j;
               } else {
                 break;
               }
             }
 
-            const day = daysFromYearStart - calVars.mday[month - 1];
-
-            return makeDate(year, month, day);
+            const day = daysFromYearStart - calVars.mday[month];
+            return { year, month, day };
           }
         }
       }
@@ -457,30 +545,20 @@ export class ChineseCalendar {
 
             const heMonth = this.getSexagenaryMonth(year, i, calVars);
             const daysFromYearStart = calVars.cmonthDate[i];
-            const date = this._computeGregorianDateFromDays(year, daysFromYearStart, calVars);
+            const wDate = this._computeWesternDateFromDays(year, daysFromYearStart, calVars);
 
-            if (i === calVars.cmonthDate.length - 1 && year !== date.getFullYear()) {
+            if (i === calVars.cmonthDate.length - 1 && year !== wDate.year) {
               continue;
             }
 
-            if (curCYear !== year) {
-              console.log(`getChineseYearMonthInfo: year ${year} !== curCYear ${curCYear}.`);
-            }
-
             lunarMonths.push({
-              date: date,
-              cMonth: Math.abs(cMonthNum),
+              date: wDate,
+              cMonth: cMonthNum,
               heMonth: heMonth,
               cMonthSize: calVars.cmonthLong[i],
               nDays,
-              // 改元年（如-103年颛顼历→太初历、700年武周）公历年内没有岁首，
-              // 老历法岁首在前一年，新历法岁首在后一年，因此该年所有月份 isFirstMonth 均为 false
-              isFirstMonth:
-                (year === -103 || year === 700)
-                  ? false
-                  : Math.abs(cMonthNum) === (getFirstMonthNum(cYear) ?? calVars.firstMonthNum ?? 1) && (cMonthNum > 0),
-              // curCYear ? year ?
-              leap: getLeapPrefix(curCYear, cMonthNum, calVars),
+              isFirstMonth: lunarMonths.length === 0,
+              leap: getLeapPrefix(cYear, cMonthNum, calVars),
             });
           }
         }
@@ -499,14 +577,12 @@ export class ChineseCalendar {
    * @param month - 公历月份（0-11）
    * @param calendar - 历书或者政权名称
    * @param cyears - 干支年字符串数组
-   * @param firstMonths - 岁首月份数组
    * @param calVars - 日历计算数据
    * @returns 月历数据对象
    */
   exportMonth(
     year: number,
     month: number,
-    firstMonths: number[],
     calVars: CalVars
   ): MonthExportData {
     const monthExportData: MonthExportData = {
@@ -519,17 +595,14 @@ export class ChineseCalendar {
     // Add Chinese month information
     const orders = this.getChineseMonthsByMonth(month, calVars.mday, calVars.cmonthDate);
     for (let i = 0; i < orders.length; i ++) {
-      const cYearIndex = calVars.cmonthYear[orders[i]] - calVars.cmonthYear[0];
-      const cMonthNum = calVars.cmonthNum[orders[i]]
-      const heMonth = this.getSexagenaryMonth(year, i, calVars)
-      let isFirstMonth = cMonthNum === firstMonths[calVars.cmonthYear[orders[i]]];
-      // 跨岁首变更年份
-      if (year === -103 || year === 700) {
-        isFirstMonth = false;
-      }
+      const order = orders[i];
+      const cMonthNum = calVars.cmonthNum[order]
+      const heMonth = this.getSexagenaryMonth(year, order, calVars)
+      let isFirstMonth = this.isFirstMonth(year, month, order, calVars);
 
       monthExportData.cSpanMonths.push({
-        cYearIndex: cYearIndex,
+        // 该农历月在农历年的Span中的索引序号
+        cYearIndex: calVars.cmonthYear[order] - calVars.cmonthYear[0],
         heMonth: heMonth,
         cMonth: cMonthNum,
         cMonthSize: calVars.cmonthLong[orders[i]],
@@ -602,34 +675,22 @@ export class ChineseCalendar {
     // 通过calVars.cmonthYear计算year中包含的农历年个数
     const cYearCount = calVars.cmonthYear[calVars.cmonthYear.length - 1] - calVars.cmonthYear[0] + 1;
 
-    // 获取岁首月份
-    const firstMonths: number[] = [];
-    for (let i = 0; i < 3; i ++) {
-      let firstMonth = getFirstMonthNum(year - 1 + i);
-      if (firstMonth === null) {
-        firstMonth = calVars.firstMonthNum ?? 1;
-      }
-      firstMonths.push(firstMonth);
-    }
-
-    // 获取农历年岁首的月和日
+    // 获取农历年岁首的公历月和日
     const cSpanMonths: number[] = [];
     const cSpanDates: number[] = [];
-    for (let i = 1; i < cYearCount; i++) {
-      const yearNo = calVars.cmonthYear[0] + i;
-      for (let j = 1; j < calVars.cmonthNum.length; j++) {
-        if (calVars.cmonthYear[j] === yearNo && calVars.cmonthNum[j] === firstMonths[yearNo]) {
-          const cSpanDays = calVars.cmonthDate[j];
-          let cSpanMonth = 0;
-          for (let k = 0; k < 13; k++) {
-            if (cSpanDays <= calVars.mday[k]) {
-              cSpanMonth = k;
-              break;
-            }
+    // 用 cmonthYear 的变化来判断岁首的变化
+    for (let i = 1; i < calVars.cmonthYear.length; i ++) {
+      if (calVars.cmonthYear[i - 1] !== calVars.cmonthYear[i]) {
+        const cSpanDays = calVars.cmonthDate[i];
+        let cSpanMonth = 0;
+        for (let k = 0; k < 13; k++) {
+          if (cSpanDays <= calVars.mday[k]) {
+            cSpanMonth = k;
+            break;
           }
-          cSpanMonths.push(cSpanMonth);
-          cSpanDates.push(cSpanDays - calVars.mday[cSpanMonth - 1]);
         }
+        cSpanMonths.push(cSpanMonth);
+        cSpanDates.push(cSpanDays - calVars.mday[cSpanMonth - 1]);
       }
     }
 
@@ -640,13 +701,11 @@ export class ChineseCalendar {
       cMonths: []
     };
 
-    const baseYearIndex = calVars.cmonthYear[0]; 
     for (let i = 0; i < cYearCount; i ++) {
       yearExportData.cSpanYears.push({
-        cYear: year - 1 + baseYearIndex + i,
-        heYear: getSexagenaryYear(year - 1 + baseYearIndex + i),
+        cYear: year - 1 + calVars.cmonthYear[0] + i,
+        heYear: getSexagenaryYear(year - 1 + calVars.cmonthYear[0] + i),
         date: (i === 0) ? undefined : { month: cSpanMonths[i - 1], day: cSpanDates[i - 1] },
-        //eraNames: eraName(this.localeName, year - 1 + calVars.cmonthYear[0] + i, correctedCalendarOrRegion)
       });
 
     }
@@ -658,7 +717,7 @@ export class ChineseCalendar {
     const calendricalSolarTerms = calCalendricalSolarTerms(year, calVars);
 
     for (let month = 0; month < 12; month ++) {
-      const monthExportData = this.exportMonth(year, month, firstMonths, calVars);
+      const monthExportData = this.exportMonth(year, month, calVars);
       
       // 添加现代天文的节气和月相
       monthExportData.moonPhasesDetails = getMoonPhasesByMonth(year, month, calVars.mday, moonPhases, solarEclipses, lunarEclipses);

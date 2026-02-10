@@ -264,15 +264,23 @@ export function isDefaultRegionCalendar(region: ChineseCalendarType | null, year
     region == undefined || 
     region == null ||
     region == ChineseCalendarType.DEFAULT ||
+    // 魏
     region == ChineseCalendarType.TKI_WEI ||
+
+    // 晋，宋，齐，梁，陈
     region == ChineseCalendarType.JIN ||
     region == ChineseCalendarType.SOUTHNORTH_SOUTH_JIN ||
     region == ChineseCalendarType.SOUTHNORTH_SOUTH_SONG ||
     region == ChineseCalendarType.SOUTHNORTH_SOUTH_QI ||
     region == ChineseCalendarType.SOUTHNORTH_SOUTH_LIANG ||
     region == ChineseCalendarType.SOUTHNORTH_SOUTH_CHEN ||
+
+    // 后汉，后周，宋
+    region == ChineseCalendarType.SONGLIAOJINYUAN_LATERHAN ||
     region == ChineseCalendarType.SONGLIAOJINYUAN_LATERZHOU ||
     region == ChineseCalendarType.SONGLIAOJINYUAN_SONG ||
+
+    // 清
     region == ChineseCalendarType.QING_QING
   ) {
     return true;

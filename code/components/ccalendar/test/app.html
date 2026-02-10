@@ -30,7 +30,7 @@
     <hr>
 
     <!-- Calendar Selection -->
-    <div class="calendar-buttons">
+    <div class="calendar-buttons" id="calendar-selection">
       <div class="calendar-buttons-label" id="calendar-label">选择历法:</div>
       <div class="calendar-btn-group" id="calendar-btn-group">
         <!-- Buttons will be generated dynamically -->
@@ -143,11 +143,15 @@
       const calendars = getAvailableCalendars(currentYear);
 
       if (calendars.length === 0) {
+        const btnSelection = document.getElementById('calendar-selection');
+        btnSelection.style.display = 'none';
         // No special calendars, use default
         currentCalendar = ChineseCalendarType.DEFAULT;
         renderCalendar();
         return;
       }
+      const btnSelection = document.getElementById('calendar-selection');
+      btnSelection.style.display = '';
 
       // Set current calendar to first one if not set or not in list
       if (!currentCalendar || !calendars.includes(currentCalendar)) {
