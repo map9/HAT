@@ -1,13 +1,36 @@
 /**
- * 统一平气计算模块
- *
- * 将分散在多处的平气(pingqi)计算逻辑统一到此模块：
- * - split.js: compute_pingqi() - 区域历法平气
- * - ancientCalendars.js: guliuli_pingqi(), ZhuanXu_pingqi() - 古代历法平气
- * - ChineseCalendar.ts: 内联大统历计算
- * - calendarData.js: calendricalSolarTerms() 静态数据
- *
- * 本模块不修改底层 JS 算法，仅在 TypeScript 层提供统一入口。
+ * calendrical-solar-terms-calculate.ts
+ * 历书平气计算模块
+ * 本文件来源于 https://github.com/ytliu0/ChineseCalendar/ 开源项目中的
+ * calendar.js
+ * Copyright (C) 2019 ytliu0 <https://github.com/ytliu0>
+ * 
+ * 重构说明：2026-02 map9 <https://github.com/map9>
+ * - 项目重构目的：提高模块之间的松耦合，提升代码可维护性，无核心逻辑变更。
+ * - 项目重构内容：将
+ *   1. 进一步模块化代码，提高模块之间的松耦合，提升代码可维护性，具体包含:
+ *      a. 将农历计算和基于现代天文数据的月相、节气计算分离；
+ *      b. 将公历年包含的农历年信息计算和渲染输出分离。
+ *   2. 增加了公历与农历之间的转换、农历岁首信息获取、农历年月份信息获取等函数。
+ *   3. 支持 Typescript。
+ * 
+ * - 本文档变更：
+ *   1. 将分散在多处的平气(pingqi)计算逻辑统一到此模块；
+ *   2. 本模块解决平气的所有数据提供，在渲染时完全不用考虑不同时间的历书平气数据采用的问题；
+ *   3. 支持 Typescript。
+ * 
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 import type { CalVars, SolarTermDetails, CalendricalSolarTermDetails } from '../types.js';

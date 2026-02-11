@@ -1,3 +1,34 @@
+/**
+ * utilities.ts
+ * 本文件来源于 https://github.com/ytliu0/ChineseCalendar/ 开源项目中的
+ * utilities.js
+ * Copyright (C) 2019 ytliu0 <https://github.com/ytliu0>
+ * 
+ * 重构说明：2026-02 map9 <https://github.com/map9>
+ * - 项目重构目的：提高模块之间的松耦合，提升代码可维护性，无核心逻辑变更。
+ * - 项目重构内容：将
+ *   1. 进一步模块化代码，提高模块之间的松耦合，提升代码可维护性，具体包含:
+ *      a. 将农历计算和基于现代天文数据的月相、节气计算分离；
+ *      b. 将公历年包含的农历年信息计算和渲染输出分离。
+ *   2. 增加了公历与农历之间的转换、农历岁首信息获取、农历年月份信息获取等函数。
+ *   3. 支持 Typescript。
+ * 
+ * - 本文档变更：
+ *   1. 汇总了重构后各模块所需的公用功能函数。
+ * 
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
 
 import { LeapPrefixType, CalVars, GanZhi } from "../types.js";
 
@@ -48,7 +79,9 @@ export function nDaysofGregJul(year: number) {
   return ndays;
 }
 
-// 时间解压函数
+/**
+ * 时间解压函数，只用于内部其他模块
+ */
 export function decompressTime(t: number[]): number[] {
   const x: number[] = [];
   for (let i = 0; i < t.length; i++) {
@@ -61,7 +94,7 @@ export function decompressTime(t: number[]): number[] {
 }
 
 /**
- * 判断新月是否接近午夜
+ * 判断新月是否接近午夜，只用于内部其他模块
  */
 export function isNewMoonCloseToMidnight(year: number, month: number): boolean {
   const midnights = [2057, 9, 2089, 8, 2097, 7, 2115, 2, 2116, 4, 2133, 9, 2165, 11, 2172, 9];
@@ -96,42 +129,12 @@ export function getSexagenaryDay(jday: number): GanZhi {
 }
 
 /**
- * 获取农历年岁首月份
- * @param {number} year 农历年。
- * @returns 岁首的月份序号，1为一月，2为二月，...，12为十二月
- * 1：寅正
- * 10：亥正
- * 11：子正
- * 12：丑正
+ * 通过给定的农历年，获取闰月的前缀叫法
+ * @param cYear 农历年
+ * @param cMonth 农历月份，负数表示闰月
+ * @param calVars 公历年为 cYear 的农历年数据
+ * @returns 闰月前缀
  */
-export function getFirstMonthNum(year: number): number | null {
-  if (year < -104) return null;
-  if (year < -102) return 10;
-  // 武周事情，采用
-  if (year > 689 && year < 701) return 11;
-  return 1;
-}
-
-export function isFirstMonthPlus(cYear: number, cMonth: number, calVars: CalVars): boolean {
-  if (cMonth < 0) return false;
-
-  // 先秦时期，按照古六历 / 颛顼历来确定岁首
-  if (cYear > -110) {
-    if (cYear < -102) {
-      return Math.abs(cMonth) === 10;
-    }
-
-    // 武周时期，改岁首为：子正
-    if (cYear > 689 && cYear < 701) {
-      return Math.abs(cMonth) === 11;
-    }
-
-    return Math.abs(cMonth) === 1;
-  } else {
-    return Math.abs(cMonth) === calVars.firstMonthNum!;
-  }
-}
-
 export function getLeapPrefix(cYear: number, cMonth: number, calVars: CalVars): LeapPrefixType | undefined {
   let leapPrefix: LeapPrefixType | undefined;
   if (cMonth < 0) {

@@ -1,8 +1,39 @@
 /**
- * output-html.ts
- * 将 exportYear 输出的纯数据 JSON 转换为 HTML 字符串。
- * 格式化职责集中在此模块：yearHeaderHtml、locale标签、历书节气、警告消息等。
+ * ChineseCalendarHtmlRender.ts
+ * ChineseCalendarHtmlRender 中国农历多语言格式化输出Html类。
+ * 本文件来源于 https://github.com/ytliu0/ChineseCalendar/ 开源项目中的
+ * calendar.js
+ * Copyright (C) 2019 ytliu0 <https://github.com/ytliu0>
+ * 
+ * 重构说明：2026-02 map9 <https://github.com/map9>
+ * - 项目重构目的：提高模块之间的松耦合，提升代码可维护性，无核心逻辑变更。
+ * - 项目重构内容：将
+ *   1. 进一步模块化代码，提高模块之间的松耦合，提升代码可维护性，具体包含:
+ *      a. 将农历计算和基于现代天文数据的月相、节气计算分离；
+ *      b. 将公历年包含的农历年信息计算和渲染输出分离。
+ *   2. 增加了公历与农历之间的转换、农历岁首信息获取、农历年月份信息获取等函数。
+ *   3. 支持 Typescript。
+ * 
+ * - 本文档变更：
+ *   1. 将 ChineseCalendar 的 exportYear 的输出数据，格式化为 html；
+ *   2. 拆分 calendar.js html格式化输出相关操作到本文件；
+ *   3. 合并不同年份的提示和警告信息；
+ *   4. 支持 Typescript。
+ * 
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+
 import { YearExportData, DayExportData, ChineseCalendarType } from './types.js';
 
 import { getWesternCalendarBookByYear, isNewMoonCloseToMidnight } from './core/index.js'
