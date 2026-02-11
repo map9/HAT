@@ -343,6 +343,24 @@ describe('parseTimeRangeString', () => {
     });
   });
 
+  describe('区间分隔符', () => {
+    it('应当区分自定义区间分隔符－', () => {
+      const result = parseTimeRangeString('618年五月初一－618年六月十五', {separator: '－'});
+      expect(result[0]).toEqual({ year: 618, month: 5, day: 1, calendarType: 'lunar' });
+      expect(result[1]).toEqual({ year: 618, month: 6, day: 15, calendarType: 'lunar' });
+    });
+    it('应当区分自定义区间分隔符~', () => {
+      const result = parseTimeRangeString('618年五月初一~618年六月十五', {separator: '~'});
+      expect(result[0]).toEqual({ year: 618, month: 5, day: 1, calendarType: 'lunar' });
+      expect(result[1]).toEqual({ year: 618, month: 6, day: 15, calendarType: 'lunar' });
+    });
+    it('应当区分自定义区间分隔符,', () => {
+      const result = parseTimeRangeString('618年五月初一,618年六月十五', {separator: ','});
+      expect(result[0]).toEqual({ year: 618, month: 5, day: 1, calendarType: 'lunar' });
+      expect(result[1]).toEqual({ year: 618, month: 6, day: 15, calendarType: 'lunar' });
+    });
+  });
+
   describe('农历时间区间', () => {
     it('应当解析完整的时间区间', () => {
       const result = parseTimeRangeString('618年五月初一-618年六月十五');

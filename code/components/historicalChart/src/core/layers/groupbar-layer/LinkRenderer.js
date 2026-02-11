@@ -177,7 +177,7 @@ export class LinkRenderer {
     }
 
     // Unified signature: styleFn(type, context) where context = { data, ... }
-    const style = this.options.styleFn('link', { data: link }) || {};
+    const style = this.options.styleFn('link', { data: link });
     if (!style || typeof style !== 'object') {
       return defaultStyle;
     } else {
@@ -197,17 +197,15 @@ export class LinkRenderer {
    */
   _applyStyle(element, style) {
     // Get or create marker for this style
-    if (style.headMarker === 'none') {
+    if (!style || style.headMarker === 'none') {
       element.attr('marker-end', null);
     } else {
       const markerId = this._getOrCreateMarker(style.headMarker, style.stroke);
       element.attr('marker-end', `url(#${markerId})`);
     }
 
-    // Apply stroke style
-    if (this.options.styleFn) {
-      applyStrokeStyle(element, style);
-    }
+    // Apply stroke style (null values in style will clear inline styles)
+    applyStrokeStyle(element, style);
   }
 
   /**
@@ -253,19 +251,48 @@ export class LinkRenderer {
 
   /**
    * Update link positions (on zoom/pan)
+   * Handles enter/exit for links that appear/disappear due to minLinkLength,
+   * applies styleFn only to newly entering elements.
    * @param {Array} enrichedLinks - Links with updated positions
    */
   update(enrichedLinks) {
     if (!this.container) return;
-    const self = this;
 
-    this.container.selectAll('path')
-      .data(enrichedLinks, d => `${d.startId}-${d.endId}`)
+    const links = this.container
+      .selectAll('.link-item')
+      .data(enrichedLinks, d => `${d.startId}-${d.endId}`);
+
+    links.exit().remove();
+
+    const enter = links.enter()
+      .append('g')
+      .classed('link-item', true);
+
+    enter.append('path');
+
+    // Apply styles only to newly entering elements
+    const self = this;
+    enter.select('path')
       .attr('d', d => this._getLinkPath(d))
       .each(function(d) {
         const style = self._getStyle(d);
         self._applyStyle(d3.select(this), style);
+      })
+      .call(elem => {
+        if (self.options.onClick) {
+          elem.on('click', (e, d) => self.options.onClick(d, e));
+        }
+        if (self.options.onHover) {
+          elem.on('mouseenter', (e, d) => self.options.onHover(d, e));
+        }
+        if (self.options.onLeave) {
+          elem.on('mouseleave', (e, d) => self.options.onLeave(d, e));
+        }
       });
+
+    // Existing elements: only update path positions
+    links.select('path')
+      .attr('d', d => this._getLinkPath(d));
   }
 
   /**

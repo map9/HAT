@@ -210,7 +210,7 @@ export class GroupBarRenderer {
     }
 
     // Unified signature: styleFn(type, context) where context = { data, mode }
-    const style = this.options.styleFn('groupBar', { data: node, mode: this.options.mode }) || {};
+    const style = this.options.styleFn('groupBar', { data: node, mode: this.options.mode });
     if (!style || typeof style !== 'object') {
       return null;
     } else {

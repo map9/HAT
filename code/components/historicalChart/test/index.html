@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HistoricalChart 配置演示</title>
+  <title>HistoricalChartPanel Demo</title>
   <style>
     * {
       margin: 0;
@@ -76,6 +76,7 @@
       overflow: hidden;
     }
 
+    /* Sidebar - now only data-related settings */
     .sidebar {
       width: 360px;
       background: white;
@@ -147,15 +148,6 @@
       min-width: 40px;
     }
 
-    .range-row {
-      display: flex;
-      align-items: center;
-    }
-
-    .range-row input {
-      flex: 1;
-    }
-
     .field-info {
       font-size: 10px;
       color: #888;
@@ -172,6 +164,7 @@
       flex: 1;
     }
 
+    /* Chart area takes remaining space */
     .chart-area {
       flex: 1;
       display: flex;
@@ -179,88 +172,9 @@
       overflow: hidden;
     }
 
-    .chart-toolbar {
-      background: white;
-      padding: 10px 20px;
-      border-bottom: 1px solid #e0e0e0;
-      display: flex;
-      gap: 15px;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-
-    .chart-toolbar .toolbar-group {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .chart-toolbar label {
-      margin: 0;
-      font-size: 12px;
-    }
-
-    .chart-toolbar select {
-      width: auto;
-      min-width: 120px;
-    }
-
-    .chart-toolbar button {
-      padding: 5px 12px;
-      font-size: 12px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      background: white;
-      cursor: pointer;
-    }
-
-    .chart-toolbar button:hover {
-      background: #f5f5f5;
-    }
-
-    /* .chart-container styles moved below #chart */
-
     #chart {
-      background: white;
-      border-radius: 8px;
+      width: 100%;
       height: 100%;
-    }
-
-    .chart-container {
-      flex: 1;
-      background: white;
-      overflow: hidden;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .loading {
-      text-align: center;
-      padding: 60px 20px;
-      color: #999;
-      font-size: 14px;
-    }
-
-    .info-panel {
-      background: white;
-      padding: 10px 20px;
-      border-top: 1px solid #e0e0e0;
-      font-size: 12px;
-      color: #666;
-      display: flex;
-      gap: 20px;
-    }
-
-    .info-panel .info-item {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-    }
-
-    .info-panel .info-value {
-      color: #1976d2;
-      font-weight: 600;
     }
 
     .multi-select {
@@ -393,265 +307,60 @@
 <body>
   <div class="header">
     <div>
-      <h1>HistoricalChart 配置演示</h1>
-    </div>
-    <div class="header-actions">
-      <button onclick="resetConfig()">重置配置</button>
-      <button class="primary" onclick="exportConfig()">导出配置</button>
+      <h1>HistoricalChartPanel Demo</h1>
+      <div class="subtitle">Toolbar auto-hides at top edge. Settings accessible via toolbar.</div>
     </div>
   </div>
 
   <div class="container">
-    <!-- 左侧配置面板 -->
+    <!-- Sidebar: data-related settings only -->
     <div class="sidebar">
-      <!-- 时间轴配置 -->
+      <!-- Data grouping config -->
       <div class="config-section">
-        <h2>📅 时间轴配置</h2>
-
-        <div class="control-group">
-          <label>时间轴类型</label>
-          <select id="axisType">
-            <option value="western" selected>西历 (Gregorian)</option>
-            <option value="lunar">农历 (Lunar, 1-9999 CE)</option>
-            <option value="chinese">农历 (ChineseCalendar, 722 BCE-2200 CE)</option>
-            <option value="dual">双轴 (西历 + 农历)</option>
-          </select>
-        </div>
-
-        <div class="control-row">
-          <div class="control-group">
-            <label>起始年份</label>
-            <input type="number" id="startYear" value="1850" min="-722" max="2200">
-          </div>
-          <div class="control-group">
-            <label>结束年份</label>
-            <input type="number" id="endYear" value="2020" min="-722" max="2200">
-          </div>
-        </div>
-        <div class="control-row">
-          <div class="control-group">
-            <label>最小缩放 (像素/小时)</label>
-            <input type="number" id="zoomMin" value="-1" min="-1" step="0.001">
-            <div class="field-info">-1 = 不限制</div>
-          </div>
-          <div class="control-group">
-            <label>最大缩放 (像素/小时)</label>
-            <input type="number" id="zoomMax" value="-1" min="-1" step="0.001">
-            <div class="field-info">-1 = 不限制</div>
-          </div>
-        </div>
-        <div class="control-row">
-          <div class="control-group">
-            <label>显示索引轴 (IndexAxis)</label>
-            <select id="hasIndexAxis">
-              <option value="true" selected>显示</option>
-              <option value="false">隐藏</option>
-            </select>
-          </div>
-          <div class="control-group">
-            <label>索引轴高度: <span class="range-value" id="indexAxisHeightValue">28</span>px</label>
-            <input type="range" id="indexAxisHeight" min="18" max="40" value="28" step="2">
-          </div>
-        </div>
-      </div>
-
-      <!-- 布局配置 -->
-      <div class="config-section">
-        <h2>📐 布局配置</h2>
-        <div class="control-group">
-          <label>标签面板宽度: <span class="range-value" id="labelWidthValue">240</span>px</label>
-          <div class="range-row">
-            <input type="range" id="labelWidth" min="80" max="300" value="240" step="10">
-          </div>
-        </div>
-
-        <div class="control-row">
-          <div class="control-group">
-              <label>标签面板位置</label>
-              <select id="labelPosition">
-                <option value="left" selected>左侧</option>
-                <option value="right">右侧</option>
-                <option value="none">不显示</option>
-              </select>
-            </div>
-          
-            <div class="control-group">
-              <label>标签距边框间距: <span class="range-value" id="labelXPaddingValue">6</span></label>
-              <input type="range" id="labelXPadding" min="0" max="20" value="6" step="1">
-            </div>
-          </div>
-
-          <div class="control-group">
-            <label>圆角半径: <span class="range-value" id="roundRadiusValue">4</span>px</label>
-            <input type="range" id="roundRadius" min="0" max="15" value="4" step="1">
-          </div>
-        </div>
-
-      <!-- 样式配置 -->
-      <div class="config-section">
-        <h2>🎨 样式配置</h2>
-        <div class="control-row">
-          <div class="control-group">
-            <label>主题</label>
-            <select id="theme">
-              <option value="light" selected>浅色 (Light)</option>
-              <option value="dark">深色 (Dark)</option>
-            </select>
-          </div>
-
-          <div class="control-group">
-            <label>强调色</label>
-            <select id="accentScheme">
-              <option value="default" selected>默认</option>
-              <!-- 动态生成 -->
-            </select>
-          </div>
-        </div>
-
-        <div class="control-group">
-          <label>语言区域</label>
-          <select id="locale">
-            <option value="zh-cn" selected>中文 (zh-cn)</option>
-            <option value="en-us">英文 (en-us)</option>
-            <option value="ja-jp">日文 (ja-jp)</option>
-          </select>
-        </div>
-
-        <div class="control-group">
-          <label>功能开关</label>
-          <button class="toggle-btn active" id="toggleHasActiveAxis" onclick="toggleFeature('hasActiveAxis')">
-            <span>ActiveAxis</span>
-          </button>
-          <button class="toggle-btn active" id="toggleHasTooltip" onclick="toggleFeature('hasTooltip')">
-            <span>Tooltip</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- 图层布局配置 -->
-      <div class="config-section">
-        <h2>📐 图层布局配置</h2>
-        <div class="control-group">
-          <label>数据条/分组条行高: <span class="range-value" id="rowHeightValue">25</span>px</label>
-          <div class="range-row">
-            <input type="range" id="rowHeight" min="15" max="50" value="25" step="1">
-          </div>
-        </div>
-
-        <div class="control-row">
-          <div class="control-group">
-            <label>数据条水平间距: <span class="range-value" id="xPaddingValue">2</span>px</label>
-            <input type="range" id="xPadding" min="0" max="10" value="2" step="0.5">
-          </div>
-          <div class="control-group">
-            <label>数据条垂直间距: <span class="range-value" id="yPaddingValue">2</span>px</label>
-            <input type="range" id="yPadding" min="0" max="10" value="2" step="0.5">
-          </div>
-        </div>
-
-      </div>
-
-      <!-- 分组配置 -->
-      <div class="config-section">
-        <h2>📊 数据分组配置</h2>
+        <h2>Data Grouping</h2>
         <div id="laneGroupsContainer"></div>
-        <button class="btn-add-lane" onclick="addLaneGroup()">+ 添加层级</button>
-
-        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e0e0e0;">
-          <div class="control-group">
-            <label>分组条模式</label>
-            <select id="groupBarMode">
-              <option value="separate" selected>独立行 (separate)</option>
-              <option value="background">背景 (background)</option>
-            </select>
-          </div>
-
-          <div class="control-group">
-            <label>分组间距: <span class="range-value" id="groupYPaddingValue">5</span>px</label>
-            <input type="range" id="groupYPadding" min="0" max="20" value="5" step="1">
-          </div>
-        </div>
+        <button class="btn-add-lane" onclick="addLaneGroup()">+ Add Level</button>
       </div>
 
-      <!-- 颜色配置 -->
+      <!-- Data item color config -->
       <div class="config-section">
-        <h2>🎨 数据项颜色配置</h2>
+        <h2>Data Colors</h2>
 
         <div class="control-group">
-          <label>数据条颜色依据</label>
+          <label>Bar Color Field</label>
           <select id="barColorField">
-            <option value="default" selected>默认 (css define)</option>
-            <!-- 动态生成 -->
+            <option value="default" selected>Default (CSS)</option>
           </select>
         </div>
 
         <div class="control-group">
-          <label>分组条颜色依据</label>
+          <label>Group Color Mode</label>
           <select id="groupColorMode">
-            <option value="level" selected>按层级 (默认)</option>
-            <option value="field">按分组字段值</option>
+            <option value="level" selected>By Level</option>
+            <option value="field">By Field Value</option>
           </select>
         </div>
 
         <div class="control-group">
           <div class="checkbox-group">
             <input type="checkbox" id="enableStyleFn" checked>
-            <label for="enableStyleFn">启用 styleFn 回调</label>
+            <label for="enableStyleFn">Enable styleFn callback</label>
           </div>
-          <div class="field-info">关闭后使用默认样式逻辑</div>
+          <div class="field-info">Disable to use default style logic</div>
         </div>
       </div>
-
     </div>
 
-    <!-- 右侧图表区域 -->
+    <!-- Chart area: HistoricalChartPanel renders here -->
     <div class="chart-area">
-      <div class="chart-toolbar">
-        <div class="toolbar-group">
-          <label>缩放:</label>
-          <button onclick="zoomIn()">放大</button>
-          <button onclick="zoomOut()">缩小</button>
-          <button onclick="resetZoom()">重置</button>
-        </div>
-        <div class="toolbar-group">
-          <label>导航:</label>
-          <button onclick="panLeft()">← 左移</button>
-          <button onclick="panRight()">右移 →</button>
-        </div>
-        <div class="toolbar-group">
-          <label>展开:</label>
-          <button onclick="expandAll()">全部展开</button>
-          <button onclick="collapseAll()">全部折叠</button>
-        </div>
-      </div>
-
-      <div class="chart-container">
-        <div id="chart">
-          <div class="loading">正在加载...</div>
-        </div>
-      </div>
-
-      <div class="info-panel">
-        <div class="info-item">
-          <span>数据条目:</span>
-          <span class="info-value" id="infoDataCount">0</span>
-        </div>
-        <div class="info-item">
-          <span>可见范围:</span>
-          <span class="info-value" id="infoDomain">-</span>
-        </div>
-        <div class="info-item">
-          <span>缩放级别:</span>
-          <span class="info-value" id="infoZoom">-</span>
-        </div>
-      </div>
+      <div id="chart"></div>
     </div>
   </div>
 
   <script type="module">
     import * as d3 from 'd3';
     import {
-      HistoricalChart,
+      HistoricalChartPanel,
       GroupBarLayer,
       GridLayer,
       westernAxises,
@@ -665,227 +374,65 @@
     } from '../src/index.js';
 
     // Global state
-    let chart = null;
+    let chartPanel = null;
     let gridLayer = null;
     let groupBarLayer = null;
     let currentData = [];
-    let featureFlags = {
-      hasActiveAxis: true,
-      hasTooltip: true,
-    };
     let laneGroupCounter = 0;
-
-    // 初始化 AccentScheme 选择器
-    function initAccentSchemeSelectors() {
-      // 更新 AccentScheme 选择器
-      const accentSchemeSelect = document.getElementById('accentScheme');
-      // 保留默认选项，添加动态字段
-      const defaultOption = accentSchemeSelect.querySelector('option[value="default"]');
-      accentSchemeSelect.innerHTML = '';
-      accentSchemeSelect.appendChild(defaultOption);
-      const accentSchemes = getAccentSchemes();
-      accentSchemes.forEach(scheme => {
-        const option = document.createElement('option');
-        option.value = scheme;
-        option.textContent = scheme;
-        accentSchemeSelect.appendChild(option);
-      });
-
-      accentSchemeSelect.value = accentSchemeSelect[0].value;
-    }
-
-    // 可用分组字段 (动态生成)
     let availableFields = [];
 
-    // 从数据中提取可用的分类字段
-    function detectCategoryFields(data) {
-      if (!data || data.length === 0) return [];
+    // ==================== Axis Helpers ====================
 
-      const sample = data[0];
-      const fields = [];
-
-      // 排除的字段 (时间、ID、标签等)
-      const excludeFields = new Set(['id', 'start', 'end', 'label', 'title', 'color']);
-
-      for (const key of Object.keys(sample)) {
-        if (excludeFields.has(key)) continue;
-
-        const value = sample[key];
-        // 只保留字符串类型的字段作为分类字段
-        if (typeof value === 'string') {
-          // 统计唯一值数量
-          const uniqueValues = new Set(data.map(d => d[key]).filter(v => v != null));
-          // 唯一值数量在合理范围内才作为分类字段
-          // 上限设为数据量的一半，避免���条记录都不同的字段（如 leader）
-          const maxUnique = Math.min(500, Math.floor(data.length / 2));
-          if (uniqueValues.size >= 2 && uniqueValues.size <= maxUnique) {
-            fields.push({
-              value: key,
-              label: key,
-              uniqueCount: uniqueValues.size
-            });
+    function getAxises(axisType) {
+      switch (axisType) {
+        case 'lunar':
+          if (!isLunarLoaded()) {
+            console.warn('Lunar calendar not loaded, falling back to western');
+            return [westernAxises.yearlyAxis, westernAxises.dailyAxis, westernAxises.yearlyGrid, westernAxises.dailyGrid];
           }
-        }
-      }
-
-      // 按唯一值数量排序 (少的在前)
-      return fields.sort((a, b) => a.uniqueCount - b.uniqueCount);
-    }
-
-    // 初始化字段选择器
-    function initFieldSelectors() {
-      // 更新 Bar 颜色字段选择器
-      const barColorSelect = document.getElementById('barColorField');
-      // 保留默认选项，添加动态字段
-      const defaultOption = barColorSelect.querySelector('option[value="default"]');
-      barColorSelect.innerHTML = '';
-      barColorSelect.appendChild(defaultOption);
-
-      availableFields.forEach(field => {
-        const option = document.createElement('option');
-        option.value = field.value;
-        option.textContent = `按 ${field.label} (${field.uniqueCount})`;
-        barColorSelect.appendChild(option);
-      });
-
-      // 默认选择第一个分类字段
-      if (availableFields.length > 0) {
-        barColorSelect.value = availableFields[0].value;
+          return [lunarAxises.yearlyAxis, lunarAxises.dailyAxis, lunarAxises.yearlyGrid, lunarAxises.dailyGrid];
+        case 'chinese':
+          if (!isChineseCalendarLoaded()) {
+            console.warn('ChineseCalendar not loaded, falling back to western');
+            return [westernAxises.yearlyAxis, westernAxises.dailyAxis, westernAxises.yearlyGrid, westernAxises.dailyGrid];
+          }
+          return [chineseCalendarAxises.yearlyAxis, chineseCalendarAxises.dailyAxis, chineseCalendarAxises.yearlyGrid, chineseCalendarAxises.dailyGrid];
+        case 'dual':
+          const dualAxises = [westernAxises.yearlyAxis, westernAxises.yearlyGrid];
+          if (isChineseCalendarLoaded()) {
+            dualAxises.push(chineseCalendarAxises.dailyAxis, chineseCalendarAxises.dailyGrid);
+          } else if (isLunarLoaded()) {
+            dualAxises.push(lunarAxises.dailyAxis, lunarAxises.dailyGrid);
+          } else {
+            dualAxises.push(westernAxises.dailyAxis, westernAxises.dailyGrid);
+          }
+          return dualAxises;
+        case 'western':
+        default:
+          return [westernAxises.yearlyAxis, westernAxises.dailyAxis, westernAxises.yearlyGrid, westernAxises.dailyGrid];
       }
     }
 
-    // 添加泳道层级
-    window.addLaneGroup = function(defaultField = null) {
-      const id = laneGroupCounter++;
-      const container = document.getElementById('laneGroupsContainer');
-
-      const groupDiv = document.createElement('div');
-      groupDiv.className = 'lane-group';
-      groupDiv.dataset.id = id;
-
-      const field = defaultField || availableFields[0].value;
-
-      groupDiv.innerHTML = `
-        <div class="lane-group-header">
-          <span class="lane-group-title">层级 ${id + 1}</span>
-          <button class="btn-remove-lane" onclick="removeLaneGroup(${id})">删除</button>
-        </div>
-
-        <div class="control-group">
-          <label>分组字段</label>
-          <select class="lane-field-select" data-id="${id}" onchange="onFieldChange(${id})">
-            ${availableFields.map(f =>
-              `<option value="${f.value}" ${f.value === field ? 'selected' : ''}>${f.label}</option>`
-            ).join('')}
-          </select>
-        </div>
-
-        <div class="control-group">
-          <div class="checkbox-group">
-            <input type="checkbox" id="expanded-${id}" class="lane-expanded-checkbox" data-id="${id}" checked>
-            <label for="expanded-${id}">默认展开</label>
-          </div>
-        </div>
-
-        <div class="control-group">
-          <label>筛选值（多选）</label>
-          <select multiple class="lane-values-select" data-id="${id}">
-            <option disabled>加载中...</option>
-          </select>
-          <div class="field-info">Ctrl/Cmd 多选，留空表示全选</div>
-        </div>
-      `;
-
-      container.appendChild(groupDiv);
-
-      // 初始化值选择器
-      updateFieldValues(id, field);
-
-      // 绑定事件：值选择器变化时更新图表（数据筛选变化需要重建）
-      const valuesSelect = groupDiv.querySelector('.lane-values-select');
-      valuesSelect.addEventListener('change', setGroupBarLayerData);
-
-      // 绑定事件：展开复选框变化时更新图表
-      const expandedCheckbox = groupDiv.querySelector('.lane-expanded-checkbox');
-      expandedCheckbox.addEventListener('change', setGroupBarLayerData);
-    };
-
-    // 移除泳道层级
-    window.removeLaneGroup = function(id) {
-      const group = document.querySelector(`.lane-group[data-id="${id}"]`);
-      if (group) {
-        group.remove();
-        setGroupBarLayerData();
-      }
-    };
-
-    // 字段改变时更新值列表
-    window.onFieldChange = function(id) {
-      const select = document.querySelector(`.lane-field-select[data-id="${id}"]`);
-      const field = select.value;
-      updateFieldValues(id, field);
-      setGroupBarLayerData();
-    };
-
-    // 更新字段值列表
-    function updateFieldValues(id, field) {
-      if (!currentData || currentData.length === 0) return;
-
-      const uniqueValues = [...new Set(currentData.map(d => d[field]))].filter(v => v).sort();
-      const valuesSelect = document.querySelector(`.lane-values-select[data-id="${id}"]`);
-
-      if (valuesSelect) {
-        valuesSelect.innerHTML = uniqueValues.map(value =>
-          `<option value="${value}" selected>${value || '(空)'}</option>`
-        ).join('');
-      }
+    function getDate(year, month, day) {
+      const date = new Date(2000, 0, 1, 0, 0, 0, 0);
+      date.setFullYear(year);
+      date.setMonth(month - 1);
+      date.setDate(day);
+      date.setHours(0, 0, 0, 0);
+      return date;
     }
 
-    // 获取泳道层级配置
-    function getLaneGroupsConfig() {
-      const groups = [];
-      document.querySelectorAll('.lane-group').forEach(groupDiv => {
-        const id = groupDiv.dataset.id;
-        const fieldSelect = groupDiv.querySelector('.lane-field-select');
-        const expandedCheckbox = groupDiv.querySelector('.lane-expanded-checkbox');
-        const valuesSelect = groupDiv.querySelector('.lane-values-select');
+    // ==================== Data Loading ====================
 
-        const selectedValues = Array.from(valuesSelect.selectedOptions).map(opt => opt.value);
-
-        groups.push({
-          field: fieldSelect.value,
-          label: fieldSelect.options[fieldSelect.selectedIndex].text,
-          expanded: expandedCheckbox.checked,
-          selectedValues: selectedValues.length > 0 ? selectedValues : null
-        });
-      });
-      return groups;
-    }
-
-    // 初始化默认泳道层级
-    function initDefaultLaneGroups() {
-      // 使用第一个检测到的分类字段
-      const defaultField = availableFields.length > 0 ? availableFields[0].value : null;
-      if (defaultField) {
-        addLaneGroup(defaultField);
-      }
-    }
-
-    // Load and parse archigos.csv data
     async function loadArchigosData() {
       try {
         const response = await fetch('./data/archigos.csv');
         const text = await response.text();
         const lines = text.split('\n');
-        const headers = lines[0].split(',');
-
         const data = [];
         for (let i = 1; i < lines.length; i++) {
           if (!lines[i].trim()) continue;
-
-          // Parse CSV line (handle quoted values)
           const values = parseCSVLine(lines[i]);
-
           const obsid = values[1];
           const idacr = values[3];
           const leader = values[4];
@@ -894,9 +441,7 @@
           const exit = values[7];
           const gender = values[8];
           const countryname = values[9];
-
           if (!startdate || !enddate) continue;
-
           data.push({
             id: obsid,
             country: countryname,
@@ -910,16 +455,10 @@
             title: `<strong>${leader}</strong><br/>${countryname}<br/>${startdate} - ${enddate}<br/>Exit: ${exit}`,
           });
         }
-
-        // 为测试目的，将部分数据转换为点（例如任期少于1年的领导人）
         data.forEach(d => {
           const durationDays = (d.end - d.start) / (1000 * 60 * 60 * 24);
-          // 任期少于30天的转换为点事件
-          if (durationDays < 30) {
-            d.end = d.start; // 将 end 设为与 start 相同，使其成为点
-          }
+          if (durationDays < 30) d.end = d.start;
         });
-
         return data;
       } catch (e) {
         console.error('Failed to load archigos.csv:', e);
@@ -927,338 +466,198 @@
       }
     }
 
-    // Parse CSV line handling quoted values
     function parseCSVLine(line) {
       const values = [];
       let current = '';
       let inQuotes = false;
-
       for (let i = 0; i < line.length; i++) {
         const char = line[i];
-        if (char === '"') {
-          inQuotes = !inQuotes;
-        } else if (char === ',' && !inQuotes) {
-          values.push(current.trim());
-          current = '';
-        } else {
-          current += char;
-        }
+        if (char === '"') { inQuotes = !inQuotes; }
+        else if (char === ',' && !inQuotes) { values.push(current.trim()); current = ''; }
+        else { current += char; }
       }
       values.push(current.trim());
       return values;
     }
 
-    // Parse date string (YYYY-MM-DD)
     function parseDate(dateStr) {
       const parts = dateStr.split('-');
       if (parts.length !== 3) return new Date();
-      const year = parseInt(parts[0]);
-      const month = parseInt(parts[1]) - 1;
-      const day = parseInt(parts[2]);
       const date = new Date(2000, 0, 1);
-      date.setFullYear(year);
-      date.setMonth(month);
-      date.setDate(day);
+      date.setFullYear(parseInt(parts[0]));
+      date.setMonth(parseInt(parts[1]) - 1);
+      date.setDate(parseInt(parts[2]));
       return date;
     }
 
-    // Fallback data if CSV load fails
     function generateFallbackData() {
-      const data = [];
       const leaders = [
         { id: '1', country: 'United States', countryCode: 'USA', leader: 'Washington', start: '1789-04-30', end: '1797-03-04', exit: 'Regular' },
         { id: '2', country: 'United States', countryCode: 'USA', leader: 'Adams', start: '1797-03-04', end: '1801-03-04', exit: 'Regular' },
         { id: '3', country: 'United States', countryCode: 'USA', leader: 'Jefferson', start: '1801-03-04', end: '1809-03-04', exit: 'Regular' }
       ];
-
-      leaders.forEach(l => {
-        data.push({
-          id: l.id,
-          country: l.country,
-          countryCode: l.countryCode,
-          leader: l.leader,
-          exit: l.exit,
-          start: parseDate(l.start),
-          end: parseDate(l.end),
-          label: l.leader,
-          title: `<strong>${l.leader}</strong><br/>${l.country}<br/>${l.start} - ${l.end}`,
-        });
-      });
-
-      return data;
+      return leaders.map(l => ({
+        ...l,
+        start: parseDate(l.start),
+        end: parseDate(l.end),
+        label: l.leader,
+        title: `<strong>${l.leader}</strong><br/>${l.country}<br/>${l.start} - ${l.end}`,
+      }));
     }
 
-    // Generate demo links: connect consecutive leaders in the same country
     function generateDemoLinks(data) {
       const links = [];
-
-      // Link types based on exit reason
       const exitToLinkType = {
-        'Regular': 'succession',
-        'Irregular': 'coup',
-        'Natural Death': 'death',
-        'Still in Office': 'succession',
-        'Resignation': 'resignation',
-        'Lost Election': 'election'
+        'Regular': 'succession', 'Irregular': 'coup', 'Natural Death': 'death',
+        'Still in Office': 'succession', 'Resignation': 'resignation', 'Lost Election': 'election'
       };
-
-      // Group data by country
       const byCountry = {};
       data.forEach(d => {
-        const country = d.country;
-        if (!byCountry[country]) {
-          byCountry[country] = [];
-        }
-        byCountry[country].push(d);
+        if (!byCountry[d.country]) byCountry[d.country] = [];
+        byCountry[d.country].push(d);
       });
-
-      // For each country, sort by start date and create links between consecutive leaders
       Object.values(byCountry).forEach(countryData => {
-        // Sort by start date
         countryData.sort((a, b) => a.start - b.start);
-
-        // Create links between consecutive leaders (limit to first 3 per country to avoid clutter)
-        const maxLinks = 3;
-        for (let i = 0; i < Math.min(countryData.length - 1, maxLinks); i++) {
+        for (let i = 0; i < Math.min(countryData.length - 1, 3); i++) {
           const current = countryData[i];
           const next = countryData[i + 1];
-
-          // Determine link type based on current leader's exit reason
-          const linkType = exitToLinkType[current.exit] || 'succession';
-
           links.push({
-            startId: current.id,
-            endId: next.id,
-            // Use default dates (end of current -> start of next)
+            startId: current.id, endId: next.id,
             label: `${current.leader} → ${next.leader}`,
-            type: linkType
+            type: exitToLinkType[current.exit] || 'succession'
           });
         }
       });
-
       return links;
     }
 
-    // 避免公元前后，new Date 的错误
-    function getDate(year, month, day) {
-      const date = new Date(2000, 0, 1, 0, 0, 0, 0, 0);
-      date.setFullYear(year);
-      date.setMonth(month - 1);
-      date.setDate(day);
-      date.setHours(0, 0, 0, 0);
-      return date;
-    }
+    // ==================== Field Detection ====================
 
-    // Get axes based on axis type
-    function getAxises(axisType) {
-      switch (axisType) {
-        case 'lunar':
-          if (!isLunarLoaded()) {
-            console.warn('Lunar calendar not loaded, falling back to western');
-            return [
-              westernAxises.yearlyAxis,
-              westernAxises.dailyAxis,
-              westernAxises.yearlyGrid,
-              westernAxises.dailyGrid
-            ];
-          }
-          return [
-            lunarAxises.yearlyAxis,
-            lunarAxises.dailyAxis,
-            lunarAxises.yearlyGrid,
-            lunarAxises.dailyGrid
-          ];
-        case 'chinese':
-          if (!isChineseCalendarLoaded()) {
-            console.warn('ChineseCalendar not loaded, falling back to western');
-            return [
-              westernAxises.yearlyAxis,
-              westernAxises.dailyAxis,
-              westernAxises.yearlyGrid,
-              westernAxises.dailyGrid
-            ];
-          }
-          return [
-            chineseCalendarAxises.yearlyAxis,
-            chineseCalendarAxises.dailyAxis,
-            chineseCalendarAxises.yearlyGrid,
-            chineseCalendarAxises.dailyGrid
-          ];
-        case 'dual':
-          // Western + Chinese (if loaded)
-          const dualAxises = [
-            westernAxises.yearlyAxis,
-            westernAxises.yearlyGrid
-          ];
-          if (isChineseCalendarLoaded()) {
-            dualAxises.push(chineseCalendarAxises.dailyAxis);
-            dualAxises.push(chineseCalendarAxises.dailyGrid);
-          } else if (isLunarLoaded()) {
-            dualAxises.push(lunarAxises.dailyAxis);
-            dualAxises.push(lunarAxises.dailyGrid);
-          } else {
-            dualAxises.push(westernAxises.dailyAxis);
-            dualAxises.push(westernAxises.dailyGrid);
-          }
-          return dualAxises;
-        case 'western':
-        default:
-          return [
-            westernAxises.yearlyAxis,
-            westernAxises.dailyAxis,
-            westernAxises.yearlyGrid,
-            westernAxises.dailyGrid
-          ];
-      }
-    }
-
-    // Get current Chart configuration
-    function getChartConfig() {
-      const startYear = parseInt(document.getElementById('startYear').value);
-      const endYear = parseInt(document.getElementById('endYear').value);
-      const axisType = document.getElementById('axisType').value;
-
-      const chartEl = document.getElementById('chart');
-      return {
-        width: chartEl.offsetWidth || 1000,
-        height: chartEl.offsetHeight || 600,
-
-        timeDomain: [
-          getDate(startYear, 1, 1),
-          getDate(endYear, 12, 31)
-        ],
-        zoomLimited: [
-          parseFloat(document.getElementById('zoomMin').value),
-          parseFloat(document.getElementById('zoomMax').value)
-        ],
-        axises: getAxises(axisType),
-
-        labelWidth: parseInt(document.getElementById('labelWidth').value),
-        labelPosition: document.getElementById('labelPosition').value,
-        roundRadius: document.getElementById('roundRadius').value,
-        
-        hasIndexAxis: document.getElementById('hasIndexAxis').value === 'true',
-        indexAxisHeight: document.getElementById('indexAxisHeight').value,
-
-        hasActiveAxis: featureFlags.hasActiveAxis,
-        hasTooltip: featureFlags.hasTooltip,
-
-        style: document.getElementById('theme').value,
-        accentScheme: document.getElementById('accentScheme').value,
-        locale: document.getElementById('locale').value,
-      };
-    }
-
-    // Update chart
-    // 永远都不强制重建，配置调整了用 setOptions 更新，数据变化了，通过layer的 setLayerData 更新
-    function updateChart(forceRecreate = false) {
-      const config = getChartConfig();
-      const filteredData = getFilteredData();
-
-      if (!chart || forceRecreate) {
-        if (chart) {
-          chart.destroy();
-          chart = null;
-          groupBarLayer = null;
-          gridLayer = null;
-        }
-
-        // Create new chart
-        chart = new HistoricalChart(config);
-        chart.Create('#chart');
-        
-        updateGridLayer();
-        updateGroupBarLayer();
-
-        chart.render()
-
-        // Event listeners
-        chart.on('domainChange', (domain) => {
-          document.getElementById('infoDomain').textContent =
-            `${domain[0].getFullYear()} - ${domain[1].getFullYear()}`;
-        });
-
-        chart.on('itemClick', (data) => {
-          console.log('Clicked:', data);
-        });
-
-        chart.on('groupToggle', (node, expanded) => {
-          //console.log('Toggle:', node.key, expanded);
-        });
-
-        chart.on('itemHover', (data, event) => {
-          //console.log('Link hover:', link);
-        });
-
-        console.log('Chart created');
-      } else {
-        chart.setOptions({
-          ...config
-        });
-        console.log('Chart setOptions');
-      }
-
-      // Update info
-      document.getElementById('infoDataCount').textContent = filteredData.length;
-    }
-
-    // Get current GroupBarLayer configuration
-    function getGroupBarLayerConfig() {
-      return {
-        // Rows
-        rowHeight: parseInt(document.getElementById('rowHeight').value),
-        minRowHeight: 12,         // Minimum row height
-        // Labels
-        labelWidth: parseInt(document.getElementById('labelWidth').value),
-        labelPosition: document.getElementById('labelPosition').value,
-        labelXPadding: parseFloat(document.getElementById('labelXPadding').value),
-        // Spacing
-        xPadding: parseFloat(document.getElementById('xPadding').value),
-        yPadding: parseFloat(document.getElementById('yPadding').value),
-        roundRadius: parseInt(document.getElementById('roundRadius').value),
-        // Groups
-        mode: document.getElementById('groupBarMode').value,
-        groupYPadding: parseInt(document.getElementById('groupYPadding').value),
-        // Bars
-        barTextPosition: 'center',  // 'none' | 'left' | 'center' | 'right'
-        barStyleFn: createStyleFn(),
-        // Points
-        pointSizeRatio: 0.3,      // Point size relative to rowHeight (0-1)
-        pointTextPosition: 'none',// 'none' | 'right' | 'top'
-        pointStyleFn: createStyleFn(),
-        // Links
-        curve: 'curveBumpX',      // d3 curve type for links
-        minLinkLength: 20,        // Minimum link length to display
-        headSize: 5,
-        linkStyleFn: createStyleFn(),
-      }
-    }
-
-    // Filter data based on lane groups configuration
-    function getFilteredData() {
-      const groups = getLaneGroupsConfig();
-
-      // If no groups configured, return all data
-      if (groups.length === 0) {
-        return currentData;
-      }
-
-      // Filter data based on selectedValues in each group
-      return currentData.filter(d => {
-        for (const group of groups) {
-          // If selectedValues is null (all selected), skip this filter
-          if (group.selectedValues === null) continue;
-
-          // Check if the data item's field value is in the selected values
-          const fieldValue = d[group.field];
-          if (!group.selectedValues.includes(fieldValue)) {
-            return false;
+    function detectCategoryFields(data) {
+      if (!data || data.length === 0) return [];
+      const sample = data[0];
+      const fields = [];
+      const excludeFields = new Set(['id', 'start', 'end', 'label', 'title', 'color']);
+      for (const key of Object.keys(sample)) {
+        if (excludeFields.has(key)) continue;
+        if (typeof sample[key] === 'string') {
+          const uniqueValues = new Set(data.map(d => d[key]).filter(v => v != null));
+          const maxUnique = Math.min(500, Math.floor(data.length / 2));
+          if (uniqueValues.size >= 2 && uniqueValues.size <= maxUnique) {
+            fields.push({ value: key, label: key, uniqueCount: uniqueValues.size });
           }
         }
-        return true;
+      }
+      return fields.sort((a, b) => a.uniqueCount - b.uniqueCount);
+    }
+
+    function initFieldSelectors() {
+      const barColorSelect = document.getElementById('barColorField');
+      const defaultOption = barColorSelect.querySelector('option[value="default"]');
+      barColorSelect.innerHTML = '';
+      barColorSelect.appendChild(defaultOption);
+      availableFields.forEach(field => {
+        const option = document.createElement('option');
+        option.value = field.value;
+        option.textContent = `${field.label} (${field.uniqueCount})`;
+        barColorSelect.appendChild(option);
       });
+      //if (availableFields.length > 0) barColorSelect.value = availableFields[0].value;
     }
-    // D3 颜色比例尺 - 按字段分别创建
+
+    // ==================== Lane Groups (Data Config) ====================
+
+    window.addLaneGroup = function(defaultField = null) {
+      const id = laneGroupCounter++;
+      const container = document.getElementById('laneGroupsContainer');
+      const groupDiv = document.createElement('div');
+      groupDiv.className = 'lane-group';
+      groupDiv.dataset.id = id;
+      const field = defaultField || availableFields[0].value;
+
+      groupDiv.innerHTML = `
+        <div class="lane-group-header">
+          <span class="lane-group-title">Level ${id + 1}</span>
+          <button class="btn-remove-lane" onclick="removeLaneGroup(${id})">Remove</button>
+        </div>
+        <div class="control-group">
+          <label>Group Field</label>
+          <select class="lane-field-select" data-id="${id}" onchange="onFieldChange(${id})">
+            ${availableFields.map(f =>
+              `<option value="${f.value}" ${f.value === field ? 'selected' : ''}>${f.label}</option>`
+            ).join('')}
+          </select>
+        </div>
+        <div class="control-group">
+          <div class="checkbox-group">
+            <input type="checkbox" id="expanded-${id}" class="lane-expanded-checkbox" data-id="${id}" checked>
+            <label for="expanded-${id}">Default Expanded</label>
+          </div>
+        </div>
+        <div class="control-group">
+          <label>Filter Values</label>
+          <select multiple class="lane-values-select" data-id="${id}">
+            <option disabled>Loading...</option>
+          </select>
+          <div class="field-info">Ctrl/Cmd multi-select. Leave empty for all.</div>
+        </div>
+      `;
+      container.appendChild(groupDiv);
+      updateFieldValues(id, field);
+
+      const valuesSelect = groupDiv.querySelector('.lane-values-select');
+      valuesSelect.addEventListener('change', setGroupBarLayerData);
+      const expandedCheckbox = groupDiv.querySelector('.lane-expanded-checkbox');
+      expandedCheckbox.addEventListener('change', setGroupBarLayerData);
+    };
+
+    window.removeLaneGroup = function(id) {
+      const group = document.querySelector(`.lane-group[data-id="${id}"]`);
+      if (group) { group.remove(); setGroupBarLayerData(); }
+    };
+
+    window.onFieldChange = function(id) {
+      const select = document.querySelector(`.lane-field-select[data-id="${id}"]`);
+      updateFieldValues(id, select.value);
+      setGroupBarLayerData();
+    };
+
+    function updateFieldValues(id, field) {
+      if (!currentData || currentData.length === 0) return;
+      const uniqueValues = [...new Set(currentData.map(d => d[field]))].filter(v => v).sort();
+      const valuesSelect = document.querySelector(`.lane-values-select[data-id="${id}"]`);
+      if (valuesSelect) {
+        valuesSelect.innerHTML = uniqueValues.map(value =>
+          `<option value="${value}" selected>${value || '(empty)'}</option>`
+        ).join('');
+      }
+    }
+
+    function getLaneGroupsConfig() {
+      const groups = [];
+      document.querySelectorAll('.lane-group').forEach(groupDiv => {
+        const fieldSelect = groupDiv.querySelector('.lane-field-select');
+        const expandedCheckbox = groupDiv.querySelector('.lane-expanded-checkbox');
+        const valuesSelect = groupDiv.querySelector('.lane-values-select');
+        const selectedValues = Array.from(valuesSelect.selectedOptions).map(opt => opt.value);
+        groups.push({
+          field: fieldSelect.value,
+          label: fieldSelect.options[fieldSelect.selectedIndex].text,
+          expanded: expandedCheckbox.checked,
+          selectedValues: selectedValues.length > 0 ? selectedValues : null
+        });
+      });
+      return groups;
+    }
+
+    function initDefaultLaneGroups() {
+      if (availableFields.length > 0) {
+        addLaneGroup(availableFields[0].value);
+      }
+    }
+
+    // ==================== Color / Style Functions ====================
+
     const colorScales = {
       country: d3.scaleOrdinal(d3.schemeTableau10),
       countryCode: d3.scaleOrdinal(d3.schemeTableau10),
@@ -1267,170 +666,121 @@
       level: d3.scaleOrdinal(d3.schemeDark2)
     };
 
-    // 获取字段值的颜色
     function getFieldColor(field, value) {
       if (!value) return '#95a5a6';
       const scale = colorScales[field] || d3.scaleOrdinal(d3.schemeSet2);
       return scale(value);
     }
-    
-    // 形状回调函数 - 根据 exit 字段决定形状
+
     function getFieldShape(ctx) {
-      const exit = ctx.data.exit;
-      // 根据 exit 类型返回不同形状
-      switch (exit) {
-        case 'Regular':
-          return 'square';
-        case 'Irregular':
-          return 'diamond';
-        case 'Natural Death':
-          return 'triangle';
-        case 'Still in Office':
-          return 'square';
-        default:
-          return 'circle';
+      switch (ctx.data.exit) {
+        case 'Regular': return 'square';
+        case 'Irregular': return 'diamond';
+        case 'Natural Death': return 'triangle';
+        case 'Still in Office': return 'square';
+        default: return 'circle';
       }
     }
 
-    // 统一颜色回调函数
     function createStyleFn() {
       const barColorField = document.getElementById('barColorField').value;
       const groupColorMode = document.getElementById('groupColorMode').value;
       const enableStyleFn = document.getElementById('enableStyleFn').checked;
-
-      if (!enableStyleFn) {
-        return null;
-      }
+      if (!enableStyleFn) return null;
 
       return function(type, ctx) {
         if (type === 'bar') {
-          // Bar 颜色
-          if (barColorField === 'default') {
-            return null; // 使用默认 css
-          }
-          return {
-            stroke: null,
-            strokeWidth: null,
-            strokeDasharray: null,
-            fill: getFieldColor(barColorField, ctx.data[barColorField]),
-            fillOpacity: null 
-          }
+          if (barColorField === 'default') return null;
+          return { stroke: null, strokeWidth: null, strokeDasharray: null, fill: getFieldColor(barColorField, ctx.data[barColorField]), fillOpacity: null };
         }
-
         if (type === 'point') {
-          // Point 颜色 - 使用与 bar 相同的逻辑
-          if (barColorField === 'default') {
-            return null;
-          }
-          return {
-            stroke: null,
-            strokeWidth: null,
-            fill: getFieldColor(barColorField, ctx.data[barColorField]),
-            fillOpacity: null,
-            marker: getFieldShape(ctx)
-          };
+          if (barColorField === 'default') return null;
+          return { stroke: null, strokeWidth: null, fill: getFieldColor(barColorField, ctx.data[barColorField]), fillOpacity: null, marker: getFieldShape(ctx) };
         }
-        
         if (type === 'groupBar') {
-          // Group 颜色
           if (groupColorMode === 'level') {
-            return {
-              stroke: colorScales.level(ctx.data.level),
-              strokeWidth: 1.5,
-              strokeDasharray: null,
-              fill: colorScales.level(ctx.data.level),
-              fillOpacity: 0.4
-            };
+            return { stroke: colorScales.level(ctx.data.level), strokeWidth: 1.2, strokeDasharray: null, fill: colorScales.level(ctx.data.level), fillOpacity: 0.4 };
           }
-          // 按分组字段值着色
-          return {
-              stroke: getFieldColor(ctx.data.field, ctx.data.key),
-              strokeWidth: 1.5,
-              strokeDasharray: null,
-              fill: getFieldColor(ctx.data.field, ctx.data.key),
-              fillOpacity: 0.4
-            };
+          return { stroke: getFieldColor(ctx.data.field, ctx.data.key), strokeWidth: 0.8, strokeDasharray: null, fill: getFieldColor(ctx.data.field, ctx.data.key), fillOpacity: 0.4 };
         }
-
         if (type === 'link') {
-          // Link 颜色 - 根据 link type 字段
-          const typeColors = {
-            'succession': '#2196F3',
-            'coup': '#F44336',
-            'election': '#4CAF50',
-            'death': '#9E9E9E',
-            'resignation': '#FF9800'
+          const typeColors = { 'succession': '#2196F3', 'coup': '#F44336', 'election': '#4CAF50', 'death': '#9E9E9E', 'resignation': '#FF9800' };
+          const linkType = ctx.data.type || 'succession';
+          const styles = {
+            coup: { stroke: typeColors.coup, strokeWidth: 2.5, strokeDasharray: '5,3', headMarker: 'diamond' },
+            election: { stroke: typeColors.election, strokeWidth: 2, strokeDasharray: null, headMarker: 'circle' },
+            death: { stroke: typeColors.death, strokeWidth: 1.5, strokeDasharray: '2,2', headMarker: 'square' },
+            resignation: { stroke: typeColors.resignation, strokeWidth: 2, strokeDasharray: '8,4', headMarker: 'arrow' },
           };
-          const type = ctx.data.type || 'succession';
-
-          // 根据不同类型返回不同样式
-          switch (type) {
-            case 'coup':
-              return {
-                stroke: typeColors.coup,
-                strokeWidth: 2.5,
-                strokeDasharray: '5,3',
-                headMarker: 'diamond'
-              };
-            case 'election':
-              return {
-                stroke: typeColors.election,
-                strokeWidth: 2,
-                strokeDasharray: null,
-                headMarker: 'circle'
-              };
-            case 'death':
-              return {
-                stroke: typeColors.death,
-                strokeWidth: 1.5,
-                strokeDasharray: '2,2',
-                headMarker: 'square'
-              };
-            case 'resignation':
-              return {
-                stroke: typeColors.resignation,
-                strokeWidth: 2,
-                strokeDasharray: '8,4',
-                headMarker: 'arrow'
-              };
-            case 'succession':
-            default:
-              return {
-                stroke: typeColors.succession,
-                strokeWidth: 1.5,
-                strokeDasharray: null,
-                headMarker: 'circle'
-              };
-          }
+          return styles[linkType] || { stroke: typeColors.succession, strokeWidth: 1.5, strokeDasharray: null, headMarker: 'circle' };
         }
-
         return null;
       };
     }
 
+    // ==================== Data Filtering ====================
+
+    function getFilteredData() {
+      const groups = getLaneGroupsConfig();
+      if (groups.length === 0) return currentData;
+      return currentData.filter(d => {
+        for (const group of groups) {
+          if (group.selectedValues === null) continue;
+          if (!group.selectedValues.includes(d[group.field])) return false;
+        }
+        return true;
+      });
+    }
+
+    // ==================== Layer Management ====================
+
+    function getGroupBarLayerConfig() {
+      const chart = chartPanel.getChart();
+      return {
+        rowHeight: 25,
+        minRowHeight: 12,
+        labelWidth: chart.options.labelWidth,
+        labelPosition: chart.options.labelPosition,
+        labelXPadding: 6,
+        xPadding: 2,
+        yPadding: 2,
+        roundRadius: chart.options.roundRadius,
+        groupBarMode: 'separate',
+        groupYPadding: 5,
+        barTextPosition: 'center',
+        barStyleFn: createStyleFn(),
+        pointSizeRatio: 0.3,
+        pointTextPosition: 'none',
+        pointStyleFn: createStyleFn(),
+        curve: 'curveBumpX',
+        minLinkLength: 20,
+        headSize: 5,
+        linkStyleFn: createStyleFn(),
+      };
+    }
+
     function updateGroupBarLayer() {
+      const chart = chartPanel.getChart();
       if (!chart) return;
 
-      const config = getGroupBarLayerConfig();
-
       if (!groupBarLayer) {
-        groupBarLayer = new GroupBarLayer('groupBar', {
-          ...config
-        });
+        const config = getGroupBarLayerConfig();
+        groupBarLayer = new GroupBarLayer('groupBar', config);
         setGroupBarLayerData();
         chart.layerManager.addLayer(groupBarLayer, 1);
-
-        console.log('Layer created');
+        console.log('GroupBarLayer created');
       } else {
+        // Only update style-related options (layout options are managed by setting panel)
         groupBarLayer.setOptions({
-          ...config
+          barStyleFn: createStyleFn(),
+          pointStyleFn: createStyleFn(),
+          linkStyleFn: createStyleFn(),
         });
       }
     }
 
     function setGroupBarLayerData() {
       if (!groupBarLayer) return;
-      
       const filteredData = getFilteredData();
       const groups = getLaneGroupsConfig();
       groupBarLayer.setLayerData(filteredData, {
@@ -1440,8 +790,6 @@
         label: d => d.label,
         color: d => d.color,
         title: d => d.title,
-        // 判断是否为时间点：当 start === end 时为点
-        // 注意：经过 layout.js 处理后，start/end 可能已转换为时间戳数字
         isPoint: d => {
           const start = typeof d.start === 'number' ? d.start : d.start.getTime();
           const end = typeof d.end === 'number' ? d.end : d.end.getTime();
@@ -1449,253 +797,112 @@
         }
       }, groups);
 
-      // Generate demo links: connect consecutive leaders in same country
       const demoLinks = generateDemoLinks(filteredData);
       groupBarLayer.setLinkData(demoLinks);
-      console.log(`Generated ${demoLinks.length} demo links`);
+
+      // Update info panel data count
+      chartPanel.setDataCount(filteredData.length);
+      console.log(`Data set: ${filteredData.length} items, ${demoLinks.length} links`);
     }
 
     function updateGridLayer() {
+      const chart = chartPanel.getChart();
       if (!chart) return;
 
-      const config = getChartConfig();
-
+      const axises = getAxises('western');
       if (!gridLayer) {
-        gridLayer = new GridLayer('grid', {
-          axises: config.axises,
-          locale: config.locale,
-        });
+        gridLayer = new GridLayer('grid', { axises, locale: 'zh-cn' });
         chart.layerManager.addLayer(gridLayer, 0);
       } else {
-        gridLayer.setOptions({
-          axises: config.axises,
-          locale: config.locale,
-        });
+        gridLayer.setOptions({ axises, locale: chart.options.locale });
       }
     }
 
-    // Toggle feature
-    window.toggleFeature = function(feature) {
-      featureFlags[feature] = !featureFlags[feature];
-      const btn = document.getElementById('toggle' + feature.charAt(0).toUpperCase() + feature.slice(1));
-      btn.classList.toggle('active', featureFlags[feature]);
-      updateChart();
-    };
+    // ==================== Sidebar Event Bindings ====================
 
-    // Zoom controls
-    window.zoomIn = function() {
-      if (chart && chart.zoomManager) {
-        chart.zoomIn(1.5);
-      }
-    };
-
-    window.zoomOut = function() {
-      if (chart && chart.zoomManager) {
-        chart.zoomOut(1.5);
-      }
-    };
-
-    window.resetZoom = function() {
-      if (chart) {
-        chart.resetZoom();
-      }
-    };
-
-    window.panLeft = function() {
-      if (chart && chart.zoomManager) {
-        chart.pan(100);
-      }
-    };
-
-    window.panRight = function() {
-      if (chart && chart.zoomManager) {
-        chart.pan(-100);
-      }
-    };
-
-    window.expandAll = function() {
-      // TODO: Implement expand all
-      console.log('Expand all - requires tree access');
-    };
-
-    window.collapseAll = function() {
-      // TODO: Implement collapse all
-      console.log('Collapse all - requires tree access');
-    };
-
-    // Reset config
-    window.resetConfig = function() {
-      if (!confirm('确定要重置所有配置吗？')) return;
-
-      document.getElementById('axisType').value = 'western';
-      document.getElementById('startYear').value = '1850';
-      document.getElementById('endYear').value = '2020';
-      document.getElementById('zoomMin').value = '-1';
-      document.getElementById('zoomMax').value = '-1';
-      document.getElementById('labelWidth').value = '240';
-      document.getElementById('labelWidthValue').textContent = '240';
-      document.getElementById('labelPosition').value = 'left';
-      document.getElementById('roundRadius').value = '4';
-      document.getElementById('roundRadiusValue').textContent = '4';
-      document.getElementById('hasIndexAxis').value = 'true';
-      document.getElementById('indexAxisHeight').value = 28;
-      document.getElementById('indexAxisHeightValue').textContent = '28';
-      document.getElementById('rowHeight').value = '25';
-      document.getElementById('rowHeightValue').textContent = '25';
-      document.getElementById('xPadding').value = '2';
-      document.getElementById('xPaddingValue').textContent = '2';
-      document.getElementById('yPadding').value = '2';
-      document.getElementById('yPaddingValue').textContent = '2';
-      document.getElementById('groupBarMode').value = 'separate';
-      document.getElementById('labelXPadding').value = '6';
-      document.getElementById('labelXPaddingValue').textContent = '6';
-      document.getElementById('groupYPadding').value = '5';
-      document.getElementById('groupYPaddingValue').textContent = '5';
-      document.getElementById('theme').value = 'light';
-      document.getElementById('locale').value = 'zh-cn';
-      document.getElementById('accentScheme').value = 'default';
-
-      featureFlags = { hasActiveAxis: true, hasTooltip: true };
-      document.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.add('active'));
-
-      // Reset color config
-      document.getElementById('barColorField').value = availableFields.length > 0 ? availableFields[0].value : 'default';
-      document.getElementById('groupColorMode').value = 'level';
-      document.getElementById('enableStyleFn').checked = true;
-
-      // Reset lane groups
-      document.getElementById('laneGroupsContainer').innerHTML = '';
-      laneGroupCounter = 0;
-      initDefaultLaneGroups();
-
-      updateChart(true);
-    };
-
-    // Export config
-    window.exportConfig = function() {
-      const config = getChartConfig();
-      const json = JSON.stringify(config, (key, value) => {
-        if (value instanceof Date) return value.toISOString();
-        if (typeof value === 'function') return '[Function]';
-        return value;
-      }, 2);
-
-      console.log('Current Configuration:');
-      console.log(json);
-      alert('配置已输出到控制台');
-    };
-
-    // Bind events
-    function bindEvents() {
-      // Range sliders
-      let rangeInputs = ['labelWidth', 'roundRadius', 'indexAxisHeight', 'rowHeight', 'xPadding', 'yPadding', 'labelXPadding', 'groupYPadding'];
-      rangeInputs.forEach(id => {
-        const input = document.getElementById(id);
-        const valueSpan = document.getElementById(id + 'Value');
-        if (['rowHeight', 'xPadding', 'yPadding', 'labelXPadding', 'groupYPadding'].includes(id)) {
-          input.addEventListener('input', function() {
-            valueSpan.textContent = this.value;
-            updateGroupBarLayer();
-          });
-        } else if (['indexAxisHeight'].includes(id)) {
-          input.addEventListener('input', function() {
-            valueSpan.textContent = this.value;
-            updateChart();
-          });
-        } else {
-          input.addEventListener('input', function() {
-            valueSpan.textContent = this.value;
-            updateChart();
-            updateGroupBarLayer();
-          });
-        }
+    function bindSidebarEvents() {
+      // Color-related controls
+      ['barColorField', 'groupColorMode'].forEach(id => {
+        document.getElementById(id).addEventListener('change', updateGroupBarLayer);
       });
-
-      // Select inputs
-      const selectInputs = ['axisType', 'labelPosition', 'hasIndexAxis', 'groupBarMode', 'barColorField', 'groupColorMode', 'theme', 'accentScheme', 'locale'];
-      selectInputs.forEach(id => {
-        const input = document.getElementById(id);
-        if (['hasIndexAxis', 'theme', 'accentScheme'].includes(id)) {
-          input.addEventListener('change', function() {
-            updateChart();
-          });
-        } else if (['groupBarMode', 'barColorField', 'groupColorMode'].includes(id)) {
-          input.addEventListener('change', function() {
-            updateGroupBarLayer();
-          });
-        } else if(['axisType', 'locale'].includes(id)) {
-          input.addEventListener('change', function() {
-            updateChart();
-            updateGridLayer();
-          });
-        } else {
-          input.addEventListener('change',function() {
-            updateChart();
-            updateGroupBarLayer();
-          });
-        }
-      });
-
-      // Checkbox inputs
-      document.getElementById('enableStyleFn').addEventListener('change', function() {
-        updateGroupBarLayer();
-      });
-
-      // Number inputs
-      const numberInputs = ['startYear', 'endYear', 'zoomMin', 'zoomMax'];
-      numberInputs.forEach(id => {
-        document.getElementById(id).addEventListener('change', function() {
-          updateChart();
-        });
-      });
+      document.getElementById('enableStyleFn').addEventListener('change', updateGroupBarLayer);
     }
 
-    // Initialize
+    // ==================== Chart Panel Creation ====================
+
+    function createChartPanel() {
+      chartPanel = new HistoricalChartPanel({
+        timeDomain: [getDate(1850, 1, 1), getDate(2020, 12, 31)],
+        zoomLimited: [-1, -1],
+        axises: getAxises('western'),
+        labelWidth: 240,
+        labelPosition: 'none',
+        roundRadius: 4,
+        hasIndexAxis: true,
+        indexAxisHeight: 28,
+        hasActiveAxis: true,
+        hasTooltip: true,
+        style: 'light',
+        accentScheme: 'default',
+        locale: 'zh-cn',
+        panelOptions: {
+          showInfoPanel: true,
+          axisTypeOptions: [
+            { value: 'western', label: 'Western (Gregorian)' },
+            { value: 'lunar', label: 'Lunar (1-9999 CE)' },
+            { value: 'chinese', label: 'Chinese Calendar (722 BCE-2200 CE)' },
+            { value: 'dual', label: 'Dual (Western + Lunar)' },
+          ],
+          onAxisTypeChange: (axisType) => getAxises(axisType),
+        },
+      });
+
+      chartPanel.create('#chart');
+
+      // Add layers
+      updateGridLayer();
+      updateGroupBarLayer();
+      chartPanel.render();
+
+      // Chart event listeners
+      chartPanel.on('itemClick', (data) => console.log('Clicked:', data));
+
+      console.log('HistoricalChartPanel created');
+    }
+
+    // ==================== Init ====================
+
     async function init() {
-      // Try to load Chinese calendar libraries
-      console.log('Attempting to load Chinese calendar libraries...');
-      
-      // Initialize ChineseCalendar (722 BCE - 2200 CE, via @hat/ccalendar)
+      console.log('Loading calendar libraries...');
       await initChineseCalendar();
-      console.log('ChineseCalendar loaded successfully');
+      console.log('ChineseCalendar loaded');
 
-      // Try to load lunar-javascript (1 CE - 9999 CE)
       try {
         await initLunar();
-        console.log('lunar-javascript loaded successfully');
+        console.log('lunar-javascript loaded');
       } catch (e) {
         console.warn('lunar-javascript not available:', e.message);
       }
 
-      // Load archigos.csv data
       currentData = await loadArchigosData();
-
-      // 检测可用的分类字段
       availableFields = detectCategoryFields(currentData);
-      console.log('Detected category fields:', availableFields.map(f => f.value));
+      console.log('Detected fields:', availableFields.map(f => f.value));
 
-      // 初始化字段选择器
       initFieldSelectors();
-
-      initAccentSchemeSelectors();
-
-      // Initialize default lane groups (after data is loaded)
       initDefaultLaneGroups();
+      bindSidebarEvents();
 
-      bindEvents();
-      updateChart();
+      createChartPanel();
 
-      console.log(`HistoricalChart Demo initialized with ${currentData.length} events`);
-      console.log(`Calendar support: Lunar=${isLunarLoaded()}, ChineseCalendar=${isChineseCalendarLoaded()}`);
+      console.log(`Demo initialized: ${currentData.length} events`);
     }
 
     init();
 
     // Handle resize
     window.addEventListener('resize', () => {
-      if (chart) {
-        const chartEl = document.getElementById('chart');
-        chart.resize(chartEl.offsetWidth, chartEl.offsetHeight);
+      if (chartPanel) {
+        chartPanel.resize();
       }
     });
   </script>

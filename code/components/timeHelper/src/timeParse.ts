@@ -17,6 +17,7 @@ export type EraValidator = (eraName: string) => boolean;
  */
 export interface ParseOptions {
   eraValidator?: EraValidator;
+  separator?: string;
 }
 
 /**
@@ -498,7 +499,8 @@ export function parseTimeRangeString(
     return [null, null];
   }
 
-  const parts = timeRangeStr.split('-').map(part => part.trim());
+  const separator = options?.separator?? '-';
+  const parts = timeRangeStr.split(separator).map(part => part.trim());
 
   if (parts.length === 2) {
     const startStr = parts[0];

@@ -142,7 +142,7 @@ export class BarRenderer {
       return null;
     }
 
-    const style = this.options.styleFn('bar', { data: data, accessors }) || {};
+    const style = this.options.styleFn('bar', { data: data, accessors });
     if (!style || typeof style !== 'object') {
       return null;
     } else {

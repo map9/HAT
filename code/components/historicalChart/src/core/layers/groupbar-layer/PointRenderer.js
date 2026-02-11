@@ -3,7 +3,7 @@
  * Supports multiple shapes: circle, diamond, triangle, square
  */
 import * as d3 from 'd3';
-import { applyStrokeStyle, applyFillStyle } from '../../utils/styleHelper.js';
+import { applyStrokeStyle, applyFillStyle, clearStrokeStyle, clearFillStyle } from '../../utils/styleHelper.js';
 
 // D3 symbol types mapping
 const SYMBOL_TYPES = {
@@ -151,7 +151,7 @@ export class PointRenderer {
       return null;
     }
 
-    const style = this.options.styleFn('point', { data: data, accessors }) || {};
+    const style = this.options.styleFn('point', { data: data, accessors });
     if (!style || typeof style !== 'object') {
       return null;
     } else {
@@ -177,8 +177,11 @@ export class PointRenderer {
       return d3.symbol().type(symbolType).size(symbolSize)();
     });
 
-    // Apply stroke and fill styles
-    if (this.options.styleFn && style) {
+    // Apply or clear stroke and fill styles
+    if (!this.options.styleFn || !style) {
+      clearStrokeStyle(element);
+      clearFillStyle(element);
+    } else {
       applyStrokeStyle(element, style);
       applyFillStyle(element, style);
     }

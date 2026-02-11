@@ -3,32 +3,35 @@
  */
 
 // Main class
-export { HistoricalChart } from './HistoricalChart.js';
+export { HistoricalChart } from './core/HistoricalChart.js';
+
+// Panel wrapper
+export { HistoricalChartPanel } from './HistoricalChartPanel.js';
 
 // Managers
-export { AxisManager } from './AxisManager.js';
-export { IndexAxisManager } from './IndexAxisManager.js';
-export { ZoomManager } from './ZoomManager.js';
-export { ScrollManager } from './ScrollManager.js';
-export { TooltipManager } from './TooltipManager.js';
-export { LayerManager } from './LayerManager.js';
+export { AxisManager } from './core/AxisManager.js';
+export { IndexAxisManager } from './core/IndexAxisManager.js';
+export { ZoomManager } from './core/ZoomManager.js';
+export { ScrollManager } from './core/ScrollManager.js';
+export { TooltipManager } from './core/TooltipManager.js';
+export { LayerManager } from './core/LayerManager.js';
 
 // Layers
-export { Layer, GridLayer, GroupBarLayer } from './layers';
+export { Layer, GridLayer, GroupBarLayer } from './core/layers';
 
 // Axis configurations - Western (Gregorian) calendar
-export * as westernAxises from './axises/westernAxises.js';
+export * as westernAxises from './core/axises/westernAxises.js';
 
 // Axis configurations - Chinese Lunar calendar (lunar-javascript, 1 CE - 9999 CE)
-export * as lunarAxises from './axises/lunarAxises.js';
-export { initLunar, isLunarLoaded } from './axises/lunarAxises.js';
+export * as lunarAxises from './core/axises/lunarAxises.js';
+export { initLunar, isLunarLoaded } from './core/axises/lunarAxises.js';
 
 // Axis configurations - Chinese calendar (ChineseCalendar, 722 BCE - 2200 CE)
-export * as chineseCalendarAxises from './axises/chineseCalendarAxises.js';
-export { initChineseCalendar, isChineseCalendarLoaded, getAxises as getChineseCalendarAxises } from './axises/chineseCalendarAxises.js';
+export * as chineseCalendarAxises from './core/axises/chineseCalendarAxises.js';
+export { initChineseCalendar, isChineseCalendarLoaded, getAxises as getChineseCalendarAxises } from './core/axises/chineseCalendarAxises.js';
 
 // Styles
-export { getSystemTheme, getAccentSchemes } from './style.js';
+export { getSystemTheme, getAccentSchemes } from './core/theme.js';
 
 // Utilities
 export {
@@ -38,7 +41,7 @@ export {
   assignRowsStackII,
   getLayoutAlgorithm,
   getMaxRow
-} from './utils/layout.js';
+} from './core/utils/layout.js';
 
 export {
   getHoursPerPixel,
@@ -48,4 +51,4 @@ export {
   formatDate,
   clampDomain,
   MS_PER_HOUR
-} from './utils/scales.js';
+} from './core/utils/scales.js';

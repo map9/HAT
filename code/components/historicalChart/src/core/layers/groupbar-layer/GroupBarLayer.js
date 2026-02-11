@@ -25,7 +25,7 @@ export class GroupBarLayer extends Layer {
    * @param {number} options.xPadding - Horizontal padding between bars
    * @param {number} options.yPadding - Vertical padding for bars, include row height
    * @param {number} options.roundRadius - Corner radius for bars and group bars and tooltips
-   * @param {string} options.mode - 'separate' | 'background'
+   * @param {string} options.groupBarMode - 'separate' | 'background'
    * @param {number} options.groupYPadding - Vertical padding for groups in background mode
    * @param {string} options.barTextPosition - 'none' | 'left' | 'center' | 'right'
    * @param {Function} options.barStyleFn - Style callback for bars
@@ -64,7 +64,7 @@ export class GroupBarLayer extends Layer {
       roundRadius: 4,           // Corner radius for bars and group bars and tooltips
 
       // Groups
-      mode: 'separate',         // 'separate' | 'background'
+      groupBarMode: 'separate',  // 'separate' | 'background'
       groupYPadding: 5,         // Vertical padding for groups in background mode
 
       // Bars
@@ -120,7 +120,7 @@ export class GroupBarLayer extends Layer {
 
     // Group bar renderer
     this.groupBarRenderer = new GroupBarRenderer({
-      mode: this.options.mode,
+      mode: this.options.groupBarMode,
       roundRadius: this.options.roundRadius,
       yPadding: this.options.yPadding,
       styleFn: this.options.barStyleFn,
@@ -406,8 +406,8 @@ export class GroupBarLayer extends Layer {
    */
   _assignRowsToTree(root, xScale) {
     const { start, end } = this.currentAccessors;
-    const useSeparateRow = this.options.mode === 'separate';
-    const useBackground = this.options.mode === 'background';
+    const useSeparateRow = this.options.groupBarMode === 'separate';
+    const useBackground = this.options.groupBarMode === 'background';
     const groupYPadding = this.options.groupYPadding || 0;
     const rowHeight = this.options.rowHeight;
 
@@ -592,7 +592,7 @@ export class GroupBarLayer extends Layer {
 
     // Render labels
     if (this.laneTree && this.labelRenderer) {
-      this.labelRenderer.render(this.laneTree, this.options.rowHeight, this.options.mode);
+      this.labelRenderer.render(this.laneTree, this.options.rowHeight, this.options.groupBarMode);
     }
 
     this._prepareLinks(xScale);
@@ -603,22 +603,22 @@ export class GroupBarLayer extends Layer {
 
   /**
    * Update group bar positions on zoom/pan
+   * Only updates positions, does not re-apply styles
    * @param {d3.ScaleTime} xScale - New time scale
    */
   update(xScale) {
-    // Update bars
+    // Update bars (positions only)
     this.barRenderer.update(xScale);
 
-    // Update points
+    // Update points (positions only)
     this.pointRenderer.update(xScale, this.options.rowHeight);
 
-    // Update group bars (need full redraw for proper positioning)
-    if (this.laneTree && this.currentAccessors) {
-      this.groupBarRenderer.render(this.laneTree, xScale, this.options.rowHeight, this.currentAccessors);
-    }
+    // Update group bars (positions only)
+    this.groupBarRenderer.update(xScale);
 
+    // Update links (positions only, enter/exit for minLinkLength changes)
     this._prepareLinks(xScale);
-    this.linkRenderer.render(this.enrichedLinks);
+    this.linkRenderer.update(this.enrichedLinks);
   }
 
   /**
@@ -648,7 +648,7 @@ export class GroupBarLayer extends Layer {
   setOptions(options, skipRender = false) {
     // Detect if structural changes require cache invalidation
     const needsFullRebuild =
-      options.mode !== undefined ||
+      options.groupBarMode !== undefined ||
       options.rowHeight !== undefined ||
       options.xPadding !== undefined ||
       options.groupYPadding !== undefined;
@@ -661,9 +661,9 @@ export class GroupBarLayer extends Layer {
     const labelOptions = {};
 
     // groupBarRenderer and barRenderer options
-    if (options.mode && options.mode !== this.options.mode) {
-      groupBarOptions.mode = options.mode;
-      labelOptions.mode = options.mode;
+    if (options.groupBarMode && options.groupBarMode !== this.options.groupBarMode) {
+      groupBarOptions.mode = options.groupBarMode;
+      labelOptions.mode = options.groupBarMode;
     }
     if (options.roundRadius && options.roundRadius !== this.options.roundRadius) {
       groupBarOptions.roundRadius = options.roundRadius;
@@ -677,7 +677,7 @@ export class GroupBarLayer extends Layer {
     if (options.barTextPosition && options.barTextPosition !== this.options.barTextPosition) {
       barOptions.textPosition = options.barTextPosition;
     }
-    if (options.barStyleFn && options.barStyleFn !== this.options.barStyleFn) {
+    if ('barStyleFn' in options && options.barStyleFn !== this.options.barStyleFn) {
       groupBarOptions.styleFn = options.barStyleFn;
       barOptions.styleFn = options.barStyleFn;
     }
@@ -689,7 +689,7 @@ export class GroupBarLayer extends Layer {
     if (options.headSize && options.headSize !== this.options.headSize) {
       linkOptions.headSize = options.headSize;
     }
-    if (options.linkStyleFn && options.linkStyleFn !== this.options.linkStyleFn) {
+    if ('linkStyleFn' in options && options.linkStyleFn !== this.options.linkStyleFn) {
       linkOptions.styleFn = options.linkStyleFn;
     }
 
@@ -700,7 +700,7 @@ export class GroupBarLayer extends Layer {
     if (options.pointTextPosition && options.pointTextPosition !== this.options.pointTextPosition) {
       pointOptions.textPosition = options.pointTextPosition;
     }
-    if (options.pointStyleFn && options.pointStyleFn !== this.options.pointStyleFn) {
+    if ('pointStyleFn' in options && options.pointStyleFn !== this.options.pointStyleFn) {
       pointOptions.styleFn = options.pointStyleFn;
     }
 

@@ -292,10 +292,10 @@ if __name__ == '__main__':
         save_to_csv(
             era_names,
             ['分期', '朝代', '政权', '统治者谥号', '统治者姓名', '年号', '起讫时间', '使用年数', '备注'],
-            './data/era_names.csv'
+            '../components/historicalChart/test/data/era_names.csv'
         )
         save_to_csv(
             ruler_infos,
             ['分期', '朝代', '政权', '统治者谥号', '统治者姓名', '统治者在位时间'],
-            './data/ruler_infos.csv'
+            '../components/historicalChart/test/data/ruler_infos.csv'
         )

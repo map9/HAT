@@ -130,6 +130,15 @@ export class Layer {
   }
 
   /**
+   * Force re-render to pick up styleFn logic changes
+   * Use when styleFn reference hasn't changed but its internal behavior has.
+   * Skips data preparation (layout unchanged), only re-renders visuals with fresh styleFn calls.
+   */
+  rerender() {
+    this._triggerRender();
+  }
+
+  /**
    * Trigger a re-render of this layer
    * Subclasses can override for custom behavior
    * @protected

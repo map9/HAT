@@ -3,7 +3,7 @@
  * Combines TimelineChart's axis system with GanttChart's hierarchical lanes
  */
 import * as d3 from 'd3';
-import { getSystemTheme } from './style.js';
+import { getSystemTheme } from './theme.js';
 import { AxisManager } from './AxisManager.js';
 import { IndexAxisManager } from './IndexAxisManager.js';
 import { ZoomManager } from './ZoomManager.js';
@@ -28,7 +28,7 @@ export class HistoricalChart {
    * @param {number} options.indexAxisHeight - Height of index axis
    * @param {boolean} options.hasActiveAxis - Whether to show active axis
    * @param {boolean} options.hasTooltip - Whether to enable tooltips
-   * @param {string} options.style - CSS style string
+   * @param {string} options.theme - CSS style string
    * @param {string} options.accentScheme - Accent color scheme
    * @param {string} options.locale - Locale for date formatting
    */
@@ -66,7 +66,7 @@ export class HistoricalChart {
       hasTooltip: true,
 
       // Style
-      style: 'light',
+      theme: 'light',
       accentScheme: 'default',
       locale: 'en-us',
 
@@ -132,7 +132,7 @@ export class HistoricalChart {
     // Add styles
     this.wrapper
       .append('style')
-      .text(getSystemTheme(this.options.style, this.options.accentScheme));
+      .text(getSystemTheme(this.options.theme, this.options.accentScheme));
 
     // Create main chart div
     this.chartDiv = this.wrapper.append('div')
@@ -531,7 +531,9 @@ export class HistoricalChart {
       .attr('width', this.options.width)
       .attr('height', this.contentHeight || bodyHeight);
 
-    this.activeAxis.attr('y2', this.axisManager.getHeight());
+    if (this.activeAxis) {
+      this.activeAxis.attr('y2', this.axisManager.getHeight());
+    }
 
     // Update zoom
     this.zoomManager.resize(this.options.width, bodyHeight);
@@ -586,13 +588,13 @@ export class HistoricalChart {
 
   /**
    * Set style/theme
-   * @param {string} style - LIGHT or DARK or custom CSS
+   * @param {string} theme - LIGHT or DARK or custom CSS
    * @param {string} accentScheme - Accent color scheme
    */
-  setStyle(style, accentScheme) {
-    this.options.style = style || 'light';
+  setStyle(theme, accentScheme) {
+    this.options.theme = theme || 'light';
     this.options.accentScheme = accentScheme || 'default';
-    this.wrapper.select('style').text(getSystemTheme(this.options.style, this.options.accentScheme));
+    this.wrapper.select('style').text(getSystemTheme(this.options.theme, this.options.accentScheme));
   }
 
   /**
@@ -760,7 +762,10 @@ export class HistoricalChart {
     }
 
     // Index axis
-    if (oldOptions.hasIndexAxis !== this.options.hasIndexAxis) {
+    if (
+      oldOptions.hasIndexAxis !== this.options.hasIndexAxis ||
+      oldOptions.indexAxisHeight !== this.options.indexAxisHeight
+    ) {
       if (this.options.hasIndexAxis && !this.indexAxisManager) {
         // Create index axis manager
         this._createIndexAxis();
@@ -768,6 +773,8 @@ export class HistoricalChart {
       } else if (!this.options.hasIndexAxis && this.indexAxisManager) {
         this.indexAxisManager.destroy();
         this.indexAxisManager = null;
+      } else if (oldOptions.indexAxisHeight !== this.options.indexAxisHeight  && this.indexAxisManager) {
+        this.indexAxisManager.resize(this.options.width, this.options.indexAxisHeight);
       }
 
       // Update content area height
@@ -788,15 +795,19 @@ export class HistoricalChart {
       }
     }
     if (oldOptions.hasTooltip !== this.options.hasTooltip) {
-      this.tooltipManager.setVisible(this.options.hasTooltip);
+      if (this.options.hasTooltip && !this.tooltipManager) {
+        this._createTooltip();
+      } else if (this.tooltipManager) {
+        this.tooltipManager.setVisible(this.options.hasTooltip);
+      }
     }
 
     // Style
     if (
-      oldOptions.style !== this.options.style ||
+      oldOptions.theme !== this.options.theme ||
       oldOptions.accentScheme !== this.options.accentScheme
     ) {
-      this.setStyle(this.options.style, this.options.accentScheme);
+      this.setStyle(this.options.theme, this.options.accentScheme);
     }
     if (oldOptions.locale !== this.options.locale) {
       this.axisManager.setOptions({
